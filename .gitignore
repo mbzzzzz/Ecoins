@@ -1,0 +1,28 @@
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+.pub-cache/
+.pub/
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Supabase
+supabase/.temp/
+
+# Keys
+google-services.json
+key.json
+*.jks
+*.keystore
+
+# Editors
+.vscode/
+.idea/
+*.iml
