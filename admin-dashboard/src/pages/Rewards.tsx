@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
-import { Plus, Trash2, Edit2 } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 
 interface Reward {
     id: string
@@ -30,7 +30,7 @@ export default function Rewards() {
     }, [])
 
     async function fetchRewards() {
-        const { data, error } = await supabase
+        const { data } = await supabase
             .from('rewards')
             .select('*, brands(name)')
             .order('created_at', { ascending: false })
