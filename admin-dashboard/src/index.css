@@ -26,11 +26,25 @@ body {
   flex-direction: column;
 }
 
-.sidebar h1 {
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 2rem;
+  padding-left: 0.5rem;
+}
+
+.brand-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.brand h1 {
   font-size: 1.5rem;
   color: var(--primary-color);
-  margin-bottom: 2rem;
   font-weight: 800;
+  margin: 0;
 }
 
 .sidebar a {
@@ -45,7 +59,8 @@ body {
   transition: all 0.2s;
 }
 
-.sidebar a:hover, .sidebar a.active {
+.sidebar a:hover,
+.sidebar a.active {
   background-color: #D1FAE5;
   color: #065F46;
 }
@@ -60,7 +75,7 @@ body {
   background: white;
   padding: 1.5rem;
   border-radius: 1rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   margin-bottom: 1.5rem;
 }
 
@@ -83,7 +98,8 @@ table {
   border-collapse: collapse;
 }
 
-th, td {
+th,
+td {
   text-align: left;
   padding: 1rem;
   border-bottom: 1px solid #E5E7EB;
