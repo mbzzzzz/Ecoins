@@ -2,7 +2,6 @@ import 'package:ecoins/ui/widgets/activity_logger_modal.dart';
 import 'package:ecoins/ui/screens/leaderboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -135,7 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         Text(
                           'This Month\'s Impact',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             color: Colors.white.withOpacity(0.9),
                             fontSize: 14,
                           ),
@@ -168,7 +167,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         Text(
                           '${_carbonSaved.toStringAsFixed(1)} kg',
-                          style: GoogleFonts.outfit(
+                          style: const TextStyle(
+                            fontFamily: 'Outfit',
                             color: Colors.white,
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
@@ -180,7 +180,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     Text(
                       'CO₂ Saved',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         color: Colors.white.withOpacity(0.9),
                         fontSize: 14,
                       ),

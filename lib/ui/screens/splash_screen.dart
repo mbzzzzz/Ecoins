@@ -30,15 +30,15 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Image.asset('assets/images/logo.png', width: 200, height: 200, fit: BoxFit.contain),
             // const Icon(Icons.eco, size: 80, color: Color(0xFF10B981)), // Fallback removed
-            SizedBox(height: 16),
-            CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            const CircularProgressIndicator(),
           ],
         ),
       ),

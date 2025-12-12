@@ -25,10 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
       const webClientId = 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com'; // User must replace this
       const iosClientId = 'YOUR_IOS_CLIENT_ID.apps.googleusercontent.com'; // User must replace this
 
-      final GoogleSignIn googleSignIn = GoogleSignIn(
-        clientId: iosClientId,
-        serverClientId: webClientId,
-      );
+      final GoogleSignIn googleSignIn = GoogleSignIn();
       final googleUser = await googleSignIn.signIn();
       final googleAuth = await googleUser?.authentication;
 

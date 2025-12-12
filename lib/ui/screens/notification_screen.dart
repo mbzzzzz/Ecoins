@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:timeago/timeago.dart' as timeago;
+import 'package:timeago/timeago.dart' as timeago_lib;
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -88,7 +88,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           Text(note['message']),
                           const SizedBox(height: 4),
                           Text(
-                            timeago.format(created),
+                            timeago_lib.format(created),
                             style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
                           ),
                         ],
