@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+// import 'package:google_sign_in/google_sign_in.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,51 +16,51 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   bool _isSignUp = false;
 
-  Future<void> _googleSignIn() async {
-    setState(() => _isLoading = true);
-    try {
-      // 1. Native Google Sign In
-      // Ensure you configured SHA-1 in Firebase/Google Cloud Console for Android
-      // and Info.plist for iOS.
-      const webClientId = 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com'; // User must replace this
-      const iosClientId = 'YOUR_IOS_CLIENT_ID.apps.googleusercontent.com'; // User must replace this
-
-      final GoogleSignIn googleSignIn = GoogleSignIn();
-      final googleUser = await googleSignIn.signIn();
-      final googleAuth = await googleUser?.authentication;
-
-      if (googleAuth == null) {
-        throw 'Google Sign-In canceled.';
-      }
-
-      final accessToken = googleAuth.accessToken;
-      final idToken = googleAuth.idToken;
-
-      if (idToken == null) {
-        throw 'No ID Token found.';
-      }
-
-      // 2. Sign In to Supabase
-      await Supabase.instance.client.auth.signInWithIdToken(
-        provider: OAuthProvider.google,
-        idToken: idToken,
-        accessToken: accessToken,
-      );
-
-      if (mounted) {
-        context.go('/home');
-      }
-    } catch (error) {
-       debugPrint('Google Sign In Error: $error');
-       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Google Sign-In failed (Check Setup)'), backgroundColor: Colors.red),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
+  // Future<void> _googleSignIn() async {
+  //   setState(() => _isLoading = true);
+  //   try {
+  //     // 1. Native Google Sign In
+  //     // Ensure you configured SHA-1 in Firebase/Google Cloud Console for Android
+  //     // and Info.plist for iOS.
+  //     const webClientId = 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com'; // User must replace this
+  //     const iosClientId = 'YOUR_IOS_CLIENT_ID.apps.googleusercontent.com'; // User must replace this
+  //
+  //     final GoogleSignIn googleSignIn = GoogleSignIn();
+  //     final googleUser = await googleSignIn.signIn();
+  //     final googleAuth = await googleUser?.authentication;
+  //
+  //     if (googleAuth == null) {
+  //       throw 'Google Sign-In canceled.';
+  //     }
+  //
+  //     final accessToken = googleAuth.accessToken;
+  //     final idToken = googleAuth.idToken;
+  //
+  //     if (idToken == null) {
+  //       throw 'No ID Token found.';
+  //     }
+  //
+  //     // 2. Sign In to Supabase
+  //     await Supabase.instance.client.auth.signInWithIdToken(
+  //       provider: OAuthProvider.google,
+  //       idToken: idToken,
+  //       accessToken: accessToken,
+  //     );
+  //
+  //     if (mounted) {
+  //       context.go('/home');
+  //     }
+  //   } catch (error) {
+  //      debugPrint('Google Sign In Error: $error');
+  //      if (mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         const SnackBar(content: Text('Google Sign-In failed (Check Setup)'), backgroundColor: Colors.red),
+  //       );
+  //     }
+  //   } finally {
+  //     if (mounted) setState(() => _isLoading = false);
+  //   }
+  // }
 
   Future<void> _submit() async {
     setState(() {
@@ -176,17 +176,17 @@ class _LoginScreenState extends State<LoginScreen> {
                     : Text(_isSignUp ? 'Sign Up' : 'Sign In', style: const TextStyle(fontSize: 16)),
               ),
               const SizedBox(height: 16),
-              OutlinedButton.icon(
-                onPressed: _isLoading ? null : _googleSignIn,
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                icon: const Icon(Icons.g_mobiledata, size: 28), // Or custom asset
-                label: const Text('Continue with Google'),
-              ),
+              // OutlinedButton.icon(
+              //   onPressed: _isLoading ? null : _googleSignIn,
+              //   style: OutlinedButton.styleFrom(
+              //     padding: const EdgeInsets.symmetric(vertical: 16),
+              //     shape: RoundedRectangleBorder(
+              //       borderRadius: BorderRadius.circular(12),
+              //     ),
+              //   ),
+              //   icon: const Icon(Icons.g_mobiledata, size: 28), // Or custom asset
+              //   label: const Text('Continue with Google'),
+              // ),
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () {
