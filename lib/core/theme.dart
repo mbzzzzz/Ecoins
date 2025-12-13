@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Brand Colors
+  // Brand Colors - Glassmorphism Nature Palette
   static const Color primaryGreen = Color(0xFF10B981); // Emerald 500
   static const Color primaryDark = Color(0xFF047857); // Emerald 700
   static const Color primaryLight = Color(0xFFD1FAE5); // Emerald 100
+  static const Color accentYellow = Color(0xFFFDE047); // Sunny Yellow
   
   static const Color textDark = Color(0xFF1F2937); // Gray 800
   static const Color textLight = Color(0xFF6B7280); // Gray 500
@@ -23,7 +24,7 @@ class AppTheme {
         secondary: primaryDark,
         surface: surfaceWhite,
         background: background,
-        surfaceTint: Colors.white, // Removes annoying tint on cards
+        surfaceTint: Colors.white,
       ),
       
       // Typography
@@ -38,8 +39,13 @@ class AppTheme {
       ),
 
       // Component Themes
+<<<<<<< HEAD
       appBarTheme: const AppBarTheme(
         backgroundColor: surfaceWhite,
+=======
+      appBarTheme: AppBarTheme(
+        backgroundColor: Colors.transparent, // Glassmorphism ready
+>>>>>>> 990c220 (feat: Gamified tree growth and AI verification improvements)
         elevation: 0,
         scrolledUnderElevation: 0,
         titleTextStyle: TextStyle(fontFamily: 'Outfit', fontSize: 20, fontWeight: FontWeight.w600, color: textDark),
@@ -47,11 +53,15 @@ class AppTheme {
       ),
       
       cardTheme: CardThemeData(
+<<<<<<< HEAD
         color: surfaceWhite,
+=======
+        color: surfaceWhite.withOpacity(0.8), // Semi-transparent for glass effect
+>>>>>>> 990c220 (feat: Gamified tree growth and AI verification improvements)
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: Colors.grey.shade200),
+          borderRadius: BorderRadius.circular(20), // Softer corners
+          side: BorderSide(color: Colors.white.withOpacity(0.5), width: 1.5),
         ),
         margin: EdgeInsets.zero,
       ),
@@ -60,43 +70,56 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: primaryGreen,
           foregroundColor: Colors.white,
-          elevation: 0,
+          elevation: 4, // Tactics
+          shadowColor: primaryGreen.withOpacity(0.4),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+<<<<<<< HEAD
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16, fontFamily: 'Inter'),
+=======
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 16),
+>>>>>>> 990c220 (feat: Gamified tree growth and AI verification improvements)
         ),
       ),
 
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: primaryGreen,
-          side: const BorderSide(color: primaryGreen),
+          side: const BorderSide(color: primaryGreen, width: 2),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+<<<<<<< HEAD
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           textStyle: const TextStyle(fontWeight: FontWeight.w600, fontFamily: 'Inter'),
+=======
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600),
+>>>>>>> 990c220 (feat: Gamified tree growth and AI verification improvements)
         ),
       ),
       
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: surfaceWhite,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        fillColor: Colors.white.withOpacity(0.7),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.5)),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: primaryGreen, width: 2),
         ),
+        labelStyle: GoogleFonts.inter(color: textLight),
+        hintStyle: GoogleFonts.inter(color: textLight.withOpacity(0.7)),
       ),
       
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: surfaceWhite,
+        backgroundColor: Colors.white.withOpacity(0.9),
         indicatorColor: primaryLight,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         iconTheme: WidgetStateProperty.resolveWith((states) {

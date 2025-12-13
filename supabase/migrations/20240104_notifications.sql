@@ -25,6 +25,7 @@ create or replace function public.handle_new_friend_request()
 returns trigger
 language plpgsql
 security definer
+set search_path = public
 as $$
 declare
   requester_name text;

@@ -23,7 +23,7 @@ create table public.user_challenges (
 );
 
 -- LEADERBOARD VIEW
-create or replace view public.leaderboard as
+create or replace view public.leaderboard with (security_invoker = true) as
 select 
   id as user_id,
   display_name,

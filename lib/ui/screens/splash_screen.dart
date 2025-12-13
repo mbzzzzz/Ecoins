@@ -20,12 +20,16 @@ class _SplashScreenState extends State<SplashScreen> {
     await Future.delayed(const Duration(seconds: 1)); // Show splash for a bit
     if (!mounted) return;
 
+    // BYPASS FOR UI REVIEW (Supabase Outage)
+    context.go('/home');
+    /*
     final session = Supabase.instance.client.auth.currentSession;
     if (session != null) {
       context.go('/home');
     } else {
       context.go('/login');
     }
+    */
   }
 
   @override

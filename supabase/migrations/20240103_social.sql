@@ -30,7 +30,7 @@ create policy "Users can update own friendships" on public.friendships
 
 -- ACTIVITY FEED VIEW
 -- Shows activities from the user AND their accepted friends
-create or replace view public.activity_feed as
+create or replace view public.activity_feed with (security_invoker = true) as
 select 
   a.id as activity_id,
   a.user_id,

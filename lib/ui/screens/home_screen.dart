@@ -1,5 +1,8 @@
+import 'package:ecoins/core/theme.dart';
 import 'package:ecoins/ui/widgets/activity_logger_modal.dart';
+import 'package:ecoins/ui/widgets/my_tree_widget.dart';
 import 'package:ecoins/ui/screens/leaderboard_screen.dart';
+import 'package:ecoins/ui/widgets/glass_container.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -25,7 +28,35 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _fetchUserData() async {
     try {
-      final userId = _supabase.auth.currentUser!.id;
+      final user = _supabase.auth.currentUser;
+
+      if (user == null) {
+        // MOCK DATA (For UI Review during Outage)
+        if (mounted) {
+          setState(() {
+            _points = 1250;
+            _carbonSaved = 42.5;
+            _recentActivities = [
+              {
+                'category': 'transport',
+                'description': 'Bus Ride (Mock)',
+                'points_earned': 50,
+                'logged_at': DateTime.now().toIso8601String(),
+              },
+              {
+                'category': 'food',
+                'description': 'Vegan Lunch (Mock)',
+                'points_earned': 30,
+                'logged_at': DateTime.now().subtract(const Duration(hours: 2)).toIso8601String(),
+              },
+            ];
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+
+      final userId = user.id;
 
       // Fetch Profile
       final profile = await _supabase
@@ -72,41 +103,77 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return Scaffold(
+        body: Stack(
+          children: [
+            Positioned.fill(child: Image.asset('assets/images/background.png', fit: BoxFit.cover)),
+            const Center(child: CircularProgressIndicator(color: Colors.white)),
+          ],
+        ),
+      );
     }
 
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      extendBodyBehindAppBar: true,
+      body: Stack(
+        children: [
+          // Background
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/background.png',
+              fit: BoxFit.cover,
+            ),
+          ),
+          
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  // Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Welcome Back,', style: Theme.of(context).textTheme.bodyMedium),
-                      Text(
-                        _supabase.auth.currentUser?.email?.split('@')[0] ?? 'Eco Warrior',
-                        style: Theme.of(context).textTheme.titleLarge,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Good Morning,',
+                            style: GoogleFonts.inter(
+                              color: Colors.white.withOpacity(0.8),
+                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            _supabase.auth.currentUser?.email?.split('@')[0] ?? 'Eco Warrior',
+                            style: GoogleFonts.outfit(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle, // Ensure circular shape
+                          border: Border.all(color: Colors.white.withOpacity(0.3), width: 2), // Outer border
+                        ),
+                        child: CircleAvatar(
+                          radius: 24,
+                          backgroundColor: Colors.white.withOpacity(0.2), // Semi-transparent Glassy background
+                          child: Text(
+                            _supabase.auth.currentUser?.email?[0].toUpperCase() ?? 'U',
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                  CircleAvatar(
-                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                    child: Text(
-                      _supabase.auth.currentUser?.email?[0].toUpperCase() ?? 'U',
-                      style: TextStyle(color: Theme.of(context).colorScheme.primary),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
+                  const SizedBox(height: 32),
 
+<<<<<<< HEAD
               // Hero Card (Impact)
               Container(
                 width: double.infinity,
@@ -271,128 +338,176 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
+=======
+                  // Hero Section (Tree)
+                  Center(
+                    child: GestureDetector(
+                      onTap: () {
+                         Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const LeaderboardScreen()),
+                        );
+                      },
+                      child: Column(
+                        children: [
+                          Stack(
+                            alignment: Alignment.center,
+>>>>>>> 990c220 (feat: Gamified tree growth and AI verification improvements)
                             children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
+                              // Glow
+                              Container(
+                                width: 250,
+                                height: 250,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFF10B981).withOpacity(0.3),
+                                      blurRadius: 60,
+                                      spreadRadius: 20,
                                     ),
-                                    child: Text(challenge['icon'] ?? '🎯', style: const TextStyle(fontSize: 20)),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          challenge['title'],
-                                          style: Theme.of(context).textTheme.titleSmall,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        Text(
-                                          '+${challenge['points_reward']} pts',
-                                          style: Theme.of(context).textTheme.labelLarge,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                              const Spacer(),
+                              // Tree Widget
+                              MyTreeWidget(points: _points, size: 220),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          // Stats
+                          Column(
+                            children: [
                               Text(
-                                challenge['description'] ?? '',
-                                style: Theme.of(context).textTheme.bodySmall,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
+                                '${_carbonSaved.toStringAsFixed(1)} kg',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              Text(
+                                'CO₂ Saved (Tree Growth: ${_points}pts)',
+                                style: GoogleFonts.inter(
+                                  fontSize: 14,
+                                  color: Colors.white.withOpacity(0.8),
+                                ),
                               ),
                             ],
                           ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Recent Activities Title
-              Text(
-                'Recent Activities',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-
-              // Activities List
-              if (_recentActivities.isEmpty)
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32.0),
-                    child: Column(
-                      children: [
-                        Icon(Icons.history, size: 48, color: Colors.grey.shade300),
-                        const SizedBox(height: 8),
-                        Text(
-                          'No activities yet',
-                          style: TextStyle(color: Colors.grey.shade500),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                )
-              else
-                ListView.separated(
-                  physics: const NeverScrollableScrollPhysics(),
-                  shrinkWrap: true,
-                  itemCount: _recentActivities.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final activity = _recentActivities[index];
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.secondaryContainer,
-                          borderRadius: BorderRadius.circular(12),
+
+                  const SizedBox(height: 40),
+
+                  // Daily Progress & Quick Action Grid
+                  Row(
+                    children: [
+                      // Daily Challenge Card
+                      Expanded(
+                        child: GlassContainer(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(Icons.directions_bike, color: Colors.white, size: 24),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Daily Challenge',
+                                style: GoogleFonts.inter(color: Colors.white70, fontSize: 12),
+                              ),
+                              Text(
+                                'Bike to Work',
+                                style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                              ),
+                              const SizedBox(height: 8),
+                               LinearProgressIndicator(
+                                value: 0.8,
+                                backgroundColor: Colors.white.withOpacity(0.2),
+                                color: AppTheme.accentYellow,
+                                minHeight: 4,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '80% • 4/5 km ridden',
+                                style: GoogleFonts.inter(color: Colors.white70, fontSize: 10),
+                              ),
+                            ],
+                          ),
                         ),
-                        child: Icon(
-                          _getIconForCategory(activity['category']),
-                          color: Theme.of(context).colorScheme.secondary,
-                          size: 20,
+                      ),
+                      const SizedBox(width: 16),
+                      // Streak Card (Passive)
+                      Expanded(
+                        child: GlassContainer(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                               Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(Icons.local_fire_department, color: Colors.orangeAccent, size: 24),
+                              ),
+                              const SizedBox(height: 12),
+                               Text(
+                                'Current Streak',
+                                style: GoogleFonts.inter(color: Colors.white70, fontSize: 12),
+                              ),
+                              Text(
+                                '5 Days',
+                                style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Keep it up!',
+                                style: GoogleFonts.inter(color: Colors.white70, fontSize: 10),
+                              ),
+                              const SizedBox(height: 4), 
+                              // Visual spacer to match height of neighbor roughly if needed, or just let it adjust
+                              const SizedBox(height: 18), 
+                            ],
+                          ),
                         ),
                       ),
-                      title: Text(
-                        activity['category'].toString().toUpperCase(),
-                        style: Theme.of(context).textTheme.titleSmall,
-                      ),
-                      subtitle: Text(
-                        activity['description'] ?? 'Logged activity',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                      trailing: Text(
-                        '+${activity['points_earned']}',
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-            ],
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
           ),
-        ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showLoggerModal,
-        backgroundColor: const Color(0xFF10B981),
-        icon: const Icon(Icons.add_circle, color: Colors.white),
-        label: const Text('Log Action', style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.white.withOpacity(0.2), // Glass FAB
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30), 
+            side: BorderSide(color: Colors.white.withOpacity(0.5))
+        ),
+        icon: Container(
+          decoration: const BoxDecoration(shape: BoxShape.circle, color: AppTheme.primaryGreen),
+          padding: const EdgeInsets.all(8),
+          child: const Icon(Icons.add, color: Colors.white, size: 20),
+        ),
+        label: Text('Log Activity', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w600)),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 

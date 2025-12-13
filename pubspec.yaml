@@ -16,9 +16,20 @@ dependencies:
   lucide_icons: ^0.257.0
   intl: ^0.20.2
   cupertino_icons: ^1.0.2
+<<<<<<< HEAD
   firebase_core: ^4.2.1
   firebase_messaging: ^16.0.4
   timeago: ^3.7.1
+=======
+  firebase_core: ^3.0.0
+  firebase_messaging: ^15.0.0
+  timeago: ^3.7.1
+  font_awesome_flutter: ^10.12.0
+  image_picker: ^1.2.1
+  geolocator: ^14.0.2
+  http: ^1.6.0
+  native_exif: ^0.6.2
+>>>>>>> 990c220 (feat: Gamified tree growth and AI verification improvements)
 
 dev_dependencies:
   flutter_test:
@@ -29,6 +40,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+<<<<<<< HEAD
     - assets/images/
     - assets/fonts/
 
@@ -45,6 +57,15 @@ flutter:
           weight: 400
         - asset: assets/fonts/Inter-VariableFont_opsz,wght.ttf
           weight: 600
+=======
+    - assets/images/logo.png
+    - assets/images/background.png
+    - assets/images/tree_stage_1.png
+    - assets/images/tree_stage_2.png
+    - assets/images/tree_stage_3.png
+    - assets/images/tree_stage_4.png
+    - assets/images/tree_stage_5.png
+>>>>>>> 990c220 (feat: Gamified tree growth and AI verification improvements)
 
 flutter_launcher_icons:
   android: "launcher_icon"

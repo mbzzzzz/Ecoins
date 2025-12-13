@@ -24,7 +24,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _fetchProfile() async {
     try {
-      final userId = _supabase.auth.currentUser!.id;
+      final user = _supabase.auth.currentUser;
+      
+      if (user == null) {
+        // MOCK DATA
+         await Future.delayed(const Duration(milliseconds: 500));
+         if (mounted) {
+           setState(() {
+             _profile = {
+               'display_name': 'Eco Warrior', 
+               'avatar_url': null,
+               'points_balance': 1250,
+               'carbon_saved_kg': 42.5
+             };
+             _isLoading = false;
+           });
+         }
+         return;
+      }
+
+      final userId = user.id;
       final data = await _supabase.from('profiles').select().eq('id', userId).single();
       if (mounted) {
         setState(() {
