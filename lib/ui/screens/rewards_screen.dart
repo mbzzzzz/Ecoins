@@ -1,10 +1,7 @@
-<<<<<<< HEAD
-
-=======
 import 'package:ecoins/core/theme.dart';
 import 'package:ecoins/ui/widgets/glass_container.dart';
->>>>>>> 990c220 (feat: Gamified tree growth and AI verification improvements)
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RewardsScreen extends StatefulWidget {
@@ -218,76 +215,6 @@ class _RewardsScreenState extends State<RewardsScreen> {
           ),
         ],
       ),
-<<<<<<< HEAD
-      body: _isLoading 
-          ? const Center(child: CircularProgressIndicator()) 
-          : _rewards.isEmpty 
-              ? const Center(child: Text('No active rewards available.'))
-              : GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.75,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                  ),
-                  itemCount: _rewards.length,
-                  itemBuilder: (context, index) {
-                    final reward = _rewards[index];
-                    final brand = reward['brands'] as Map<String, dynamic>?;
-                    
-                    return Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(12.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              height: 48,
-                              width: 48,
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: brand?['logo_url'] != null
-                                  ? Image.network(brand!['logo_url'])
-                                  : Center(child: Text(brand?['name']?[0] ?? 'B')),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              brand?['name'] ?? 'Partner Brand',
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              reward['title'] ?? 'Reward',
-                              style: Theme.of(context).textTheme.titleMedium,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const Spacer(),
-                            Text(
-                              '${reward['cost_points']} pts',
-                              style: Theme.of(context).textTheme.labelLarge,
-                            ),
-                            const SizedBox(height: 8),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: () => _redeem(reward),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Theme.of(context).primaryColor,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                  padding: EdgeInsets.zero,
-                                  visualDensity: VisualDensity.compact,
-                                ),
-                                child: const Text('Redeem'),
-                              ),
-                            ),
-                          ],
-                        ),
-=======
       body: Stack(
         children: [
            // Background
@@ -318,7 +245,6 @@ class _RewardsScreenState extends State<RewardsScreen> {
                         enabledBorder: InputBorder.none,
                         focusedBorder: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(vertical: 14),
->>>>>>> 990c220 (feat: Gamified tree growth and AI verification improvements)
                       ),
                     ),
                   ),
