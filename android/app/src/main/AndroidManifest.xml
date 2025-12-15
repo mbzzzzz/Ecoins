@@ -1,10 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-<<<<<<< HEAD
-        android:label="temp_project"
-=======
         android:label="ecoins"
->>>>>>> 990c220 (feat: Gamified tree growth and AI verification improvements)
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -28,8 +24,6 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-<<<<<<< HEAD
-=======
             <!-- Deep link for Supabase Auth -->
             <intent-filter>
               <action android:name="android.intent.action.VIEW" />
@@ -37,7 +31,6 @@
               <category android:name="android.intent.category.BROWSABLE" />
               <data android:scheme="io.supabase.ecoins" android:host="login-callback" />
             </intent-filter>
->>>>>>> 990c220 (feat: Gamified tree growth and AI verification improvements)
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
