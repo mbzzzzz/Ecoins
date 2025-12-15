@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // Brand Colors - Glassmorphism Nature Palette
@@ -39,13 +40,8 @@ class AppTheme {
       ),
 
       // Component Themes
-<<<<<<< HEAD
-      appBarTheme: const AppBarTheme(
-        backgroundColor: surfaceWhite,
-=======
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent, // Glassmorphism ready
->>>>>>> 990c220 (feat: Gamified tree growth and AI verification improvements)
         elevation: 0,
         scrolledUnderElevation: 0,
         titleTextStyle: TextStyle(fontFamily: 'Outfit', fontSize: 20, fontWeight: FontWeight.w600, color: textDark),
@@ -53,11 +49,7 @@ class AppTheme {
       ),
       
       cardTheme: CardThemeData(
-<<<<<<< HEAD
-        color: surfaceWhite,
-=======
         color: surfaceWhite.withOpacity(0.8), // Semi-transparent for glass effect
->>>>>>> 990c220 (feat: Gamified tree growth and AI verification improvements)
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20), // Softer corners
@@ -73,13 +65,8 @@ class AppTheme {
           elevation: 4, // Tactics
           shadowColor: primaryGreen.withOpacity(0.4),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-<<<<<<< HEAD
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16, fontFamily: 'Inter'),
-=======
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 16),
->>>>>>> 990c220 (feat: Gamified tree growth and AI verification improvements)
         ),
       ),
 
@@ -88,13 +75,8 @@ class AppTheme {
           foregroundColor: primaryGreen,
           side: const BorderSide(color: primaryGreen, width: 2),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-<<<<<<< HEAD
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontFamily: 'Inter'),
-=======
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600),
->>>>>>> 990c220 (feat: Gamified tree growth and AI verification improvements)
         ),
       ),
       
