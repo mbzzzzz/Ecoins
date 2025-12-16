@@ -3,6 +3,7 @@ import 'package:ecoins/ui/widgets/glass_container.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
 class SocialScreen extends StatefulWidget {
   const SocialScreen({super.key});
@@ -279,8 +280,7 @@ class _ActivityFeedTabState extends State<ActivityFeedTab> {
 
   String _formatTime(String? timestamp) {
     if (timestamp == null) return '';
-    // Simple mock formatter
-    return '2h ago'; 
+    return timeago.format(DateTime.parse(timestamp));
   }
 }
 
