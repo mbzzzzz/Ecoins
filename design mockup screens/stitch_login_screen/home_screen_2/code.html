@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Ecoins Home Screen</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&amp;family=Noto+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec13",
+                        "background-light": "#f8fcf8", // Slightly off-white for eye comfort
+                        "background-dark": "#102210", // Deep forest green/black
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1a2e1a",
+                        "text-main": "#0d1b0d",
+                        "text-sub": "#4a5f4a",
+                    },
+                    fontFamily: {
+                        "display": ["Spline Sans", "sans-serif"],
+                        "body": ["Noto Sans", "sans-serif"],
+                    },
+                    borderRadius: {
+                        "DEFAULT": "1rem", 
+                        "lg": "1.5rem", 
+                        "xl": "2rem", 
+                        "2xl": "2.5rem",
+                        "full": "9999px"
+                    },
+                    boxShadow: {
+                        "soft": "0 4px 20px -2px rgba(19, 236, 19, 0.15)",
+                        "inner-glow": "inset 0 0 20px rgba(19, 236, 19, 0.2)",
+                    }
+                },
+            },
+        }
+    </script>
+<style>.no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }.radial-progress {
+            background: conic-gradient(var(--tw-gradient-from) 0% 75%, transparent 75% 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-text-main dark:text-gray-100 transition-colors duration-300 antialiased selection:bg-primary selection:text-black pb-24">
+<header class="sticky top-0 z-30 bg-background-light/90 dark:bg-background-dark/90 backdrop-blur-md transition-colors">
+<div class="flex items-center justify-between p-4 pb-2">
+<div class="flex items-center gap-3">
+<div class="relative group cursor-pointer">
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-12 border-2 border-white dark:border-background-dark shadow-sm" data-alt="Profile picture of a smiling young man in nature" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBXzRAmjrAjVYLasXFGelMWD0D8c7ft874P-Z69sz_nBb39fkiAR4PDjtLMfbRt_5FgUQ18idMH9XfZnBZm4TkYYXqrNqZ-LHowD6ITBEeVl9kd3Ot4EvFs56CNnj7gh3NWqXaJmfdb2BfvegW3oKMq2zXlGmm8ff6ghNQG4l81VIdB_n07u8TyzRTpdneKFsX135XSFlB2XRGDJ7S0LHNd6u36by4zvmsUd9wj_mfAP0guvj_rlROBfNsuIiJNThiUCSu4j_u69i4");'>
+</div>
+<div class="absolute -bottom-1 -right-1 bg-primary text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-background-light dark:border-background-dark">
+                        LVL 5
+                    </div>
+</div>
+<div class="flex flex-col">
+<span class="text-sm text-text-sub dark:text-gray-400 font-medium">Welcome back,</span>
+<h2 class="text-text-main dark:text-white text-lg font-bold leading-tight">Alex</h2>
+</div>
+</div>
+<button class="flex items-center justify-center size-10 rounded-full bg-surface-light dark:bg-surface-dark text-text-main dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shadow-sm">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0, 'wght' 400;">notifications</span>
+</button>
+</div>
+</header>
+<section class="flex flex-col items-center justify-center pt-6 pb-10 px-4 relative overflow-hidden">
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-primary/10 rounded-full blur-3xl -z-10"></div>
+<div class="relative flex flex-col items-center w-full max-w-sm">
+<div class="absolute top-0 z-20">
+<div class="flex items-center gap-1.5 bg-surface-light/80 dark:bg-surface-dark/80 backdrop-blur-md px-3 py-1 rounded-full border border-white/40 dark:border-white/10 shadow-sm animate-fade-in-down">
+<span class="material-symbols-outlined text-primary text-[16px]" style="font-variation-settings: 'FILL' 1;">nature</span>
+<span class="text-xs font-bold text-text-sub dark:text-gray-300 tracking-wide uppercase">Stage 4: Young Oak</span>
+</div>
+</div>
+<div class="relative size-72 mt-4 flex items-center justify-center">
+<svg class="absolute inset-0 w-full h-full -rotate-90 transform drop-shadow-sm" viewBox="0 0 100 100">
+<circle class="dark:stroke-gray-800" cx="50" cy="50" fill="transparent" r="46" stroke="#e5e7eb" stroke-dasharray="4 4" stroke-width="1.5"></circle>
+<circle cx="50" cy="50" fill="transparent" r="46" stroke="#13ec13" stroke-dasharray="289" stroke-dashoffset="85" stroke-linecap="round" stroke-width="2.5"></circle>
+</svg>
+<div class="absolute inset-6 rounded-full bg-gradient-to-b from-blue-50/50 to-green-50/50 dark:from-white/5 dark:to-primary/5 border border-white/50 dark:border-white/5 shadow-inner-glow backdrop-blur-[2px]"></div>
+<div class="relative z-10 w-48 h-48 transform translate-y-3">
+<svg class="w-full h-full drop-shadow-xl hover:scale-105 transition-transform duration-500 ease-out" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="trunkGradient" x1="0%" x2="100%" y1="0%" y2="0%">
+<stop offset="0%" style="stop-color:#795548;stop-opacity:1"></stop>
+<stop offset="100%" style="stop-color:#5D4037;stop-opacity:1"></stop>
+</linearGradient>
+<linearGradient id="leafGradientMain" x1="0%" x2="0%" y1="0%" y2="100%">
+<stop offset="0%" style="stop-color:#4CAF50;stop-opacity:1"></stop>
+<stop offset="100%" style="stop-color:#2E7D32;stop-opacity:1"></stop>
+</linearGradient>
+<linearGradient id="leafGradientLight" x1="0%" x2="0%" y1="0%" y2="100%">
+<stop offset="0%" style="stop-color:#81C784;stop-opacity:1"></stop>
+<stop offset="100%" style="stop-color:#43A047;stop-opacity:1"></stop>
+</linearGradient>
+</defs>
+<ellipse cx="100" cy="180" fill="#000" opacity="0.15" rx="40" ry="6"></ellipse>
+<path d="M92,180 Q88,160 85,140 Q80,120 70,110 L85,115 Q95,125 100,140 L105,140 Q110,125 120,115 L135,110 Q125,120 120,140 Q117,160 113,180 Z" fill="url(#trunkGradient)"></path>
+<circle cx="65" cy="105" fill="url(#leafGradientLight)" r="22"></circle>
+<circle cx="135" cy="105" fill="url(#leafGradientLight)" r="22"></circle>
+<circle cx="100" cy="75" fill="url(#leafGradientMain)" r="35"></circle>
+<circle cx="80" cy="95" fill="#66BB6A" r="28"></circle>
+<circle cx="120" cy="95" fill="#43A047" r="28"></circle>
+<circle cx="55" cy="115" fill="#A5D6A7" r="15"></circle>
+<circle cx="145" cy="115" fill="#A5D6A7" r="15"></circle>
+<g class="animate-pulse">
+<circle cx="90" cy="80" fill="#FDD835" r="4" stroke="#F9A825" stroke-width="1"></circle>
+<circle cx="115" cy="90" fill="#FDD835" r="4" stroke="#F9A825" stroke-width="1"></circle>
+<circle cx="75" cy="100" fill="#FDD835" r="4" stroke="#F9A825" stroke-width="1"></circle>
+</g>
+</svg>
+</div>
+</div>
+<div class="relative -mt-8 z-20 flex flex-col items-center gap-3">
+<div class="bg-surface-light dark:bg-surface-dark px-6 py-3 rounded-2xl shadow-soft border border-gray-100 dark:border-gray-700 flex items-center justify-between gap-6 min-w-[220px]">
+<div class="flex flex-col">
+<span class="text-[10px] text-text-sub dark:text-gray-400 font-bold uppercase tracking-wider">Total Impact</span>
+<div class="text-2xl font-bold text-text-main dark:text-white leading-none mt-0.5">124<span class="text-sm font-medium text-gray-400 ml-0.5">kg</span></div>
+</div>
+<div class="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
+<div class="flex flex-col items-end">
+<span class="text-[10px] text-text-sub dark:text-gray-400 font-bold uppercase tracking-wider">Balance</span>
+<div class="flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-yellow-500 text-[18px]" style="font-variation-settings: 'FILL' 1;">monetization_on</span>
+<span class="text-lg font-bold text-yellow-700 dark:text-yellow-400 leading-none">1,250</span>
+</div>
+</div>
+</div>
+<div class="text-xs text-center text-gray-400 dark:text-gray-500 max-w-[200px] leading-tight font-medium">
+                    Reduce 15kg more CO₂ to grow your tree to the next stage!
+                </div>
+</div>
+</div>
+</section>
+<section class="px-4 mb-8">
+<h3 class="text-text-main dark:text-white text-lg font-bold mb-4 px-1">Log Activity</h3>
+<div class="grid grid-cols-2 gap-4">
+<button class="group relative flex flex-col items-center justify-center h-36 rounded-2xl bg-primary hover:bg-[#0fd60f] transition-all duration-300 shadow-soft active:scale-95">
+<div class="size-14 bg-black/10 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-black text-3xl">qr_code_scanner</span>
+</div>
+<span class="text-black font-bold text-lg">Scan Item</span>
+<span class="text-black/60 text-xs font-medium mt-0.5">Earn +50</span>
+</button>
+<button class="group relative flex flex-col items-center justify-center h-36 rounded-2xl bg-surface-light dark:bg-surface-dark hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-700 transition-all duration-300 active:scale-95">
+<div class="size-14 bg-green-100 dark:bg-primary/20 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-green-800 dark:text-primary text-3xl">directions_bike</span>
+</div>
+<span class="text-text-main dark:text-white font-bold text-lg">Track Ride</span>
+<span class="text-gray-400 text-xs font-medium mt-0.5">Earn +100</span>
+</button>
+</div>
+</section>
+<section class="px-4">
+<div class="flex items-center justify-between mb-4 px-1">
+<h3 class="text-text-main dark:text-white text-lg font-bold">Daily Quests</h3>
+<a class="text-primary text-sm font-bold hover:underline" href="#">View All</a>
+</div>
+<div class="flex flex-col gap-3">
+<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<div class="flex gap-3">
+<div class="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg h-fit">
+<span class="material-symbols-outlined text-blue-600 dark:text-blue-400 text-[20px]">footprint</span>
+</div>
+<div>
+<p class="text-text-main dark:text-white font-bold text-base leading-tight">Walk 5k steps</p>
+<p class="text-gray-500 dark:text-gray-400 text-xs mt-0.5">Reduce car usage</p>
+</div>
+</div>
+<span class="text-text-main dark:text-white text-sm font-bold">3.2<span class="text-gray-400 font-normal">/5k</span></span>
+</div>
+<div class="mt-2 h-2.5 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+<div class="h-full bg-blue-500 rounded-full" style="width: 64%"></div>
+</div>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<div class="flex gap-3">
+<div class="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-lg h-fit">
+<span class="material-symbols-outlined text-orange-600 dark:text-orange-400 text-[20px]">wine_bar</span>
+</div>
+<div>
+<p class="text-text-main dark:text-white font-bold text-base leading-tight">Recycle Glass</p>
+<p class="text-gray-500 dark:text-gray-400 text-xs mt-0.5">Scan at center</p>
+</div>
+</div>
+<span class="text-text-main dark:text-white text-sm font-bold">0<span class="text-gray-400 font-normal">/3</span></span>
+</div>
+<div class="mt-2 h-2.5 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+<div class="h-full bg-orange-500 rounded-full" style="width: 0%"></div>
+</div>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm opacity-60">
+<div class="flex justify-between items-start mb-2">
+<div class="flex gap-3">
+<div class="bg-primary/20 p-2 rounded-lg h-fit">
+<span class="material-symbols-outlined text-green-700 dark:text-primary text-[20px]">check</span>
+</div>
+<div>
+<p class="text-text-main dark:text-white font-bold text-base leading-tight line-through decoration-gray-400">Refuse Plastic</p>
+<p class="text-gray-500 dark:text-gray-400 text-xs mt-0.5">Completed</p>
+</div>
+</div>
+<span class="text-primary text-sm font-bold">Done</span>
+</div>
+<div class="mt-2 h-2.5 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 100%"></div>
+</div>
+</div>
+</div>
+</section>
+<nav class="fixed bottom-6 left-4 right-4 z-40">
+<div class="bg-black/90 dark:bg-surface-dark/95 backdrop-blur-xl rounded-full p-2 shadow-2xl border border-white/10 flex items-center justify-between px-6 h-16">
+<button class="flex flex-col items-center justify-center gap-1 w-12 group">
+<span class="material-symbols-outlined text-primary text-[28px]" style="font-variation-settings: 'FILL' 1;">home</span>
+<div class="w-1 h-1 bg-primary rounded-full"></div>
+</button>
+<button class="flex flex-col items-center justify-center gap-1 w-12 group">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-white transition-colors text-[28px]">leaderboard</span>
+<div class="w-1 h-1 bg-transparent group-hover:bg-white rounded-full transition-colors"></div>
+</button>
+<button class="flex flex-col items-center justify-center gap-1 w-12 group">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-white transition-colors text-[28px]">account_balance_wallet</span>
+<div class="w-1 h-1 bg-transparent group-hover:bg-white rounded-full transition-colors"></div>
+</button>
+<button class="flex flex-col items-center justify-center gap-1 w-12 group">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-white transition-colors text-[28px]">person</span>
+<div class="w-1 h-1 bg-transparent group-hover:bg-white rounded-full transition-colors"></div>
+</button>
+</div>
+</nav>
+
+</body></html>

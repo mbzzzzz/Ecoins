@@ -13,6 +13,13 @@ class AppTheme {
   static const Color surfaceWhite = Colors.white;
   static const Color background = Color(0xFFF9FAFB); // Gray 50
 
+  // Alias / Extended Colors for Brand Portal
+  static const Color backgroundLight = background;
+  static const Color backgroundDark = Color(0xFF111827); // Gray 900
+  static const Color textMain = textDark;
+  static const Color textSub = textLight;
+  static const Color surfaceDark = Color(0xFF1F2937); // Gray 800
+
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,

@@ -1,0 +1,66 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper: Check if user is signed in
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    // Helper: Check if user is modifying their own data
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // PROFILES
+    // Read: Authenticated users can read profiles (for leaderboard, friends)
+    // Write: Users can only edit their own profile
+    match /profiles/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId);
+    }
+    
+    // ACTIVITIES
+    // Read: Authenticated users (public feed)
+    // Create: Users can log their own activities
+    // Update/Delete: Users can only modify their own activities
+    match /activities/{activityId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.user_id == request.auth.uid;
+    }
+    
+    // FRIENDSHIPS
+    // Read: Involved parties
+    // Create: Requester
+    // Update: Addressee (accept/reject) or Requester (cancel)
+    match /friendships/{friendshipId} {
+      allow read: if isAuthenticated() && (resource.data.requester_id == request.auth.uid || resource.data.addressee_id == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.requester_id == request.auth.uid;
+      allow update: if isAuthenticated() && (resource.data.addressee_id == request.auth.uid || resource.data.requester_id == request.auth.uid);
+    }
+
+    // REWARDS
+    // Read: Authenticated users
+    // Write: Admin only
+    match /rewards/{rewardId} {
+      allow read: if isAuthenticated();
+      allow write: if false; 
+    }
+
+    // REDEMPTIONS
+    // Read: Owner
+    // Create: Owner
+    match /redemptions/{redemptionId} {
+      allow read: if isAuthenticated() && resource.data.user_id == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
+    }
+
+    // NOTIFICATIONS
+    // Read: Owner
+    // Update: Owner (mark as read)
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && resource.data.user_id == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.user_id == request.auth.uid;
+      allow create: if false; 
+    }
+  }
+}

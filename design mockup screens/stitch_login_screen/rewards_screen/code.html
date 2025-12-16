@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Ecoins Rewards</title>
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec13",
+                        "primary-dark": "#0db80d",
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#102210",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1a2e1a",
+                        "text-main-light": "#0d1b0d",
+                        "text-main-dark": "#e0ece0",
+                        "text-sub-light": "#4c9a4c",
+                        "text-sub-dark": "#88c888",
+                    },
+                    fontFamily: {
+                        "display": ["Spline Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-text-main-light dark:text-text-main-dark font-display antialiased overflow-x-hidden">
+<div class="relative min-h-screen flex flex-col max-w-md mx-auto bg-background-light dark:bg-background-dark shadow-2xl overflow-hidden pb-24">
+<!-- Header -->
+<header class="sticky top-0 z-30 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md px-4 pt-6 pb-2 border-b border-black/5 dark:border-white/5 transition-all">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="relative group cursor-pointer">
+<div class="bg-center bg-no-repeat bg-cover rounded-full h-10 w-10 border-2 border-primary" data-alt="User profile picture of a smiling young person" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBJLgC538IndR8zKjiXRkNLevXJkU2XBYo7SkyXCN64U8F1OXy6xWjaPHQNzfpP3zq5vCtJX8Tkt6snie7Ar1TbPeGq8tDNDRi4ZQC__v6kUTOsfvMDXr3TPnNxag451N0pp94FTGI2Mo1UVOAWFZSLBlwugwAHsj49zMq2FsuTPN6nhaqWB_LBgaZ8wr87_v19FxEnXT8fS-1o_FK1q49Lwwm0aF_NZDGXqovVtJjoxNKHhiqdI3TcLur0Dfpzowii5sVL4uATsnk");'></div>
+<div class="absolute bottom-0 right-0 h-3 w-3 bg-primary rounded-full border-2 border-background-light dark:border-background-dark"></div>
+</div>
+<div>
+<h1 class="text-sm font-medium text-text-sub-light dark:text-text-sub-dark">Welcome back,</h1>
+<p class="text-base font-bold leading-none">Alex Johnson</p>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<div class="flex items-center gap-1.5 bg-primary/10 dark:bg-primary/20 px-3 py-1.5 rounded-full border border-primary/20">
+<span class="material-symbols-outlined text-primary-dark dark:text-primary text-[20px]">savings</span>
+<span class="text-primary-dark dark:text-primary text-base font-bold">2,450</span>
+</div>
+<span class="text-[10px] font-medium text-text-sub-light dark:text-text-sub-dark mt-1 mr-1">Available Ecoins</span>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col gap-6 pt-4">
+<!-- Search & Filter -->
+<div class="px-4">
+<div class="relative mb-4">
+<span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-text-sub-light">search</span>
+<input class="w-full bg-white dark:bg-surface-dark h-12 rounded-full pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-sm border-none placeholder-text-sub-light/50" placeholder="Search rewards..." type="text"/>
+</div>
+<!-- Chips -->
+<div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+<button class="flex h-9 shrink-0 items-center justify-center rounded-full bg-primary text-background-dark px-5 shadow-sm transition-transform active:scale-95">
+<p class="text-sm font-bold">All</p>
+</button>
+<button class="flex h-9 shrink-0 items-center justify-center rounded-full bg-white dark:bg-surface-dark border border-black/5 dark:border-white/5 px-5 transition-transform active:scale-95">
+<span class="material-symbols-outlined text-[16px] mr-1.5 text-text-sub-light">restaurant</span>
+<p class="text-sm font-medium">Food</p>
+</button>
+<button class="flex h-9 shrink-0 items-center justify-center rounded-full bg-white dark:bg-surface-dark border border-black/5 dark:border-white/5 px-5 transition-transform active:scale-95">
+<span class="material-symbols-outlined text-[16px] mr-1.5 text-text-sub-light">checkroom</span>
+<p class="text-sm font-medium">Fashion</p>
+</button>
+<button class="flex h-9 shrink-0 items-center justify-center rounded-full bg-white dark:bg-surface-dark border border-black/5 dark:border-white/5 px-5 transition-transform active:scale-95">
+<span class="material-symbols-outlined text-[16px] mr-1.5 text-text-sub-light">recycling</span>
+<p class="text-sm font-medium">Zero Waste</p>
+</button>
+<button class="flex h-9 shrink-0 items-center justify-center rounded-full bg-white dark:bg-surface-dark border border-black/5 dark:border-white/5 px-5 transition-transform active:scale-95">
+<span class="material-symbols-outlined text-[16px] mr-1.5 text-text-sub-light">bolt</span>
+<p class="text-sm font-medium">&lt; 500 pts</p>
+</button>
+</div>
+</div>
+<!-- Featured Carousel -->
+<section>
+<div class="flex items-center justify-between px-4 mb-3">
+<h2 class="text-xl font-bold tracking-tight flex items-center gap-2">
+                        Featured Offers
+                        <span class="flex h-2 w-2 rounded-full bg-primary animate-pulse"></span>
+</h2>
+<a class="text-primary-dark dark:text-primary text-sm font-semibold" href="#">See All</a>
+</div>
+<div class="flex overflow-x-auto gap-4 px-4 pb-4 no-scrollbar snap-x snap-mandatory">
+<!-- Card 1 -->
+<div class="snap-center shrink-0 w-[85%] rounded-[2rem] bg-white dark:bg-surface-dark shadow-md p-3 relative overflow-hidden group">
+<div class="absolute top-3 right-3 z-10 bg-black/40 backdrop-blur-sm text-white text-xs font-bold px-3 py-1 rounded-full border border-white/20">
+                            Limited Time
+                        </div>
+<div class="h-40 w-full rounded-[1.5rem] bg-cover bg-center mb-3" data-alt="Fresh organic vegetables and fruits in a reusable mesh bag" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBnqUKcnjP0gsXRg3KdT0uzzON0ZaHk3aAzunB_HQ5MaNcK5nafJW_GW0o3v15kDdfiXpUUls3LNCF5EoWGPRVYtfOFvCbcT_Y97fF1mh6AiAQZADJWt3IGu_Z3BFVH2JWDpEg3AW91vTlNOc64YsV_Rga4hGlmhBKjz-FhBY7rnRZtMp2MTrPRW8dWu-LB1TWdh8KJJ-j2G5QsrA1ApJJoRFhT6r3AfOOA5U1Lp4VZq5r37PAWpjCetJa0tveH7VBe45wJaZZntiE');"></div>
+<div class="px-1 pb-1">
+<div class="flex justify-between items-start mb-1">
+<div>
+<h3 class="font-bold text-lg leading-tight mb-1">Double Points Week</h3>
+<p class="text-text-sub-light dark:text-text-sub-dark text-sm">Earn 2x on all local grocery partners</p>
+</div>
+<div class="bg-primary/10 dark:bg-primary/20 p-2 rounded-full">
+<span class="material-symbols-outlined text-primary-dark dark:text-primary">storefront</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="snap-center shrink-0 w-[85%] rounded-[2rem] bg-white dark:bg-surface-dark shadow-md p-3 relative overflow-hidden group">
+<div class="absolute top-3 right-3 z-10 bg-primary text-background-dark text-xs font-bold px-3 py-1 rounded-full">
+                            Best Value
+                        </div>
+<div class="h-40 w-full rounded-[1.5rem] bg-cover bg-center mb-3" data-alt="Person wearing a sustainable Patagonia jacket hiking" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC5Pxx76XJYyJIZkXLUL3GINvxZmZT49n2sFbC7wQ8mBK_-rFCMDGE55xtSqeKUAnlpDWLZQoQGH6o5da0i92m-TgXMvJn8W5DuHa1jC9mfWyggMCBc8d_QkHYSx1qDqMCMpE4Z20Wl-khjefpQbKSU2FFqWhgNVpJZ0pimfiHMS8PmIAUQz2sv8niEKSpYfw3kE3UEkUeGGTRw2_GAhoPbMsLpL4poqlI4XhoEMd_iXpWMbLVpYLvQ7J80rfdi05ABN0BFLYfaCXs');"></div>
+<div class="px-1 pb-1">
+<div class="flex justify-between items-start mb-1">
+<div>
+<h3 class="font-bold text-lg leading-tight mb-1">50% Off Patagonia</h3>
+<p class="text-text-sub-light dark:text-text-sub-dark text-sm">Sustainable gear for your adventures</p>
+</div>
+<div class="bg-primary/10 dark:bg-primary/20 p-2 rounded-full">
+<span class="material-symbols-outlined text-primary-dark dark:text-primary">hiking</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Grid Section -->
+<section class="px-4">
+<h2 class="text-xl font-bold tracking-tight mb-4">Marketplace</h2>
+<div class="grid grid-cols-2 gap-4">
+<!-- Reward Item 1 -->
+<div class="bg-white dark:bg-surface-dark rounded-[1.5rem] p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col h-full group">
+<div class="relative w-full aspect-square rounded-2xl bg-cover bg-center mb-3 overflow-hidden" data-alt="Starbucks coffee cup on a wooden table" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA8Z9LhYOJihCDtgiSVZv6APtYonIaKv2SCH9opIVCZFhyOlQWXgqT8gir1v7K2NOY3vCBKSQ4SRvJwn3QFC4mddprI5vrPn1KHk6AGlAnE2prSoEWFCP3NlybO1AKPY8gSI9Hb33jgtZrZklccqYWLQrSDdW0ReqGDCyW18mZC3tKiie5T5QnUedUjZfOq5X5p1kr-ky7Mq2UIB1IFZjnk9zfNDmI3YLatQnnyYLAUKZRKju2tKp8m8eO8NmpBbGi3ZE0TcXzvA6E');">
+<div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
+</div>
+<div class="flex flex-col flex-1">
+<p class="text-[10px] font-bold uppercase tracking-wider text-text-sub-light mb-1">Starbucks</p>
+<h3 class="font-bold text-sm leading-snug mb-2 flex-1">Free Reusable Cup Fill</h3>
+<div class="flex items-center justify-between mt-auto">
+<span class="text-primary-dark dark:text-primary font-bold text-sm">500 pts</span>
+<button class="h-6 w-6 rounded-full bg-background-light dark:bg-background-dark flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Reward Item 2 -->
+<div class="bg-white dark:bg-surface-dark rounded-[1.5rem] p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col h-full group">
+<div class="relative w-full aspect-square rounded-2xl bg-cover bg-center mb-3 overflow-hidden" data-alt="Fresh vegetables in a market stall" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCvajpahTNgy0LIrdnnfhQrO_01_oAJKzjurH8l2G8jabHWDQ5S6vR4S6lx3ddnwEbUAEm2IHPrmC_0V7BOG3S_IaRLUMfKEv_sZkbtdCh8WnvHGL0jKyHnw_FjFVECKLHsBvOb785OpLayT42bOpv7B9CHf6GeE9l4PBF8jAlHPtCoGb6W63UD50unONIHc3H_gVBfYQCrxsukoZ1hhh9P3xOpVfjxAAqbF3T6T2Vgk6NXHjL8o7zupQezvuqwr6lafypUtXw-v0Y');">
+<div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
+</div>
+<div class="flex flex-col flex-1">
+<p class="text-[10px] font-bold uppercase tracking-wider text-text-sub-light mb-1">Local Market</p>
+<h3 class="font-bold text-sm leading-snug mb-2 flex-1">$5 Fresh Produce Voucher</h3>
+<div class="flex items-center justify-between mt-auto">
+<span class="text-primary-dark dark:text-primary font-bold text-sm">800 pts</span>
+<button class="h-6 w-6 rounded-full bg-background-light dark:bg-background-dark flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Reward Item 3 -->
+<div class="bg-white dark:bg-surface-dark rounded-[1.5rem] p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col h-full group">
+<div class="relative w-full aspect-square rounded-2xl bg-cover bg-center mb-3 overflow-hidden" data-alt="Person riding a rental electric scooter in the city" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDXUqLEFuaROSH7OmswMSORwGjGLzpmOFtxoQB5E8pSF8mXUlq7ZVgiEI9R6mxsIXoGR2GrzJsX1yYFdMpFdN5M75utJqByK_fkTlshKiu_CC5CiGyMtB5GvFfI0gBPo2pG-dvSkse1y8E8Zm4vPeyME4I_xyTm8ahtdovYvx8Mkz8NQiuCXe5aYNJwT4bTPosfGUbmLgbWvDN_4AKU6T4PreWXBkucfvJZz7h8O2dD8iwviVbbUzlF5zZg1TPJ4Uj6Rrb-Fd9XZm0');">
+<div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
+</div>
+<div class="flex flex-col flex-1">
+<p class="text-[10px] font-bold uppercase tracking-wider text-text-sub-light mb-1">Lime Scooters</p>
+<h3 class="font-bold text-sm leading-snug mb-2 flex-1">Free 20min Unlock</h3>
+<div class="flex items-center justify-between mt-auto">
+<span class="text-primary-dark dark:text-primary font-bold text-sm">350 pts</span>
+<button class="h-6 w-6 rounded-full bg-background-light dark:bg-background-dark flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Reward Item 4 -->
+<div class="bg-white dark:bg-surface-dark rounded-[1.5rem] p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col h-full group">
+<div class="relative w-full aspect-square rounded-2xl bg-cover bg-center mb-3 overflow-hidden" data-alt="Plant growing in a glass jar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDDCKVMX826Vcu7IrBUUs9Y5feKdoEbzcnVjd-pAxxkIOXZxfM-dPEY-jvm2NDPRfXg4xJjmHrOYw1uC65s56Px7fIX2kUrlH8b1kYYXz96_Nbxm4sqYLCbi6vw8Jpt1ZxJ7BNOxj1kCOTnYfHhoh8itSi3xOds_AnXCY3h5MbYxjGr6eLABMMPP2F7oCO8b7nvVYe41tnpKl13xtpY99bA3ajsa-aAo92v9EhLnvUcr7MJcC6p94PcqKtthk659qciqFBIFvZBWrI');">
+<div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
+</div>
+<div class="flex flex-col flex-1">
+<p class="text-[10px] font-bold uppercase tracking-wider text-text-sub-light mb-1">Ecoins Store</p>
+<h3 class="font-bold text-sm leading-snug mb-2 flex-1">Plant a Tree Donation</h3>
+<div class="flex items-center justify-between mt-auto">
+<span class="text-primary-dark dark:text-primary font-bold text-sm">100 pts</span>
+<button class="h-6 w-6 rounded-full bg-background-light dark:bg-background-dark flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation -->
+<div class="fixed bottom-0 left-0 right-0 max-w-md mx-auto z-40 bg-white dark:bg-surface-dark border-t border-black/5 dark:border-white/5 pb-6 pt-2 px-6">
+<div class="flex justify-between items-end">
+<button class="flex flex-col items-center gap-1 w-12 group">
+<span class="material-symbols-outlined text-text-sub-light/70 dark:text-text-sub-dark/70 group-hover:text-primary transition-colors">home</span>
+<span class="text-[10px] font-medium text-text-sub-light/70 dark:text-text-sub-dark/70 group-hover:text-primary transition-colors">Home</span>
+</button>
+<button class="flex flex-col items-center gap-1 w-12 group">
+<span class="material-symbols-outlined text-text-sub-light/70 dark:text-text-sub-dark/70 group-hover:text-primary transition-colors">qr_code_scanner</span>
+<span class="text-[10px] font-medium text-text-sub-light/70 dark:text-text-sub-dark/70 group-hover:text-primary transition-colors">Scan</span>
+</button>
+<button class="flex flex-col items-center gap-1 w-16 -mt-8">
+<div class="h-14 w-14 bg-primary rounded-full flex items-center justify-center shadow-lg shadow-primary/40 border-4 border-background-light dark:border-background-dark transform transition-transform active:scale-95">
+<span class="material-symbols-outlined text-background-dark text-[28px]">local_mall</span>
+</div>
+<span class="text-[10px] font-bold text-primary-dark dark:text-primary">Rewards</span>
+</button>
+<button class="flex flex-col items-center gap-1 w-12 group">
+<span class="material-symbols-outlined text-text-sub-light/70 dark:text-text-sub-dark/70 group-hover:text-primary transition-colors">leaderboard</span>
+<span class="text-[10px] font-medium text-text-sub-light/70 dark:text-text-sub-dark/70 group-hover:text-primary transition-colors">Rank</span>
+</button>
+<button class="flex flex-col items-center gap-1 w-12 group">
+<span class="material-symbols-outlined text-text-sub-light/70 dark:text-text-sub-dark/70 group-hover:text-primary transition-colors">person</span>
+<span class="text-[10px] font-medium text-text-sub-light/70 dark:text-text-sub-dark/70 group-hover:text-primary transition-colors">Profile</span>
+</button>
+</div>
+</div>
+<!-- Redemption Modal (Simulated overlay) -->
+<!-- This is absolutely positioned to simulate a bottom sheet interaction -->
+<div class="fixed inset-0 z-50 pointer-events-none flex items-end justify-center">
+<!-- Backdrop -->
+<div class="absolute inset-0 bg-black/0 pointer-events-none transition-colors"></div>
+<!-- Bottom Sheet Content (Hidden by default, shown for demo structure purposes. In a real app, this would be toggled) -->
+<!-- To visualize the redemption flow described:
+                  - Imagine this translates Y up into view
+             -->
+<div class="w-full max-w-md bg-white dark:bg-surface-dark rounded-t-[2rem] shadow-[0_-8px_30px_rgba(0,0,0,0.12)] p-6 transform translate-y-full transition-transform duration-300 pointer-events-auto hidden"> <!-- Removed 'hidden' class to show structure in code, but kept translate-y-full for initial state if logic was present -->
+<div class="w-12 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mb-6"></div>
+<div class="flex gap-4 mb-6">
+<div class="h-20 w-20 rounded-2xl bg-cover bg-center shrink-0" data-alt="Starbucks logo on a cup" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBE5cxcILSMpIht7uWBbTclKXfcBY77LGOwSwhD9kSHAoq0Z-YFXUphoUh8epFjy6_UvzHW5swFGRkkFABsf_FZ8-8ZgjBJ-9nf_ykhb0KGigb17ktKgsBLQ7s963b39fHHHRi4bTTwq20E7--yP8iIpvhwJVdtZooXcJYksyDsraF-QIpVISnKU_Ex2TObfY8czQwhRcq1fsDx5pMDLBBYRImCDPJiMiSfyEcMmzFuDhpMWxJMUcA4Am9btmPhjjFBIwQlHY5eUZk');"></div>
+<div>
+<h3 class="font-bold text-xl mb-1">Free Reusable Cup Fill</h3>
+<p class="text-text-sub-light text-sm mb-2">Starbucks Rewards</p>
+<span class="text-primary-dark dark:text-primary font-bold">500 Ecoins</span>
+</div>
+</div>
+<div class="bg-background-light dark:bg-background-dark rounded-xl p-4 mb-6">
+<h4 class="font-bold text-sm mb-2">Terms &amp; Conditions</h4>
+<p class="text-xs text-text-sub-light leading-relaxed">Valid at participating locations only. Must bring clean reusable cup. Cannot be combined with other offers. Expires 30 days after redemption.</p>
+</div>
+<button class="w-full h-14 bg-primary text-background-dark font-bold text-lg rounded-full shadow-lg shadow-primary/30 flex items-center justify-center gap-2 active:scale-95 transition-transform">
+<span class="material-symbols-outlined">verified</span>
+                    Confirm Redemption
+                </button>
+</div>
+</div>
+</div>
+</body></html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Ecoins Splash Screen</title>
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec13",
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#102210",
+                    },
+                    fontFamily: {
+                        "display": ["Spline Sans", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        @keyframes pulse-subtle {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.9; }
+        }
+        .animate-pulse-subtle {
+            animation: pulse-subtle 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display antialiased overflow-hidden h-screen w-screen selection:bg-primary selection:text-black">
+<div class="relative flex h-full w-full flex-col justify-between items-center p-6">
+<!-- Abstract Background Shapes -->
+<div class="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+<div class="absolute -top-24 -left-24 w-96 h-96 bg-primary/10 rounded-full blur-3xl opacity-50 dark:opacity-20"></div>
+<div class="absolute top-1/2 -right-32 w-80 h-80 bg-primary/15 rounded-full blur-3xl opacity-40 dark:opacity-10"></div>
+<div class="absolute -bottom-24 left-1/2 transform -translate-x-1/2 w-[500px] h-[500px] bg-gradient-to-t from-primary/5 to-transparent rounded-full blur-3xl dark:from-primary/10"></div>
+</div>
+<!-- Spacer for top balance -->
+<div class="flex-1"></div>
+<!-- Central Brand Area -->
+<div class="flex flex-col items-center justify-center flex-[2] w-full max-w-sm gap-8 z-10">
+<!-- Logo Container -->
+<div class="relative group">
+<!-- Outer Glow Ring -->
+<div class="absolute inset-0 bg-primary rounded-full blur-xl opacity-20 dark:opacity-30 group-hover:opacity-40 transition-opacity duration-1000 animate-pulse-subtle"></div>
+<!-- Logo Circle -->
+<div class="relative flex items-center justify-center w-32 h-32 bg-white dark:bg-[#1a2e1a] rounded-full shadow-2xl shadow-primary/20 border border-primary/10">
+<span class="material-symbols-outlined text-primary text-[64px]" style="font-variation-settings: 'FILL' 1, 'wght' 600;">
+                        eco
+                    </span>
+<!-- Decorative coin hint -->
+<span class="material-symbols-outlined text-primary/80 text-[28px] absolute top-7 right-7" style="font-variation-settings: 'FILL' 1;">
+                        monetization_on
+                    </span>
+</div>
+</div>
+<!-- Typography -->
+<div class="text-center space-y-2">
+<h1 class="text-4xl md:text-5xl font-bold tracking-tight text-[#0d1b0d] dark:text-white">
+                    Ecoins
+                </h1>
+<p class="text-[#0d1b0d]/70 dark:text-white/70 text-lg font-medium tracking-wide">
+                    Sustainable Rewards
+                </p>
+</div>
+</div>
+<!-- Bottom Area: Loading & Tagline -->
+<div class="flex flex-col items-center justify-end flex-1 w-full max-w-xs gap-6 pb-12 z-10">
+<!-- Loading Indicator -->
+<div class="w-full flex flex-col gap-2">
+<div class="flex justify-between items-end px-1">
+<span class="text-xs font-semibold text-primary uppercase tracking-wider">Loading Assets</span>
+</div>
+<!-- Custom ProgressBar Component -->
+<div class="h-1.5 w-full bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full animate-pulse" style="width: 45%;"></div>
+</div>
+</div>
+<!-- Footer Tagline -->
+<p class="text-[#0d1b0d]/40 dark:text-white/40 text-sm font-normal text-center">
+                Earn while you save the planet
+            </p>
+</div>
+</div>
+</body></html>

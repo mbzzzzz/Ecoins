@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Ecoins Home Screen</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&amp;family=Noto+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec13",
+                        "background-light": "#f8fcf8", // Slightly off-white for eye comfort
+                        "background-dark": "#102210", // Deep forest green/black
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1a2e1a",
+                        "text-main": "#0d1b0d",
+                        "text-sub": "#4a5f4a",
+                    },
+                    fontFamily: {
+                        "display": ["Spline Sans", "sans-serif"],
+                        "body": ["Noto Sans", "sans-serif"],
+                    },
+                    borderRadius: {
+                        "DEFAULT": "1rem", 
+                        "lg": "1.5rem", 
+                        "xl": "2rem", 
+                        "2xl": "2.5rem",
+                        "full": "9999px"
+                    },
+                    boxShadow: {
+                        "soft": "0 4px 20px -2px rgba(19, 236, 19, 0.15)",
+                        "inner-glow": "inset 0 0 20px rgba(19, 236, 19, 0.2)",
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom utilities not in Tailwind default */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        /* Radial Progress Simulation */
+        .radial-progress {
+            background: conic-gradient(var(--tw-gradient-from) 0% 75%, transparent 75% 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-text-main dark:text-gray-100 transition-colors duration-300 antialiased selection:bg-primary selection:text-black pb-24">
+<!-- Header Section -->
+<header class="sticky top-0 z-30 bg-background-light/90 dark:bg-background-dark/90 backdrop-blur-md transition-colors">
+<div class="flex items-center justify-between p-4 pb-2">
+<div class="flex items-center gap-3">
+<div class="relative group cursor-pointer">
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-12 border-2 border-white dark:border-background-dark shadow-sm" data-alt="Profile picture of a smiling young man in nature" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBXzRAmjrAjVYLasXFGelMWD0D8c7ft874P-Z69sz_nBb39fkiAR4PDjtLMfbRt_5FgUQ18idMH9XfZnBZm4TkYYXqrNqZ-LHowD6ITBEeVl9kd3Ot4EvFs56CNnj7gh3NWqXaJmfdb2BfvegW3oKMq2zXlGmm8ff6ghNQG4l81VIdB_n07u8TyzRTpdneKFsX135XSFlB2XRGDJ7S0LHNd6u36by4zvmsUd9wj_mfAP0guvj_rlROBfNsuIiJNThiUCSu4j_u69i4");'>
+</div>
+<div class="absolute -bottom-1 -right-1 bg-primary text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-background-light dark:border-background-dark">
+                        LVL 5
+                    </div>
+</div>
+<div class="flex flex-col">
+<span class="text-sm text-text-sub dark:text-gray-400 font-medium">Welcome back,</span>
+<h2 class="text-text-main dark:text-white text-lg font-bold leading-tight">Alex</h2>
+</div>
+</div>
+<button class="flex items-center justify-center size-10 rounded-full bg-surface-light dark:bg-surface-dark text-text-main dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shadow-sm">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0, 'wght' 400;">notifications</span>
+</button>
+</div>
+</header>
+<!-- Hero / Dashboard Section -->
+<section class="flex flex-col items-center justify-center pt-4 pb-8 px-4 relative overflow-hidden">
+<!-- Abstract background blobs -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/10 rounded-full blur-3xl -z-10"></div>
+<div class="relative flex flex-col items-center justify-center size-64">
+<!-- Outer Ring Background -->
+<div class="absolute inset-0 rounded-full border-[12px] border-gray-100 dark:border-surface-dark"></div>
+<!-- Progress Ring (SVG for better control over stroke) -->
+<svg class="absolute inset-0 w-full h-full -rotate-90 transform" viewbox="0 0 100 100">
+<circle cx="50" cy="50" fill="transparent" r="44" stroke="#13ec13" stroke-dasharray="276" stroke-dashoffset="69" stroke-linecap="round" stroke-width="6"></circle>
+</svg>
+<!-- Inner Content -->
+<div class="flex flex-col items-center justify-center text-center z-10 bg-background-light dark:bg-background-dark rounded-full size-52 shadow-inner-glow">
+<span class="text-text-sub dark:text-gray-400 text-sm font-semibold tracking-wide uppercase mb-1">Total Impact</span>
+<h1 class="text-black dark:text-white tracking-tight text-5xl font-bold leading-none mb-2">124<span class="text-2xl align-top ml-1 text-gray-500">kg</span></h1>
+<h2 class="text-gray-500 dark:text-gray-400 text-sm font-medium">CO₂ Saved</h2>
+<!-- Ecoins Balance Pill -->
+<div class="mt-4 flex items-center gap-2 bg-yellow-100 dark:bg-yellow-900/30 px-3 py-1.5 rounded-full border border-yellow-200 dark:border-yellow-700/50">
+<span class="material-symbols-outlined text-yellow-600 dark:text-yellow-400 text-[18px]" style="font-variation-settings: 'FILL' 1;">monetization_on</span>
+<span class="text-yellow-800 dark:text-yellow-200 text-sm font-bold">1,250 Ecoins</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Action Grid -->
+<section class="px-4 mb-8">
+<h3 class="text-text-main dark:text-white text-lg font-bold mb-4 px-1">Log Activity</h3>
+<div class="grid grid-cols-2 gap-4">
+<!-- Primary Action -->
+<button class="group relative flex flex-col items-center justify-center h-36 rounded-2xl bg-primary hover:bg-[#0fd60f] transition-all duration-300 shadow-soft active:scale-95">
+<div class="size-14 bg-black/10 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-black text-3xl">qr_code_scanner</span>
+</div>
+<span class="text-black font-bold text-lg">Scan Item</span>
+<span class="text-black/60 text-xs font-medium mt-0.5">Earn +50</span>
+</button>
+<!-- Secondary Action -->
+<button class="group relative flex flex-col items-center justify-center h-36 rounded-2xl bg-surface-light dark:bg-surface-dark hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-700 transition-all duration-300 active:scale-95">
+<div class="size-14 bg-green-100 dark:bg-primary/20 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-green-800 dark:text-primary text-3xl">directions_bike</span>
+</div>
+<span class="text-text-main dark:text-white font-bold text-lg">Track Ride</span>
+<span class="text-gray-400 text-xs font-medium mt-0.5">Earn +100</span>
+</button>
+</div>
+</section>
+<!-- Daily Challenges -->
+<section class="px-4">
+<div class="flex items-center justify-between mb-4 px-1">
+<h3 class="text-text-main dark:text-white text-lg font-bold">Daily Quests</h3>
+<a class="text-primary text-sm font-bold hover:underline" href="#">View All</a>
+</div>
+<div class="flex flex-col gap-3">
+<!-- Quest 1 -->
+<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<div class="flex gap-3">
+<div class="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg h-fit">
+<span class="material-symbols-outlined text-blue-600 dark:text-blue-400 text-[20px]">footprint</span>
+</div>
+<div>
+<p class="text-text-main dark:text-white font-bold text-base leading-tight">Walk 5k steps</p>
+<p class="text-gray-500 dark:text-gray-400 text-xs mt-0.5">Reduce car usage</p>
+</div>
+</div>
+<span class="text-text-main dark:text-white text-sm font-bold">3.2<span class="text-gray-400 font-normal">/5k</span></span>
+</div>
+<div class="mt-2 h-2.5 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+<div class="h-full bg-blue-500 rounded-full" style="width: 64%"></div>
+</div>
+</div>
+<!-- Quest 2 -->
+<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<div class="flex gap-3">
+<div class="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-lg h-fit">
+<span class="material-symbols-outlined text-orange-600 dark:text-orange-400 text-[20px]">wine_bar</span>
+</div>
+<div>
+<p class="text-text-main dark:text-white font-bold text-base leading-tight">Recycle Glass</p>
+<p class="text-gray-500 dark:text-gray-400 text-xs mt-0.5">Scan at center</p>
+</div>
+</div>
+<span class="text-text-main dark:text-white text-sm font-bold">0<span class="text-gray-400 font-normal">/3</span></span>
+</div>
+<div class="mt-2 h-2.5 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+<div class="h-full bg-orange-500 rounded-full" style="width: 0%"></div>
+</div>
+</div>
+<!-- Quest 3 (Completed) -->
+<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm opacity-60">
+<div class="flex justify-between items-start mb-2">
+<div class="flex gap-3">
+<div class="bg-primary/20 p-2 rounded-lg h-fit">
+<span class="material-symbols-outlined text-green-700 dark:text-primary text-[20px]">check</span>
+</div>
+<div>
+<p class="text-text-main dark:text-white font-bold text-base leading-tight line-through decoration-gray-400">Refuse Plastic</p>
+<p class="text-gray-500 dark:text-gray-400 text-xs mt-0.5">Completed</p>
+</div>
+</div>
+<span class="text-primary text-sm font-bold">Done</span>
+</div>
+<div class="mt-2 h-2.5 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 100%"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Bottom Navigation (Floating Dock) -->
+<nav class="fixed bottom-6 left-4 right-4 z-40">
+<div class="bg-black/90 dark:bg-surface-dark/95 backdrop-blur-xl rounded-full p-2 shadow-2xl border border-white/10 flex items-center justify-between px-6 h-16">
+<button class="flex flex-col items-center justify-center gap-1 w-12 group">
+<span class="material-symbols-outlined text-primary text-[28px]" style="font-variation-settings: 'FILL' 1;">home</span>
+<div class="w-1 h-1 bg-primary rounded-full"></div>
+</button>
+<button class="flex flex-col items-center justify-center gap-1 w-12 group">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-white transition-colors text-[28px]">leaderboard</span>
+<div class="w-1 h-1 bg-transparent group-hover:bg-white rounded-full transition-colors"></div>
+</button>
+<!-- Floating FAB in Middle - alternative style -->
+<!-- <div class="relative -top-6">
+                <button class="bg-primary text-black rounded-full size-14 flex items-center justify-center shadow-lg shadow-primary/30 transform hover:scale-105 transition-transform">
+                    <span class="material-symbols-outlined text-3xl">add</span>
+                </button>
+            </div> -->
+<button class="flex flex-col items-center justify-center gap-1 w-12 group">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-white transition-colors text-[28px]">account_balance_wallet</span>
+<div class="w-1 h-1 bg-transparent group-hover:bg-white rounded-full transition-colors"></div>
+</button>
+<button class="flex flex-col items-center justify-center gap-1 w-12 group">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-white transition-colors text-[28px]">person</span>
+<div class="w-1 h-1 bg-transparent group-hover:bg-white rounded-full transition-colors"></div>
+</button>
+</div>
+</nav>
+</body></html>

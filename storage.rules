@@ -1,0 +1,26 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Avatars: Public read (for profile images everywhere), Owner write
+    match /avatars/{userId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Reward Images: Public read, No write (Admin only)
+    match /rewards/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+    
+    // Default: Deny
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
