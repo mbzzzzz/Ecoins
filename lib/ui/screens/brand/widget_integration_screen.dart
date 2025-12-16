@@ -63,7 +63,7 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
     // Convert color to hex string
     final accentHex = '#${_selectedAccent.value.toRadixString(16).substring(2).toUpperCase()}';
     
-    return '''<script src="https://cdn.ecorewards.io/widget.js"
+    return '''<script src="https://gwmcmlpuqummaumjloci.supabase.co/functions/v1/serve-widget"
         data-key="$_apiKey"
         data-variant="$_selectedVariant"
         data-accent="$accentHex"
