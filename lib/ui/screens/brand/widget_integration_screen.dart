@@ -309,10 +309,10 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
                                   children: [
                                     Icon(Icons.eco, size: 16, color: _selectedAccent),
                                     const SizedBox(width: 4),
-                                    if (_showRawValues)
+                                      if (_showRawValues)
                                       Text(
                                         '1,250 kg',
-                                        style: GoogleFonts.mono(
+                                        style: GoogleFonts.robotoMono(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 12,
                                           color: _selectedAccent,
@@ -509,7 +509,7 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
                            color: const Color(0xFF1E293B),
                            borderRadius: BorderRadius.circular(12),
                            border: Border.all(color: Colors.white10),
-                           boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, inset: true)],
+                           boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
                          ),
                          child: SingleChildScrollView(
                            scrollDirection: Axis.horizontal,
