@@ -60,12 +60,153 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
 
   String get _snippet {
     if (_apiKey == null) return 'Loading...';
-    // Embeddable widget snippet
-    // We append custom attributes if they deviate from default, though widget.js script would need updates to handle them.
-    // For now, we stick to standard data-key and data-variant.
+    // Convert color to hex string
+    final accentHex = '#${_selectedAccent.value.toRadixString(16).substring(2).toUpperCase()}';
+    
     return '''<script src="https://cdn.ecorewards.io/widget.js"
         data-key="$_apiKey"
-        data-variant="$_selectedVariant"></script>''';
+        data-variant="$_selectedVariant"
+        data-accent="$accentHex"
+        data-font="$_selectedFont"
+        data-theme="auto"></script>''';
+  }
+
+  // ... (build method parts remain, jumping to preview section)
+
+  Widget _buildPreviewWidget(bool isDark) {
+    switch (_selectedVariant) {
+      case 'banner':
+        return Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: _selectedAccent.withOpacity(0.1), shape: BoxShape.circle),
+              child: Icon(Icons.eco, color: _selectedAccent, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                 crossAxisAlignment: CrossAxisAlignment.start,
+                 mainAxisSize: MainAxisSize.min,
+                 children: [
+                   Text('Eco Impact', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14, color: isDark ? Colors.white : Colors.black)),
+                   if (_showRawValues) Text('1,250 kg CO₂ saved', style: GoogleFonts.inter(fontSize: 12, color: isDark ? Colors.white70 : Colors.black54)),
+                 ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            if (_showPercentage)
+              Text('65%', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: _selectedAccent)),
+          ],
+        );
+      case 'badge':
+        return Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: _selectedAccent,
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.verified, color: Colors.white, size: 16),
+                const SizedBox(width: 8),
+                Text('Sustainable Brand', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 12)),
+              ],
+            ),
+          ),
+        );
+      case 'minimal':
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.eco, color: _selectedAccent, size: 16),
+            const SizedBox(width: 4),
+            Text('1,250 kg CO₂', style: GoogleFonts.robotoMono(fontWeight: FontWeight.bold, fontSize: 14, color: isDark ? Colors.white : Colors.black)),
+          ],
+        );
+      case 'compact':
+         return Column(
+           children: [
+             Icon(Icons.eco, color: _selectedAccent, size: 24),
+             const SizedBox(height: 4),
+             Text('1,250 kg', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: isDark ? Colors.white : Colors.black)),
+             Text('Carbon Saved', style: GoogleFonts.inter(fontSize: 10, color: isDark ? Colors.white54 : Colors.black54)),
+           ],
+         );
+      case 'card':
+      default:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Eco Impact',
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : const Color(0xFF0E1B17),
+                  ),
+                ),
+                Row(
+                  children: [
+                    Icon(Icons.eco, size: 16, color: _selectedAccent),
+                    const SizedBox(width: 4),
+                    if (_showRawValues)
+                      Text(
+                        '1,250 kg',
+                        style: GoogleFonts.robotoMono(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          color: _selectedAccent,
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              height: 10,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
+                borderRadius: BorderRadius.circular(5),
+              ),
+              child: Stack(
+                children: [
+                  FractionallySizedBox(
+                    widthFactor: 0.65,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: _selectedAccent,
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (_showPercentage)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Progress to goal',
+                    style: TextStyle(fontSize: 11, color: isDark ? Colors.white54 : Colors.black54),
+                  ),
+                  Text(
+                    '65%',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isDark ? Colors.white54 : Colors.black54),
+                  ),
+                ],
+              ),
+          ],
+        );
+    }
   }
 
   @override
@@ -292,76 +433,7 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
                             ),
                           ],
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Eco Impact',
-                                  style: GoogleFonts.outfit(
-                                    fontWeight: FontWeight.bold,
-                                    color: isDark ? Colors.white : const Color(0xFF0E1B17),
-                                  ),
-                                ),
-                                Row(
-                                  children: [
-                                    Icon(Icons.eco, size: 16, color: _selectedAccent),
-                                    const SizedBox(width: 4),
-                                      if (_showRawValues)
-                                      Text(
-                                        '1,250 kg',
-                                        style: GoogleFonts.robotoMono(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12,
-                                          color: _selectedAccent,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            // Progress Bar
-                            Container(
-                              height: 10,
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
-                                borderRadius: BorderRadius.circular(5),
-                              ),
-                              child: Stack(
-                                children: [
-                                  FractionallySizedBox(
-                                    widthFactor: 0.65,
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: _selectedAccent,
-                                        borderRadius: BorderRadius.circular(5),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            if (_showPercentage)
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Progress to goal',
-                                    style: TextStyle(fontSize: 11, color: isDark ? Colors.white54 : Colors.black54),
-                                  ),
-                                  Text(
-                                    '65%',
-                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isDark ? Colors.white54 : Colors.black54),
-                                  ),
-                                ],
-                              ),
-                          ],
-                        ),
+                        child: _buildPreviewWidget(isDark),
                       ),
                       
                       const SizedBox(height: 24),
