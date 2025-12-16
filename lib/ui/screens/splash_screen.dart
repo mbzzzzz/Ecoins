@@ -78,11 +78,7 @@ class _SplashScreenState extends State<SplashScreen>
                 shape: BoxShape.circle,
                 color: primaryColor.withOpacity(isDark ? 0.2 : 0.1),
               ),
-              child: BackdropFilter(
-                 filter: android.graphics.postprocess_filter // Flutter doesn't map 1:1 to CSS blur on shapes efficiently without BlurWidget or BackdropFilter on top.
-                 // approximating with simple opacity and gradients for performance
-                 child: Container(), 
-              ),
+
             ),
           ),
           // We use simple gradients to mimic the blurs
