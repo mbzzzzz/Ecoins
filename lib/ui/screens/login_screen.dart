@@ -10,7 +10,9 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'dart:async';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final bool isBrand;
+
+  const LoginScreen({super.key, this.isBrand = false});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -28,7 +30,11 @@ class _LoginScreenState extends State<LoginScreen> {
     super.initState();
     _authStateSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       if (data.session != null && mounted) {
-        context.go('/home');
+        if (widget.isBrand) {
+          context.go('/brand-dashboard');
+        } else {
+          context.go('/home');
+        }
       }
     });
   }
@@ -73,7 +79,11 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (mounted) {
-        context.go('/home');
+        if (widget.isBrand) {
+          context.go('/brand-dashboard');
+        } else {
+          context.go('/home');
+        }
       }
     } catch (error) {
        debugPrint('Google Sign In Error: $error');
@@ -138,7 +148,13 @@ class _LoginScreenState extends State<LoginScreen> {
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
-        if (mounted) context.go('/home');
+        if (mounted) {
+          if (widget.isBrand) {
+            context.go('/brand-dashboard');
+          } else {
+            context.go('/home');
+          }
+        }
       }
     } on AuthException catch (error) {
       if (mounted) {
@@ -172,7 +188,9 @@ class _LoginScreenState extends State<LoginScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: Text(
-          _isSignUp ? 'Join the Movement' : 'Welcome Back',
+          _isSignUp 
+              ? 'Join the Movement' 
+              : (widget.isBrand ? 'Brand Portal' : 'Welcome Back'),
           style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,

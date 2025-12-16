@@ -4,12 +4,15 @@ import 'package:ecoins/ui/screens/home_screen.dart';
 import 'package:ecoins/ui/screens/login_screen.dart';
 import 'package:ecoins/ui/screens/profile_screen.dart';
 import 'package:ecoins/ui/screens/rewards_screen.dart';
+import 'package:ecoins/ui/screens/brand/brand_dashboard_screen.dart';
+import 'package:ecoins/ui/screens/role_select_screen.dart';
 import 'package:ecoins/ui/screens/social_screen.dart';
 import 'package:ecoins/ui/screens/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:provider/provider.dart';
 
 Future<void> _setupFCM() async {
   final messaging = FirebaseMessaging.instance;
@@ -48,7 +51,12 @@ Future<void> main() async {
   // await Firebase.initializeApp();
   // _setupFCM();
 
-  runApp(const EcoinsApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => ThemeNotifier(),
+      child: const EcoinsApp(),
+    ),
+  );
 }
 
 final _router = GoRouter(
@@ -59,8 +67,20 @@ final _router = GoRouter(
       builder: (context, state) => const SplashScreen(),
     ),
     GoRoute(
+      path: '/role-select',
+      builder: (context, state) => const RoleSelectScreen(),
+    ),
+    GoRoute(
       path: '/login',
       builder: (context, state) => const LoginScreen(),
+    ),
+    GoRoute(
+      path: '/brand-auth',
+      builder: (context, state) => const LoginScreen(isBrand: true),
+    ),
+    GoRoute(
+      path: '/brand-dashboard',
+      builder: (context, state) => const BrandDashboardScreen(),
     ),
     GoRoute(
       path: '/home',
@@ -74,10 +94,14 @@ class EcoinsApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'Ecoins',
-      theme: AppTheme.lightTheme,
-      routerConfig: _router,
+    return Consumer<ThemeNotifier>(
+      builder: (context, themeNotifier, child) {
+        return MaterialApp.router(
+          title: 'Ecoins',
+          theme: themeNotifier.currentTheme,
+          routerConfig: _router,
+        );
+      },
     );
   }
 }

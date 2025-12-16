@@ -20,16 +20,16 @@ class AppTheme {
   static const Color textSub = textLight;
   static const Color surfaceDark = Color(0xFF1F2937); // Gray 800
 
-  static ThemeData get lightTheme {
+  static ThemeData getTheme(Color seedColor) {
     return ThemeData(
       useMaterial3: true,
       scaffoldBackgroundColor: background,
-      primaryColor: primaryGreen,
+      primaryColor: seedColor,
       fontFamily: 'Inter',
       colorScheme: ColorScheme.fromSeed(
-        seedColor: primaryGreen,
-        primary: primaryGreen,
-        secondary: primaryDark,
+        seedColor: seedColor,
+        primary: seedColor,
+        secondary: seedColor.withOpacity(0.8), // Derived
         surface: surfaceWhite,
         background: background,
         surfaceTint: Colors.white,
@@ -43,11 +43,10 @@ class AppTheme {
         titleMedium: TextStyle(fontFamily: 'Outfit', fontSize: 18, fontWeight: FontWeight.w600, color: textDark),
         bodyLarge: TextStyle(fontSize: 16, color: textDark),
         bodyMedium: TextStyle(fontSize: 14, color: textLight),
-        labelLarge: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: primaryGreen),
       ),
 
       // Component Themes
-      appBarTheme: AppBarTheme(
+      appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent, // Glassmorphism ready
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -67,10 +66,10 @@ class AppTheme {
 
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primaryGreen,
+          backgroundColor: seedColor,
           foregroundColor: Colors.white,
           elevation: 4, // Tactics
-          shadowColor: primaryGreen.withOpacity(0.4),
+          shadowColor: seedColor.withOpacity(0.4),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 16),
@@ -79,8 +78,8 @@ class AppTheme {
 
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: primaryGreen,
-          side: const BorderSide(color: primaryGreen, width: 2),
+          foregroundColor: seedColor,
+          side: BorderSide(color: seedColor, width: 2),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600),
@@ -101,7 +100,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: primaryGreen, width: 2),
+          borderSide: BorderSide(color: seedColor, width: 2),
         ),
         labelStyle: GoogleFonts.inter(color: textLight),
         hintStyle: GoogleFonts.inter(color: textLight.withOpacity(0.7)),
@@ -109,15 +108,31 @@ class AppTheme {
       
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: Colors.white.withOpacity(0.9),
-        indicatorColor: primaryLight,
+        indicatorColor: seedColor.withOpacity(0.2), // Lighter indicator
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return const IconThemeData(color: primaryDark);
+            return IconThemeData(color: seedColor.withOpacity(0.8)); // Darker icon
           }
           return const IconThemeData(color: textLight);
         }),
       ),
     );
+  }
+  
+  // Backward compatibility
+  static ThemeData get lightTheme => getTheme(primaryGreen);
+}
+
+class ThemeNotifier extends ChangeNotifier {
+  Color _primaryColor = AppTheme.primaryGreen;
+
+  Color get primaryColor => _primaryColor;
+
+  ThemeData get currentTheme => AppTheme.getTheme(_primaryColor);
+
+  void setPrimaryColor(Color color) {
+    _primaryColor = color;
+    notifyListeners();
   }
 }
