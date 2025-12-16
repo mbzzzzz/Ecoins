@@ -54,16 +54,26 @@ class _OfferManagementScreenState extends State<OfferManagementScreen> {
     }
   }
 
-  Future<void> _createOffer(String title, String description, int cost) async {
+  Future<void> _saveOffer({String? id, required String title, required String description, required int cost}) async {
     if (_brandId == null) return;
     try {
-      await Supabase.instance.client.from('offers').insert({
-        'brand_id': _brandId,
-        'title': title,
-        'description': description,
-        'points_cost': cost,
-        'is_active': true,
-      });
+      if (id != null) {
+        // Update
+        await Supabase.instance.client.from('offers').update({
+          'title': title,
+          'description': description,
+          'points_cost': cost,
+        }).eq('id', id);
+      } else {
+        // Create
+        await Supabase.instance.client.from('offers').insert({
+          'brand_id': _brandId,
+          'title': title,
+          'description': description,
+          'points_cost': cost,
+          'is_active': true,
+        });
+      }
       _fetchOffers();
       if (mounted) Navigator.pop(context);
     } catch (e) {
@@ -71,15 +81,15 @@ class _OfferManagementScreenState extends State<OfferManagementScreen> {
     }
   }
 
-  void _showAddOfferDialog() {
-    final titleController = TextEditingController();
-    final descriptionController = TextEditingController();
-    final costController = TextEditingController(text: '500');
+  void _showOfferDialog({Map<String, dynamic>? offer}) {
+    final titleController = TextEditingController(text: offer != null ? offer['title'] : '');
+    final descriptionController = TextEditingController(text: offer != null ? offer['description'] : '');
+    final costController = TextEditingController(text: offer != null ? offer['points_cost'].toString() : '500');
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('New Offer'),
+        title: Text(offer != null ? 'Edit Offer' : 'New Offer'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -95,11 +105,16 @@ class _OfferManagementScreenState extends State<OfferManagementScreen> {
           ElevatedButton(
             onPressed: () {
                if (titleController.text.isNotEmpty && descriptionController.text.isNotEmpty) {
-                 _createOffer(titleController.text, descriptionController.text, int.tryParse(costController.text) ?? 500);
+                 _saveOffer(
+                   id: offer?['id'],
+                   title: titleController.text, 
+                   description: descriptionController.text, 
+                   cost: int.tryParse(costController.text) ?? 500
+                 );
                }
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryGreen),
-            child: const Text('Create'),
+            child: Text(offer != null ? 'Save' : 'Create'),
           ),
         ],
       ),
@@ -132,7 +147,7 @@ class _OfferManagementScreenState extends State<OfferManagementScreen> {
          iconTheme: IconThemeData(color: isDark ? Colors.white : AppTheme.textMain),
        ),
        floatingActionButton: FloatingActionButton(
-         onPressed: _showAddOfferDialog,
+         onPressed: () => _showOfferDialog(),
          backgroundColor: AppTheme.primaryGreen,
          child: const Icon(Icons.add, color: Colors.white),
        ),
@@ -151,6 +166,7 @@ class _OfferManagementScreenState extends State<OfferManagementScreen> {
                    side: isDark ? BorderSide(color: Colors.grey[800]!) : BorderSide.none,
                  ),
                  child: ListTile(
+                   onTap: () => _showOfferDialog(offer: offer),
                    contentPadding: const EdgeInsets.all(16),
                    title: Text(offer['title'], style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppTheme.textMain)),
                    subtitle: Column(

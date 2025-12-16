@@ -1,4 +1,5 @@
 import 'package:ecoins/ui/screens/edit_profile_screen.dart';
+import 'package:ecoins/ui/screens/brand/brand_dashboard_screen.dart';
 import 'package:ecoins/ui/screens/notification_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -165,6 +166,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const NotificationScreen()),
+                    ),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.store),
+                    title: const Text('Brand Portal'),
+                    subtitle: const Text('Manage your eco-brand'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const BrandDashboardScreen()),
                     ),
                   ),
                 ],
