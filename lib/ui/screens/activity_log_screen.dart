@@ -27,7 +27,19 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
     try {
       final user = _supabase.auth.currentUser;
       if (user == null) {
-        if (mounted) setState(() => _isLoading = false);
+        // Mock data for preview if no user
+        if (mounted) {
+           await Future.delayed(const Duration(milliseconds: 500));
+           setState(() {
+            _profile = {'points': 1250, 'carbon_saved': 42.5};
+            _activities = [
+              {'description': 'Cycle', 'points_earned': 20, 'carbon_saved': 4.2, 'logged_at': DateTime.now().subtract(const Duration(minutes: 15)).toIso8601String()},
+              {'description': 'Veg Meal', 'points_earned': 30, 'carbon_saved': 2.5, 'logged_at': DateTime.now().subtract(const Duration(hours: 2)).toIso8601String()},
+              {'description': 'Recycle', 'points_earned': 15, 'carbon_saved': 1.0, 'logged_at': DateTime.now().subtract(const Duration(days: 1)).toIso8601String()},
+            ];
+            _isLoading = false;
+           });
+        }
         return;
       }
 
@@ -101,7 +113,7 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
-      backgroundColor: isDark ? AppTheme.backgroundDark : Colors.white,
+      backgroundColor: isDark ? AppTheme.surfaceDark : Colors.white,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (context) => Padding(
         padding: const EdgeInsets.all(24.0),
@@ -109,20 +121,20 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Log New Activity', style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black)),
-            const SizedBox(height: 16),
+            Text('Log New Activity', style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppTheme.textMain)),
+            const SizedBox(height: 24),
             GridView.count(
               shrinkWrap: true,
               crossAxisCount: 3,
               mainAxisSpacing: 16,
               crossAxisSpacing: 16,
               children: [
-                _buildActivityOption(Icons.directions_bike, 'Cycle', 20, 4.2, Colors.blue, isDark),
-                _buildActivityOption(Icons.restaurant, 'Veg Meal', 30, 2.5, Colors.orange, isDark),
-                _buildActivityOption(Icons.recycling, 'Recycle', 15, 1.0, Colors.green, isDark),
-                _buildActivityOption(Icons.bolt, 'Energy', 45, 5.0, Colors.yellow[700]!, isDark),
-                _buildActivityOption(Icons.shopping_bag, 'Reusable', 10, 0.5, Colors.purple, isDark),
-                _buildActivityOption(Icons.water_drop, 'Save Water', 25, 3.0, Colors.cyan, isDark),
+                _buildActivityOption(Icons.directions_bike, 'Cycle', 20, 4.2, const Color(0xFF3B82F6), isDark),
+                _buildActivityOption(Icons.restaurant, 'Veg Meal', 30, 2.5, const Color(0xFFF59E0B), isDark),
+                _buildActivityOption(Icons.recycling, 'Recycle', 15, 1.0, const Color(0xFF10B981), isDark),
+                _buildActivityOption(Icons.bolt, 'Energy', 45, 5.0, const Color(0xFFEAB308), isDark),
+                _buildActivityOption(Icons.shopping_bag, 'Reusable', 10, 0.5, const Color(0xFF8B5CF6), isDark),
+                _buildActivityOption(Icons.water_drop, 'Save Water', 25, 3.0, const Color(0xFF06B6D4), isDark),
               ],
             )
           ],
@@ -146,9 +158,9 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
             ),
             child: Icon(icon, color: color, size: 28),
           ),
-          const SizedBox(height: 8),
-          Text(label, style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: isDark ? Colors.grey[300] : Colors.grey[800])),
-          Text('+$points pts', style: GoogleFonts.inter(fontSize: 10, color: Colors.grey)),
+          const SizedBox(height: 12),
+          Text(label, style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: isDark ? Colors.white : AppTheme.textMain)),
+          Text('+$points pts', style: GoogleFonts.inter(fontSize: 10, color: isDark ? Colors.grey[400] : Colors.grey[600])),
         ],
       ),
     );
@@ -158,150 +170,245 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
+    // Gradient Background
+    final bgColors = isDark 
+        ? [AppTheme.backgroundDark, const Color(0xFF1A1A2E)] 
+        : [AppTheme.backgroundLight, const Color(0xFFE6F0F5)];
+
     if (_isLoading) {
       return Scaffold(
         backgroundColor: isDark ? AppTheme.backgroundDark : AppTheme.backgroundLight,
-        body: const Center(child: CircularProgressIndicator(color: AppTheme.primaryGreen)),
+        body: Center(child: CircularProgressIndicator(color: AppTheme.primaryGreen)),
       );
     }
-
-    // Group activities by date
-    // Simple grouping logic: Today, Yesterday, Older
-    // For now, I'll just list them all under "Recent Activity" to simplify, or maybe implement basic grouping.
     
     return Scaffold(
-      backgroundColor: isDark ? AppTheme.backgroundDark : AppTheme.backgroundLight,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: isDark ? AppTheme.backgroundDark.withOpacity(0.95) : AppTheme.backgroundLight.withOpacity(0.95),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black),
-          onPressed: () => Navigator.of(context).pop(),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 16),
+          child: CircleAvatar(
+            backgroundColor: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05),
+            child: IconButton(
+              icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : AppTheme.textMain),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ),
         ),
-        title: Text('Activity Log', style: GoogleFonts.splineSans(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black)),
+        title: Text('Activity Log', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppTheme.textMain)),
         centerTitle: true,
+        systemOverlayStyle: isDark ? null : null, // Uses system default or theme
       ),
-      body: Stack(
-        children: [
-          CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                  child: Row(
-                    children: [
-                      // Total Ecoins Card
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryGreen.withOpacity(isDark ? 0.1 : 0.15),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppTheme.primaryGreen.withOpacity(0.2)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(Icons.savings, color: isDark ? AppTheme.primaryGreen : Colors.green[700]), 
-                                  const SizedBox(width: 8),
-                                  Text('Total Ecoins', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: isDark ? Colors.grey[300] : Colors.grey[600])),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              Text('${_profile?['points'] ?? 0}', style: GoogleFonts.splineSans(fontSize: 32, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.grey[900], height: 1.0)),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      // CO2 Saved Card
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: isDark ? Colors.grey[800] : Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: isDark ? Colors.grey[700]! : Colors.grey[100]!),
-                            boxShadow: [
-                              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2)),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(Icons.eco, color: isDark ? Colors.green[400] : Colors.green[600]), 
-                                  const SizedBox(width: 8),
-                                  Text('CO2 Saved', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: isDark ? Colors.grey[300] : Colors.grey[600])),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              RichText(
-                                text: TextSpan(
-                                  children: [
-                                    TextSpan(text: '${_profile?['carbon_saved'] ?? 0}', style: GoogleFonts.splineSans(fontSize: 32, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.grey[900])),
-                                    TextSpan(text: 'kg', style: GoogleFonts.splineSans(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.grey)),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              
-              // Recent Activity Header
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                sliver: SliverToBoxAdapter(
-                  child: Text(
-                    'RECENT ACTIVITY',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[500],
-                      letterSpacing: 1.0,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: bgColors,
+          ),
+        ),
+        child: Stack(
+          children: [
+            CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  sliver: SliverToBoxAdapter(
+                    child: Row(
+                      children: [
+                        // Total Ecoins Card
+                        Expanded(child: _buildSummaryCard('Total Ecoins', '${_profile?['points'] ?? 0}', Icons.savings, const Color(0xFF10B981), isDark)),
+                        const SizedBox(width: 16),
+                        // CO2 Saved Card
+                        Expanded(child: _buildSummaryCard('CO₂ Saved', '${_profile?['carbon_saved']?.toStringAsFixed(1) ?? 0} kg', Icons.cloud_outlined, const Color(0xFF3B82F6), isDark)),
+                      ],
                     ),
                   ),
                 ),
-              ),
-              
-              SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final activity = _activities[index];
-                    return _buildActivityItem(
-                      icon: _getIconForType(activity['description']),
-                      iconColor: _getColorForType(activity['description']),
-                      title: activity['description'] ?? 'Unknown Activity',
-                      subtitle: timeago.format(DateTime.parse(activity['logged_at'])),
-                      score: '+${activity['points_earned']}',
-                      isDark: isDark,
-                    );
-                  },
-                  childCount: _activities.length,
+                
+                SliverPadding(
+                   padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
+                   sliver: SliverToBoxAdapter(
+                     child: Text(
+                       'Recent Activity',
+                       style: GoogleFonts.outfit(
+                         fontSize: 18,
+                         fontWeight: FontWeight.bold,
+                         color: isDark ? Colors.white : AppTheme.textMain,
+                       ),
+                     ),
+                   ),
                 ),
+                
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final activity = _activities[index];
+                        return _buildActivityItem(
+                          icon: _getIconForType(activity['description']),
+                          iconColor: _getColorForType(activity['description']),
+                          title: activity['description'] ?? 'Activity',
+                          subtitle: timeago.format(DateTime.parse(activity['logged_at'])),
+                          score: '+${activity['points_earned']}',
+                          isDark: isDark,
+                        );
+                      },
+                      childCount: _activities.length,
+                    ),
+                  ),
+                ),
+                
+                const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
+              ],
+            ),
+            
+            // FAB
+            Positioned(
+              bottom: 30,
+              right: 20,
+              child: FloatingActionButton.extended(
+                onPressed: _showAddActivitySheet,
+                backgroundColor: AppTheme.primaryGreen,
+                foregroundColor: Colors.white,
+                elevation: 4,
+                icon: const Icon(Icons.add),
+                label: Text('Log Activity', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
               ),
-              
-              const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
-            ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard(String title, String value, IconData icon, Color color, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.surfaceDark.withOpacity(0.8) : Colors.white.withOpacity(0.8),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.white),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
-          
-          // FAB
-          Positioned(
-            bottom: 24,
-            right: 20,
-            child: FloatingActionButton.large(
-              onPressed: _showAddActivitySheet,
-              backgroundColor: AppTheme.primaryGreen,
-              foregroundColor: Colors.white, // Dark mode fix
-              shape: const CircleBorder(),
-              child: const Icon(Icons.add, size: 36),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: GoogleFonts.outfit(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : AppTheme.textMain,
+            ),
+          ),
+          Text(
+            title,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              color: isDark ? Colors.grey[400] : AppTheme.textSub,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActivityItem({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required String score,
+    required bool isDark,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.surfaceDark : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: iconColor, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.outfit(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : AppTheme.textMain,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: isDark ? Colors.grey[400] : AppTheme.textSub,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryGreen.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  score,
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primaryGreen,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -323,73 +430,13 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
 
   Color _getColorForType(String? type) {
     switch (type?.toLowerCase()) {
-      case 'cycle': return Colors.blue;
-      case 'veg meal': return Colors.orange;
-      case 'recycle': return Colors.green;
-      case 'energy': return Colors.yellow[700]!;
-      case 'reusable': return Colors.purple;
-      case 'save water': return Colors.cyan;
-      default: return Colors.teal;
+      case 'cycle': return const Color(0xFF3B82F6);
+      case 'veg meal': return const Color(0xFFF59E0B);
+      case 'recycle': return const Color(0xFF10B981);
+      case 'energy': return const Color(0xFFEAB308);
+      case 'reusable': return const Color(0xFF8B5CF6);
+      case 'save water': return const Color(0xFF06B6D4);
+      default: return const Color(0xFF10B981);
     }
-  }
-
-  Widget _buildActivityItem({
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    required String subtitle,
-    required String score,
-    required bool isDark,
-  }) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.grey[800] : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? Colors.grey[700]! : Colors.grey[100]!),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 1)),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: isDark ? iconColor.withOpacity(0.2) : iconColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Icon(icon, color: isDark ? iconColor.withOpacity(0.8) : iconColor, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.grey[900])),
-                Text(subtitle, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.grey)),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppTheme.primaryGreen.withOpacity(isDark ? 0.2 : 0.1),
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(score, style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? AppTheme.primaryGreen : Colors.green[800])),
-                const SizedBox(width: 2),
-                Icon(Icons.bolt, size: 16, color: isDark ? AppTheme.primaryGreen : Colors.green[800]),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
