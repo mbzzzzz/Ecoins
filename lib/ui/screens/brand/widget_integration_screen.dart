@@ -72,20 +72,17 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
     setState(() => _isLoadingData = true);
     try {
       final supabase = Supabase.instance.client;
-      final url = Uri.parse('${supabase.supabaseUrl}/functions/v1/brand-api?key=$_apiKey');
-      
-      final response = await http.get(url, headers: {
-        'Authorization': 'Bearer ${supabase.supabaseKey}',
-      });
-      
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (mounted) {
-          setState(() {
-            _realtimeCarbon = (data['total_carbon_saved'] ?? 0.0).toDouble();
-            _isLoadingData = false;
-          });
-        }
+      final response = await supabase.functions.invoke(
+        'brand-api',
+        method: HttpMethod.get,
+        queryParameters: {'key': _apiKey},
+      );
+      final data = response.data ?? {};
+      if (mounted) {
+        setState(() {
+          _realtimeCarbon = (data['total_carbon_saved'] ?? 0.0).toDouble();
+          _isLoadingData = false;
+        });
       }
     } catch (e) {
       debugPrint('Error fetching realtime data: $e');

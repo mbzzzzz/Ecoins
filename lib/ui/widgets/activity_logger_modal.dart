@@ -96,10 +96,9 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
           
           // Get GPS location from EXIF if available
           try {
-            final lat = await exif.getLatitude();
-            final lon = await exif.getLongitude();
-            if (lat != null && lon != null) {
-              imageLocation = {'latitude': lat, 'longitude': lon};
+            final latLong = await exif.getLatLong();
+            if (latLong != null) {
+              imageLocation = {'latitude': latLong.latitude, 'longitude': latLong.longitude};
             }
           } catch (e) {
             debugPrint('EXIF GPS error: $e');
@@ -243,45 +242,28 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
     Map<String, dynamic>? location,
     String? imageTimestamp,
   ) async {
-    // Read image bytes and encode to base64
     final bytes = await image.readAsBytes();
     final base64Image = base64Encode(bytes);
 
-    // Get Supabase URL and anon key
-    final supabase = Supabase.instance.client;
-    final supabaseUrl = supabase.supabaseUrl;
-    
-    // Call edge function
-    final url = Uri.parse('$supabaseUrl/functions/v1/verify-activity');
-    
-    final response = await http.post(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ${supabase.supabaseKey}',
-      },
-      body: jsonEncode({
+    final functions = Supabase.instance.client.functions;
+    final response = await functions.invoke(
+      'verify-activity',
+      body: {
         'imageBase64': base64Image,
         'category': category,
         'deviceInfo': deviceInfo,
         'location': location,
         'imageTimestamp': imageTimestamp,
-      }),
+      },
     );
 
-    if (response.statusCode == 200) {
-      final result = jsonDecode(response.body);
-      
-      // Check if verification failed
-      if (result['error'] != null && result['verified'] == false) {
-        throw Exception(result['error'] ?? 'Verification failed');
-      }
-      
-      return result;
-    } else {
-      final errorData = jsonDecode(response.body);
-      throw Exception(errorData['error'] ?? 'Verification API Error: ${response.statusCode}');
+    final result = response.data ?? {};
+
+    if (result['error'] != null && result['verified'] == false) {
+      throw Exception(result['error'] ?? 'Verification failed');
     }
+
+    return Map<String, dynamic>.from(result);
   }
 
   void _submit() async {

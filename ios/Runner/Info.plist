@@ -56,5 +56,19 @@
 			</array>
 		</dict>
 	</array>
+	<key>NSHealthShareUsageDescription</key>
+	<string>We need access to your health data to track your daily steps and reward you for reaching your fitness goals.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>We need access to update your health data to track your daily steps and reward you for reaching your fitness goals.</string>
+	<key>NSMotionUsageDescription</key>
+	<string>We need access to motion and fitness data to track your daily steps and reward you for reaching your fitness goals.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>We need access to your camera to verify eco-friendly activities with photos.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We need access to your photo library to select images for activity verification.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>We need access to your location to verify the location of your eco-friendly activities.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>We need access to your location to verify the location of your eco-friendly activities.</string>
 </dict>
 </plist>
