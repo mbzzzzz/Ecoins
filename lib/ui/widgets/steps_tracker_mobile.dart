@@ -2,11 +2,11 @@
 import 'package:health/health.dart';
 
 class StepsTrackerMobile {
-  static HealthFactory? _health;
+  static Health? _health;
   static Function(int)? _onStepsUpdate;
 
   static Future<void> initialize() async {
-    _health = HealthFactory();
+    _health = Health();
     
     // Request permissions
     final types = [HealthDataType.STEPS];
@@ -24,22 +24,26 @@ class StepsTrackerMobile {
     final startOfDay = DateTime(now.year, now.month, now.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
     
-    final stepsData = await _health?.getHealthDataFromTypes(
-      startOfDay,
-      endOfDay,
-      [HealthDataType.STEPS],
-    );
-    
-    if (stepsData == null || stepsData.isEmpty) return 0;
-    
-    int totalSteps = 0;
-    for (var data in stepsData) {
-      if (data.value is NumericHealthValue) {
-        totalSteps += (data.value as NumericHealthValue).numericValue.toInt();
+    try {
+      final stepsData = await _health?.getHealthDataFromTypes(
+        startTime: startOfDay,
+        endTime: endOfDay,
+        types: [HealthDataType.STEPS],
+      );
+      
+      if (stepsData == null || stepsData.isEmpty) return 0;
+      
+      int totalSteps = 0;
+      for (var data in stepsData) {
+        if (data.value is NumericHealthValue) {
+          totalSteps += (data.value as NumericHealthValue).numericValue.toInt();
+        }
       }
+      
+      return totalSteps;
+    } catch (e) {
+      return 0;
     }
-    
-    return totalSteps;
   }
 
   static void startTracking(Function(int) onUpdate) {
@@ -57,4 +61,3 @@ class StepsTrackerMobile {
     }
   }
 }
-
