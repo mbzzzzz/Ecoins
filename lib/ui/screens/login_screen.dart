@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'dart:async';
@@ -50,32 +49,9 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _googleSignIn() async {
     setState(() => _isLoading = true);
     try {
-      const String webClientId = '83614823865-t2jfqplkhg4knkof06a860s187q5c0ag.apps.googleusercontent.com';
-      const String iosClientId = 'YOUR_IOS_CLIENT_ID.apps.googleusercontent.com';
-      
-      final GoogleSignIn googleSignIn = GoogleSignIn(
-        clientId: kIsWeb ? webClientId : iosClientId,
-        serverClientId: kIsWeb ? webClientId : null,
-      );
-      
-      final googleUser = await googleSignIn.signIn();
-      final googleAuth = await googleUser?.authentication;
-
-      if (googleAuth == null) {
-        throw 'Google Sign-In canceled.';
-      }
-
-      final accessToken = googleAuth.accessToken;
-      final idToken = googleAuth.idToken;
-
-      if (idToken == null) {
-        throw 'No ID Token found.';
-      }
-
-      await Supabase.instance.client.auth.signInWithIdToken(
-        provider: OAuthProvider.google,
-        idToken: idToken,
-        accessToken: accessToken,
+      await Supabase.instance.client.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: kIsWeb ? 'http://localhost:8080' : 'io.supabase.ecoins://login-callback',
       );
       // Navigation handled by auth listener
     } catch (error) {
