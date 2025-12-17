@@ -382,10 +382,14 @@ class _CreateBrandScreenState extends State<CreateBrandScreen> {
           final fileExt = _logoFile!.path.split('.').last;
           final fileName = '${user.id}/logo_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
           
-          await _supabase.storage.from('brand-logos').upload(
+          final bytes = await _logoFile!.readAsBytes();
+          await _supabase.storage.from('brand-logos').uploadBinary(
             fileName,
-            _logoFile!,
-            fileOptions: const FileOptions(upsert: true),
+            bytes,
+            fileOptions: const FileOptions(
+              contentType: 'image/jpeg',
+              upsert: true,
+            ),
           );
           logoUrl = _supabase.storage.from('brand-logos').getPublicUrl(fileName);
         } catch (e) {

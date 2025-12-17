@@ -78,7 +78,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         : [AppTheme.backgroundLight, const Color(0xFFF0F9FF)];
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
+      extendBodyBehindAppBar: false,
       appBar: AppBar(
         title: Text(
           'My Profile',
@@ -87,7 +87,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: Colors.transparent,
+        backgroundColor: bgColors[0].withOpacity(0.95),
         elevation: 0,
         centerTitle: true,
         iconTheme: IconThemeData(color: isDark ? Colors.white : AppTheme.textMain),
@@ -111,7 +111,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ? Center(child: CircularProgressIndicator(color: AppTheme.primaryGreen))
             : SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.only(top: 100, bottom: 40, left: 20, right: 20),
+                padding: const EdgeInsets.only(top: 20, bottom: 40, left: 20, right: 20),
                 child: Column(
                   children: [
                     // Profile Header Card
@@ -145,85 +145,88 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildProfileHeader(bool isDark) {
-    return Stack(
-      alignment: Alignment.center,
+    return Column(
       children: [
-        // Decorative Blur behind avatar
-        Container(
-          width: 120,
-          height: 120,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: AppTheme.primaryGreen.withOpacity(0.3),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.primaryGreen.withOpacity(0.2),
-                blurRadius: 40,
-                spreadRadius: 10,
-              ),
-            ],
-          ),
-        ),
-        Column(
+        // Avatar with Green Circle Border
+        Stack(
+          alignment: Alignment.center,
           children: [
-            // Avatar
+            // Green Circle Border (outer ring)
             Container(
+              width: 120,
+              height: 120,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 4),
+                border: Border.all(color: AppTheme.primaryGreen, width: 4),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryGreen.withOpacity(0.3),
+                    blurRadius: 20,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+            ),
+            // Avatar with White Border
+            Container(
+              width: 110,
+              height: 110,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 3),
                 boxShadow: const [
                   BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))
                 ],
               ),
               child: CircleAvatar(
-                radius: 50,
-                backgroundColor: isDark ? Colors.grey[800] : Colors.grey[100],
+                radius: 52,
+                backgroundColor: isDark ? Colors.grey[800] : Colors.grey[200],
                 backgroundImage: _profile?['avatar_url'] != null 
                     ? NetworkImage(_profile!['avatar_url']) 
                     : null,
                 child: _profile?['avatar_url'] == null 
-                    ? Icon(Icons.person, size: 50, color: isDark ? Colors.grey[400] : Colors.grey[400]) 
+                    ? Icon(Icons.person, size: 55, color: isDark ? Colors.grey[500] : Colors.grey[600]) 
                     : null,
               ),
             ),
-            const SizedBox(height: 16),
-            // Name
-            Text(
-              _profile?['display_name'] ?? _supabase.auth.currentUser?.email?.split('@')[0] ?? 'Eco Warrior',
-              style: GoogleFonts.outfit(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : AppTheme.textMain,
-              ),
-            ),
-            if (_profile?['bio'] != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                _profile!['bio'],
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  color: isDark ? Colors.grey[400] : AppTheme.textSub,
-                ),
-              ),
-            ],
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryGreen.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppTheme.primaryGreen.withOpacity(0.2)),
-              ),
-              child: Text(
-                'Member since Dec 2025',
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: AppTheme.primaryGreen,
-                ),
-              ),
-            ),
           ],
+        ),
+        const SizedBox(height: 16),
+        // Name
+        Text(
+          _profile?['display_name'] ?? _supabase.auth.currentUser?.email?.split('@')[0] ?? 'Eco Warrior',
+          style: GoogleFonts.outfit(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : AppTheme.textMain,
+          ),
+        ),
+        if (_profile?['bio'] != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            _profile!['bio'],
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: isDark ? Colors.grey[400] : AppTheme.textSub,
+            ),
+          ),
+        ],
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppTheme.primaryGreen.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppTheme.primaryGreen.withOpacity(0.2)),
+          ),
+          child: Text(
+            'Member since Dec 2025',
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.primaryGreen,
+            ),
+          ),
         ),
       ],
     );

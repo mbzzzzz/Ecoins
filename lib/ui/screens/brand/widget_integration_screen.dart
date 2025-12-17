@@ -1,9 +1,11 @@
 import 'dart:ui';
+import 'dart:convert';
 import 'package:ecoins/core/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:http/http.dart' as http;
 
 class WidgetIntegrationScreen extends StatefulWidget {
   const WidgetIntegrationScreen({super.key});
@@ -20,6 +22,8 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
   Color _selectedAccent = const Color(0xFF10B981);
   bool _showPercentage = true;
   bool _showRawValues = true;
+  double _realtimeCarbon = 0.0;
+  bool _isLoadingData = false;
 
   final Map<String, String> _variantNames = {
     'card': 'Card',
@@ -52,9 +56,40 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
           _apiKey = data['api_key'];
           _isLoading = false;
         });
+        // Fetch realtime data
+        if (_apiKey != null) {
+          _fetchRealtimeData();
+        }
       }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _fetchRealtimeData() async {
+    if (_apiKey == null) return;
+    
+    setState(() => _isLoadingData = true);
+    try {
+      final supabase = Supabase.instance.client;
+      final url = Uri.parse('${supabase.supabaseUrl}/functions/v1/brand-api?key=$_apiKey');
+      
+      final response = await http.get(url, headers: {
+        'Authorization': 'Bearer ${supabase.supabaseKey}',
+      });
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (mounted) {
+          setState(() {
+            _realtimeCarbon = (data['total_carbon_saved'] ?? 0.0).toDouble();
+            _isLoadingData = false;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching realtime data: $e');
+      if (mounted) setState(() => _isLoadingData = false);
     }
   }
 
@@ -63,7 +98,8 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
     // Convert color to hex string
     final accentHex = '#${_selectedAccent.value.toRadixString(16).substring(2).toUpperCase()}';
     
-    return '''<script src="https://gwmcmlpuqummaumjloci.supabase.co/functions/v1/serve-widget"
+    return '''<div id="eco-rewards-widget"></div>
+<script src="https://gwmcmlpuqummaumjloci.supabase.co/functions/v1/serve-widget"
         data-key="$_apiKey"
         data-variant="$_selectedVariant"
         data-accent="$accentHex"
@@ -90,7 +126,12 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
                  mainAxisSize: MainAxisSize.min,
                  children: [
                    Text('Eco Impact', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14, color: isDark ? Colors.white : Colors.black)),
-                   if (_showRawValues) Text('1,250 kg CO₂ saved', style: GoogleFonts.inter(fontSize: 12, color: isDark ? Colors.white70 : Colors.black54)),
+                   if (_showRawValues) Text(
+                     _isLoadingData 
+                         ? 'Loading...' 
+                         : '${_realtimeCarbon.toStringAsFixed(1)} kg CO₂ saved',
+                     style: GoogleFonts.inter(fontSize: 12, color: isDark ? Colors.white70 : Colors.black54),
+                   ),
                  ],
               ),
             ),
@@ -123,7 +164,12 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
           children: [
             Icon(Icons.eco, color: _selectedAccent, size: 16),
             const SizedBox(width: 4),
-            Text('1,250 kg CO₂', style: GoogleFonts.robotoMono(fontWeight: FontWeight.bold, fontSize: 14, color: isDark ? Colors.white : Colors.black)),
+            Text(
+              _isLoadingData 
+                  ? 'Loading...' 
+                  : '${_realtimeCarbon.toStringAsFixed(1)} kg CO₂',
+              style: GoogleFonts.robotoMono(fontWeight: FontWeight.bold, fontSize: 14, color: isDark ? Colors.white : Colors.black),
+            ),
           ],
         );
       case 'compact':
@@ -131,7 +177,12 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
            children: [
              Icon(Icons.eco, color: _selectedAccent, size: 24),
              const SizedBox(height: 4),
-             Text('1,250 kg', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: isDark ? Colors.white : Colors.black)),
+             Text(
+              _isLoadingData 
+                  ? 'Loading...' 
+                  : '${_realtimeCarbon.toStringAsFixed(1)} kg',
+              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: isDark ? Colors.white : Colors.black),
+            ),
              Text('Carbon Saved', style: GoogleFonts.inter(fontSize: 10, color: isDark ? Colors.white54 : Colors.black54)),
            ],
          );
@@ -156,7 +207,9 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
                     const SizedBox(width: 4),
                     if (_showRawValues)
                       Text(
-                        '1,250 kg',
+                        _isLoadingData 
+                            ? 'Loading...' 
+                            : '${_realtimeCarbon.toStringAsFixed(1)} kg',
                         style: GoogleFonts.robotoMono(
                           fontWeight: FontWeight.bold,
                           fontSize: 12,

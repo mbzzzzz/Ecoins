@@ -36,20 +36,72 @@ Deno.serve(async (req) => {
                 });
             }
 
-            // Calculate Stats (Mock calculation for now based on redemptions or offers)
-            // Real implementation would sum actual carbon saved from related activities
-            const { count } = await supabase
+            // Calculate real carbon saved from user activities related to this brand
+            // Method 1: Sum from redemptions (if carbon_value_snapshot exists)
+            const { data: offers } = await supabase
                 .from('offers')
-                .select('*', { count: 'exact', head: true })
+                .select('id')
                 .eq('brand_id', brand.id);
 
-            // Mocking impact: 100kg per offer for demo (or use 0 if no offers)
-            const totalCarbon = (count || 0) * 100 + 450.5; // Base mock data + dynamic count
+            let totalCarbon = 0;
+            
+            if (offers && offers.length > 0) {
+                const offerIds = offers.map(o => o.id);
+                
+                // Get redemptions and sum carbon_value_snapshot
+                const { data: redemptions } = await supabase
+                    .from('redemptions')
+                    .select('carbon_value_snapshot')
+                    .in('offer_id', offerIds);
+                
+                if (redemptions && redemptions.length > 0) {
+                    totalCarbon = redemptions.reduce((sum, r) => {
+                        const carbon = r.carbon_value_snapshot || 0;
+                        return sum + carbon;
+                    }, 0);
+                }
+            }
+            
+            // Method 2: If no redemptions with carbon, calculate from user activities
+            // that earned points used for this brand's offers
+            if (totalCarbon === 0) {
+                // Get all users who redeemed this brand's offers
+                if (offers && offers.length > 0) {
+                    const offerIds = offers.map(o => o.id);
+                    const { data: userRedemptions } = await supabase
+                        .from('redemptions')
+                        .select('user_id')
+                        .in('offer_id', offerIds);
+                    
+                    if (userRedemptions && userRedemptions.length > 0) {
+                        const userIds = [...new Set(userRedemptions.map(r => r.user_id))];
+                        
+                        // Sum carbon from activities of users who redeemed
+                        const { data: activities } = await supabase
+                            .from('activities')
+                            .select('carbon_saved')
+                            .in('user_id', userIds)
+                            .gte('logged_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()); // Last 90 days
+                        
+                        if (activities) {
+                            totalCarbon = activities.reduce((sum, a) => {
+                                return sum + (a.carbon_saved || 0);
+                            }, 0);
+                        }
+                    }
+                }
+            }
+            
+            // Fallback to brand's total_carbon_saved column if available
+            if (totalCarbon === 0 && brand.total_carbon_saved) {
+                totalCarbon = brand.total_carbon_saved;
+            }
 
             return new Response(JSON.stringify({
                 name: brand.name,
                 logo_url: brand.logo_url,
-                total_carbon_saved: totalCarbon
+                total_carbon_saved: totalCarbon,
+                updated_at: new Date().toISOString()
             }), {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });

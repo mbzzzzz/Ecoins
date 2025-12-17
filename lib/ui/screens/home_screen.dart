@@ -3,6 +3,7 @@ import 'package:ecoins/ui/widgets/activity_logger_modal.dart';
 import 'package:ecoins/ui/widgets/my_tree_widget.dart';
 import 'package:ecoins/ui/screens/leaderboard_screen.dart';
 import 'package:ecoins/ui/widgets/glass_container.dart';
+import 'package:ecoins/ui/widgets/steps_tracker_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -128,7 +129,7 @@ class _HomeScreenState extends State<HomeScreen> {
           
           SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20.0),
+              padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 180.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -234,6 +235,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
 
                   const SizedBox(height: 40),
+
+                  // Steps Tracker Widget
+                  const StepsTrackerWidget(),
+                  
+                  const SizedBox(height: 16),
 
                   // Daily Progress & Quick Action Grid
                   Row(

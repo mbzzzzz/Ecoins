@@ -7,6 +7,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:native_exif/native_exif.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'dart:io' show Platform;
 
 class ActivityLoggerModal extends StatefulWidget {
   final VoidCallback onLogged;
@@ -28,6 +30,10 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
   bool _isVerifying = false;
   Map<String, dynamic>? _verificationResult;
   String? _verificationError;
+  Map<String, dynamic>? _deviceInfo;
+  Map<String, dynamic>? _imageMetadata;
+  Map<String, dynamic>? _deviceLocation;
+  DateTime? _imageTimestamp;
 
   final Map<String, IconData> _categories = {
     'transport': Icons.directions_bus,
@@ -75,45 +81,139 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
         debugPrint('Location error: $e');
       }
 
-      // 3. Read Exif (Metadata)
+      // 3. Read Exif (Metadata) - Get device info, timestamp, location
       DateTime? imageDate;
+      Map<String, dynamic>? exifData;
+      Map<String, dynamic>? imageLocation;
+      
       if (!kIsWeb && !this.isEmpty(photo.path)) {
         try {
           final exif = await Exif.fromPath(photo.path);
           final dateString = await exif.getOriginalDate();
           if (dateString != null) {
-            imageDate = dateString; 
+            imageDate = dateString;
           }
+          
+          // Get GPS location from EXIF if available
+          try {
+            final lat = await exif.getLatitude();
+            final lon = await exif.getLongitude();
+            if (lat != null && lon != null) {
+              imageLocation = {'latitude': lat, 'longitude': lon};
+            }
+          } catch (e) {
+            debugPrint('EXIF GPS error: $e');
+          }
+          
+          // Get device model from EXIF
+          try {
+            final make = await exif.getAttribute('Make');
+            final model = await exif.getAttribute('Model');
+            exifData = {'make': make, 'model': model};
+          } catch (e) {
+            debugPrint('EXIF device error: $e');
+          }
+          
           await exif.close();
         } catch (e) {
-             debugPrint('Exif error: $e');
+          debugPrint('Exif error: $e');
         }
       }
 
-      // 4. Verification Logic
-      // Cross-check: Image must be recent (within 1 hour)
+      // 4. Get Device Info
+      Map<String, dynamic> deviceInfo = {};
+      try {
+        final deviceInfoPlugin = DeviceInfoPlugin();
+        if (Platform.isAndroid) {
+          final androidInfo = await deviceInfoPlugin.androidInfo;
+          deviceInfo = {
+            'platform': 'Android',
+            'manufacturer': androidInfo.manufacturer,
+            'model': androidInfo.model,
+            'device': androidInfo.device,
+            'brand': androidInfo.brand,
+            'version': androidInfo.version.release,
+          };
+        } else if (Platform.isIOS) {
+          final iosInfo = await deviceInfoPlugin.iosInfo;
+          deviceInfo = {
+            'platform': 'iOS',
+            'name': iosInfo.name,
+            'model': iosInfo.model,
+            'systemName': iosInfo.systemName,
+            'systemVersion': iosInfo.systemVersion,
+            'identifierForVendor': iosInfo.identifierForVendor,
+          };
+        }
+      } catch (e) {
+        debugPrint('Device info error: $e');
+      }
+
+      // 5. Verification Logic - Image must be recent (within 1 hour)
       if (imageDate != null) {
         final now = DateTime.now();
         final diff = now.difference(imageDate).inMinutes.abs();
         if (diff > 60) {
-           setState(() => _verificationError = 'Image is too old. Please take a new photo.');
-           _isVerifying = false;
-           return;
+          setState(() {
+            _verificationError = 'Image is too old (${diff.toInt()} minutes). Please take a new photo within the last hour.';
+            _isVerifying = false;
+          });
+          return;
         }
-        // TODO: Could also check location distance here if we had metadata location
+      } else {
+        // If no EXIF date, use current time (photo was just taken)
+        imageDate = DateTime.now();
       }
 
-      // 5. Call Groq AI Vision
+      // 6. Cross-verify location if both available
+      if (devicePosition != null && imageLocation != null) {
+        final distance = Geolocator.distanceBetween(
+          devicePosition.latitude,
+          devicePosition.longitude,
+          imageLocation['latitude']!,
+          imageLocation['longitude']!,
+        );
+        // Allow up to 100m difference (GPS accuracy)
+        if (distance > 100) {
+          setState(() {
+            _verificationError = 'Location mismatch detected. Please ensure GPS is enabled and take photo at the activity location.';
+            _isVerifying = false;
+          });
+          return;
+        }
+      }
+
+      // 7. Call Verification Edge Function
       if (_selectedCategory == null) {
-         setState(() => _verificationError = 'Select a category first.');
-         _isVerifying = false;
-         return;
+        setState(() {
+          _verificationError = 'Select a category first.';
+          _isVerifying = false;
+        });
+        return;
       }
 
-      final result = await _analyzeWithGroq(photo, _selectedCategory!);
+      final result = await _verifyWithEdgeFunction(
+        photo, 
+        _selectedCategory!,
+        deviceInfo,
+        devicePosition != null ? {
+          'latitude': devicePosition.latitude,
+          'longitude': devicePosition.longitude,
+          'accuracy': devicePosition.accuracy,
+        } : null,
+        imageDate?.toIso8601String(),
+      );
       
       setState(() {
         _verificationResult = result;
+        _deviceInfo = deviceInfo;
+        _imageMetadata = exifData;
+        _deviceLocation = devicePosition != null ? {
+          'latitude': devicePosition.latitude,
+          'longitude': devicePosition.longitude,
+          'accuracy': devicePosition.accuracy,
+        } : null;
+        _imageTimestamp = imageDate;
         // Auto-update slider if AI confident
         if (result['carbon_saved_estimate'] != null) {
            double kg = (result['carbon_saved_estimate'] as num).toDouble();
@@ -136,66 +236,51 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
 
   bool isEmpty(String? s) => s == null || s.isEmpty;
 
-  Future<Map<String, dynamic>> _analyzeWithGroq(XFile image, String category) async {
-    // API key should be stored in environment variables or Supabase secrets
-    // For now, using placeholder - replace with actual secure storage
-    const apiKey = String.fromEnvironment('GROQ_API_KEY', defaultValue: 'PLACEHOLDER_API_KEY');
-    
-    if (apiKey == 'PLACEHOLDER_API_KEY' || apiKey.startsWith('PLACEHOLDER')) {
-      await Future.delayed(const Duration(seconds: 2));
-      return {
-        'verified': true,
-        'confidence': 0.95,
-        'carbon_saved_estimate': 1.5,
-        'reasoning': 'Detected reusable bag. Mock mode.',
-        'description': 'Shopping with reusable bags'
-      };
-    }
-
-    // Read bytes (works on web and mobile for XFile)
+  Future<Map<String, dynamic>> _verifyWithEdgeFunction(
+    XFile image,
+    String category,
+    Map<String, dynamic> deviceInfo,
+    Map<String, dynamic>? location,
+    String? imageTimestamp,
+  ) async {
+    // Read image bytes and encode to base64
     final bytes = await image.readAsBytes();
     final base64Image = base64Encode(bytes);
 
-    final url = Uri.parse('https://api.groq.com/openai/v1/chat/completions');
+    // Get Supabase URL and anon key
+    final supabase = Supabase.instance.client;
+    final supabaseUrl = supabase.supabaseUrl;
+    
+    // Call edge function
+    final url = Uri.parse('$supabaseUrl/functions/v1/verify-activity');
     
     final response = await http.post(
       url,
       headers: {
-        'Authorization': 'Bearer $apiKey',
         'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${supabase.supabaseKey}',
       },
       body: jsonEncode({
-        'model': 'meta-llama/llama-4-scout-17b-16e-instruct',
-        'messages': [
-          {
-            'role': 'user',
-            'content': [
-              {
-                'type': 'text', 
-                'text': 'Verify if this image represents the eco-friendly activity category: "$category". '
-                        'Output JSON only with keys: verified (bool), confidence (0-1), carbon_saved_estimate (kg, conservative), reasoning (string), description (short summary).'
-              },
-              {
-                'type': 'image_url',
-                'image_url': {
-                  'url': 'data:image/jpeg;base64,$base64Image'
-                }
-              }
-            ]
-          }
-        ],
-        'temperature': 0.1,
-        'max_tokens': 300,
-        'response_format': {'type': 'json_object'} 
+        'imageBase64': base64Image,
+        'category': category,
+        'deviceInfo': deviceInfo,
+        'location': location,
+        'imageTimestamp': imageTimestamp,
       }),
     );
 
     if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      final content = data['choices'][0]['message']['content'];
-      return jsonDecode(content);
+      final result = jsonDecode(response.body);
+      
+      // Check if verification failed
+      if (result['error'] != null && result['verified'] == false) {
+        throw Exception(result['error'] ?? 'Verification failed');
+      }
+      
+      return result;
     } else {
-      throw Exception('Groq API Error: ${response.statusCode} - ${response.body}');
+      final errorData = jsonDecode(response.body);
+      throw Exception(errorData['error'] ?? 'Verification API Error: ${response.statusCode}');
     }
   }
 
@@ -469,6 +554,12 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
                           label: const Text('Verify with Camera'),
                         ),
                       ),
+                    // Show Verification Metadata
+                    if (_verificationResult != null && (_deviceInfo != null || _imageMetadata != null || _deviceLocation != null))
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: _buildVerificationMetadata(),
+                      ),
                   ],
                 ),
               ),
@@ -546,5 +637,157 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
         ),
       ),
     );
+  }
+
+  Widget _buildVerificationMetadata() {
+    return ExpansionTile(
+      tilePadding: EdgeInsets.zero,
+      childrenPadding: const EdgeInsets.only(top: 8),
+      leading: const Icon(Icons.info_outline, size: 18, color: Colors.blue),
+      title: const Text(
+        'Verification Metadata',
+        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.blue),
+      ),
+      children: [
+        // Device Information
+        if (_deviceInfo != null && _deviceInfo!.isNotEmpty) ...[
+          _buildMetadataSection(
+            'Device Information',
+            Icons.phone_android,
+            _deviceInfo!,
+          ),
+          const SizedBox(height: 8),
+        ],
+        
+        // Image Metadata (EXIF)
+        if (_imageMetadata != null && _imageMetadata!.isNotEmpty) ...[
+          _buildMetadataSection(
+            'Image Metadata (EXIF)',
+            Icons.image,
+            _imageMetadata!,
+          ),
+          const SizedBox(height: 8),
+        ],
+        
+        // Device Location
+        if (_deviceLocation != null) ...[
+          _buildMetadataSection(
+            'Device Location',
+            Icons.location_on,
+            {
+              'Latitude': _deviceLocation!['latitude']?.toStringAsFixed(6) ?? 'N/A',
+              'Longitude': _deviceLocation!['longitude']?.toStringAsFixed(6) ?? 'N/A',
+              'Accuracy': '${(_deviceLocation!['accuracy'] ?? 0).toStringAsFixed(1)}m',
+            },
+          ),
+          const SizedBox(height: 8),
+        ],
+        
+        // Image Timestamp
+        if (_imageTimestamp != null) ...[
+          _buildMetadataSection(
+            'Image Timestamp',
+            Icons.access_time,
+            {
+              'Date Taken': _imageTimestamp!.toLocal().toString().split('.')[0],
+              'Time Since': _getTimeSince(_imageTimestamp!),
+            },
+          ),
+          const SizedBox(height: 8),
+        ],
+        
+        // Verification Result Metadata
+        if (_verificationResult != null) ...[
+          _buildMetadataSection(
+            'Verification Result',
+            Icons.verified,
+            {
+              'Verified': _verificationResult!['verified'] == true ? 'Yes' : 'No',
+              'Confidence': _verificationResult!['confidence'] != null 
+                  ? '${((_verificationResult!['confidence'] as num) * 100).toStringAsFixed(1)}%'
+                  : 'N/A',
+              'Verification Time': _verificationResult!['verification_timestamp'] != null
+                  ? DateTime.parse(_verificationResult!['verification_timestamp']).toLocal().toString().split('.')[0]
+                  : 'N/A',
+            },
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildMetadataSection(String title, IconData icon, Map<String, dynamic> data) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 16, color: Colors.grey.shade700),
+              const SizedBox(width: 6),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ...data.entries.map((entry) => Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 100,
+                  child: Text(
+                    '${entry.key}:',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    entry.value.toString(),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.grey.shade800,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )),
+        ],
+      ),
+    );
+  }
+
+  String _getTimeSince(DateTime dateTime) {
+    final now = DateTime.now();
+    final diff = now.difference(dateTime);
+    
+    if (diff.inMinutes < 1) {
+      return 'Just now';
+    } else if (diff.inMinutes < 60) {
+      return '${diff.inMinutes} minute${diff.inMinutes == 1 ? '' : 's'} ago';
+    } else if (diff.inHours < 24) {
+      return '${diff.inHours} hour${diff.inHours == 1 ? '' : 's'} ago';
+    } else {
+      return '${diff.inDays} day${diff.inDays == 1 ? '' : 's'} ago';
+    }
   }
 }
