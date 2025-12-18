@@ -7,6 +7,7 @@ import 'package:ecoins/ui/widgets/steps_tracker_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:ecoins/ui/screens/edit_profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -133,7 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 180.0),
+              padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 100.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -162,24 +163,33 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ],
                       ),
-                      Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle, // Ensure circular shape
-                          border: Border.all(
-                              color: Colors.white.withOpacity(0.3),
-                              width: 2), // Outer border
-                        ),
-                        child: CircleAvatar(
-                          radius: 24,
-                          backgroundColor: Colors.white.withOpacity(
-                              0.2), // Semi-transparent Glassy background
-                          child: Text(
-                            _supabase.auth.currentUser?.email?[0]
-                                    .toUpperCase() ??
-                                'U',
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const EditProfileScreen()),
+                          );
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle, // Ensure circular shape
+                            border: Border.all(
+                                color: Colors.white.withOpacity(0.3),
+                                width: 2), // Outer border
+                          ),
+                          child: CircleAvatar(
+                            radius: 24,
+                            backgroundColor: Colors.white.withOpacity(
+                                0.2), // Semi-transparent Glassy background
+                            child: Text(
+                              _supabase.auth.currentUser?.email?[0]
+                                      .toUpperCase() ??
+                                  'U',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold),
+                            ),
                           ),
                         ),
                       ),
@@ -351,7 +361,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 12),
 
                   // Log Activity Button (Inline)
                   Center(

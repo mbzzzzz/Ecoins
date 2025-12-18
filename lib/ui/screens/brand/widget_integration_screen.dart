@@ -33,6 +33,7 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
     'minimal': 'Minimal',
     'badge': 'Badge',
     'progress': 'Progress',
+    'ring': 'Activity Ring',
   };
 
   @override
@@ -151,6 +152,52 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
                       fontSize: 18,
                       color: _selectedAccent)),
           ],
+        );
+
+      case 'ring':
+        return Center(
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 140,
+                height: 140,
+                child: CircularProgressIndicator(
+                  value: 0.65, // Preview value
+                  strokeWidth: 12,
+                  backgroundColor: _selectedAccent.withOpacity(0.15),
+                  valueColor: AlwaysStoppedAnimation<Color>(_selectedAccent),
+                  strokeCap: StrokeCap.round,
+                ),
+              ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                   Icon(Icons.eco, color: _selectedAccent, size: 24),
+                   const SizedBox(height: 4),
+                  Text(
+                    _isLoadingData 
+                       ? '...' 
+                       : '${_realtimeCarbon.toStringAsFixed(0)}kg',
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  Text(
+                    'SAVED',
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white54 : Colors.black54,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         );
       case 'badge':
         return Center(

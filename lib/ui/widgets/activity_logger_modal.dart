@@ -327,6 +327,24 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
         return;
       }
 
+      // Enforce Verification
+      if (_verificationResult == null ||
+          _verificationResult!['verified'] != true) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content:
+                  Text('Verification required. Please verify with AI first.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        setState(() {
+          _isSubmitting = false;
+        });
+        return;
+      }
+
       String description = _descriptionController.text.isEmpty
           ? 'Logged $_selectedCategory'
           : _descriptionController.text;

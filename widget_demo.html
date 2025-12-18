@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eco Rewards Widget Demo</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0fdf4;
+            margin: 0;
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #166534;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h2>My Sustainability Impact</h2>
+        <p>This box below demonstrates the embedded widget:</p>
+
+        <!-- Widget Code (Local Test Mode) -->
+        <div id="eco-rewards-widget"></div>
+
+        <!-- 
+            NOTE: In production, you would use this script tag:
+            <script src="https://gwmcmlpuqummaumjloci.supabase.co/functions/v1/serve-widget" ... ></script>
+            
+            For this local demo, we are embedding the script logic directly below to show it working without deployment.
+        -->
+        <script id="eco-widget-script" data-key="e4dc073d-5cc7-4825-a20e-c755cfea6d56" data-variant="ring"
+            data-accent="#10B981" data-font="Inter (Default)" data-theme="auto">
+                (function () {
+                    const scriptTag = document.getElementById('eco-widget-script'); // Use ID for local test
+                    const apiKey = scriptTag.getAttribute('data-key');
+                    const variant = scriptTag.getAttribute('data-variant') || 'card';
+                    const accent = scriptTag.getAttribute('data-accent') || '#10B981';
+
+                    if (!apiKey) {
+                        console.error('Eco Rewards Widget: Missing API Key');
+                        return;
+                    }
+
+                    const container = document.getElementById('eco-rewards-widget');
+                    if (!container) {
+                        console.error('Eco Rewards Widget: Container #eco-rewards-widget not found');
+                        return;
+                    }
+
+                    // REAL DATA FETCH
+                    fetch('https://gwmcmlpuqummaumjloci.supabase.co/functions/v1/brand-api?key=' + apiKey)
+                        .then(function (res) { return res.json(); })
+                        .then(function (data) {
+                            if (data.error) {
+                                container.innerHTML = '<div style="color:red; font-size:12px;">Error: ' + data.error + '</div>';
+                                return;
+                            }
+
+                            const carbonSaved = parseFloat(data.total_carbon_saved || 0);
+                            const carbonSavedFormatted = carbonSaved.toFixed(1);
+                            const treesEquivalent = Math.round(carbonSaved / 20);
+
+                            let html = '';
+                            switch (variant) {
+                                case 'ring':
+                                    html = '<div style="position: relative; width: 140px; height: 140px; display: flex; align-items: center; justify-content: center; font-family: sans-serif;">' +
+                                        '<svg width="140" height="140" viewBox="0 0 140 140" style="transform: rotate(-90deg);">' +
+                                        '<circle cx="70" cy="70" r="58" stroke="#e5e7eb" stroke-width="12" fill="none" />' +
+                                        '<circle cx="70" cy="70" r="58" stroke="' + accent + '" stroke-width="12" fill="none" stroke-dasharray="364" stroke-dashoffset="120" stroke-linecap="round" />' +
+                                        '</svg>' +
+                                        '<div style="position: absolute; text-align: center;">' +
+                                        '<div style="font-size: 24px; font-weight: 800; color: #111827;">' + carbonSavedFormatted + '</div>' +
+                                        '<div style="font-size: 10px; font-weight: 600; color: #6b7280; letter-spacing: 1px; margin-top: 2px;">KG CO2</div>' +
+                                        '</div>' +
+                                        '</div>';
+                                    break;
+                                case 'card':
+                                default:
+                                    html = '<div style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 20px; max-width: 320px; text-align: center; font-family: sans-serif;">' +
+                                        '<h3 style="font-size: 16px; font-weight: 600; color: #1f2937; margin: 0 0 4px 0;">' + data.name + '</h3>' +
+                                        '<p style="font-size: 12px; color: #6b7280; margin-bottom: 16px;">Sustainability Partner</p>' +
+                                        '<h2 style="font-size: 24px; font-weight: 800; color: ' + accent + '; margin: 0;">' + carbonSavedFormatted + ' kg</h2>' +
+                                        '<p style="font-size: 12px; color: #6b7280; margin-top: 4px;">CO₂ Saved by Community</p>' +
+                                        '<div style="margin-top: 12px; padding: 10px 14px; background: #f0fdf4; border-radius: 10px;">' +
+                                        '<div style="font-size: 11px; color: #15803d; font-weight: 600;">Equivalent to planting</div>' +
+                                        '<div style="font-size: 18px; font-weight: 800; color: ' + accent + '; margin: 4px 0;">' + treesEquivalent + ' trees</div>' +
+                                        '</div></div>';
+                                    break;
+                            }
+
+                            container.innerHTML = html;
+                        })
+                        .catch(function (err) {
+                            console.error(err);
+                            container.innerHTML = '<div style="color:red; font-size:12px;">Failed to load widget</div>';
+                        });
+                })();
+            </script>
+
+    </div>
+
+</body>
+
+</html>

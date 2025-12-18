@@ -302,8 +302,113 @@ class _BrandAuthScreenState extends State<BrandAuthScreen> {
                         ),
                 ),
               ),
+              
+              const SizedBox(height: 32),
+              
+              Row(
+                children: [
+                  Expanded(child: Divider(color: isDark ? Colors.grey[800] : Colors.grey[300])),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      'Or continue with',
+                      style: GoogleFonts.inter(
+                        color: isDark ? Colors.grey[500] : Colors.grey[500],
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  Expanded(child: Divider(color: isDark ? Colors.grey[800] : Colors.grey[300])),
+                ],
+              ),
+              
+              const SizedBox(height: 24),
+              
+              Row(
+                children: [
+                  Expanded(
+                    child: _SocialAuthButton(
+                      icon: 'assets/images/google_logo.png', // Ensure asset exists or use Icon
+                      label: 'Google', 
+                      isDark: isDark,
+                      onTap: () {
+                         // TODO: Implement Google Auth
+                         ScaffoldMessenger.of(context).showSnackBar(
+                           const SnackBar(content: Text('Google Auth coming soon')),
+                         );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _SocialAuthButton(
+                      icon: 'assets/images/apple_logo.png', // Ensure asset exists or use Icon
+                      label: 'Apple',
+                      isDark: isDark, 
+                       onTap: () {
+                         // TODO: Implement Apple Auth
+                         ScaffoldMessenger.of(context).showSnackBar(
+                           const SnackBar(content: Text('Apple Auth coming soon')),
+                         );
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SocialAuthButton extends StatelessWidget {
+  final String icon;
+  final String label;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _SocialAuthButton({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isDark ? Colors.grey[800]! : Colors.grey.shade300,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          color: isDark ? AppTheme.surfaceDark : Colors.white,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Using Icons for now to avoid asset issues if they don't exist
+            Icon(
+              label == 'Google' ? Icons.g_mobiledata : Icons.apple,
+              size: 24,
+              color: isDark ? Colors.white : Colors.black,
+            ), 
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white : AppTheme.textMain,
+              ),
+            ),
+          ],
         ),
       ),
     );

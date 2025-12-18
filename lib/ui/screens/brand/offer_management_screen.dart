@@ -58,6 +58,7 @@ class _OfferManagementScreenState extends State<OfferManagementScreen> {
       {String? id,
       required String title,
       required String description,
+      required String discountCode,
       required int cost}) async {
     if (_brandId == null) return;
     try {
@@ -67,6 +68,7 @@ class _OfferManagementScreenState extends State<OfferManagementScreen> {
           'title': title,
           'description': description,
           'points_cost': cost,
+          'discount_code': discountCode,
         }).eq('id', id);
       } else {
         // Create
@@ -75,6 +77,7 @@ class _OfferManagementScreenState extends State<OfferManagementScreen> {
           'title': title,
           'description': description,
           'points_cost': cost,
+          'discount_code': discountCode,
           'is_active': true,
         });
       }
@@ -92,6 +95,8 @@ class _OfferManagementScreenState extends State<OfferManagementScreen> {
         TextEditingController(text: offer != null ? offer['title'] : '');
     final descriptionController =
         TextEditingController(text: offer != null ? offer['description'] : '');
+    final discountCodeController =
+        TextEditingController(text: offer != null ? offer['discount_code'] : '');
     final costController = TextEditingController(
         text: offer != null ? offer['points_cost'].toString() : '500');
 
@@ -116,6 +121,13 @@ class _OfferManagementScreenState extends State<OfferManagementScreen> {
                 maxLines: 2),
             const SizedBox(height: 12),
             TextField(
+                controller: discountCodeController,
+                textCapitalization: TextCapitalization.characters,
+                decoration: const InputDecoration(
+                    labelText: 'Discount Code',
+                    hintText: 'e.g. ECO20')),
+            const SizedBox(height: 12),
+            TextField(
                 controller: costController,
                 decoration: const InputDecoration(labelText: 'Points Cost'),
                 keyboardType: TextInputType.number),
@@ -128,12 +140,18 @@ class _OfferManagementScreenState extends State<OfferManagementScreen> {
           ElevatedButton(
             onPressed: () {
               if (titleController.text.isNotEmpty &&
-                  descriptionController.text.isNotEmpty) {
+                  descriptionController.text.isNotEmpty &&
+                  discountCodeController.text.isNotEmpty) {
                 _saveOffer(
                     id: offer?['id'],
                     title: titleController.text,
                     description: descriptionController.text,
+                    discountCode: discountCodeController.text,
                     cost: int.tryParse(costController.text) ?? 500);
+              } else {
+                 ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please fill all fields')),
+                );
               }
             },
             style: ElevatedButton.styleFrom(

@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
   // Read the actual widget.js file content
   // For now, return a simple widget that loads from the public folder
   // In production, serve the actual widget.js file from storage or CDN
-  
+
   const widgetJs = `
 (function () {
     const scriptTag = document.currentScript;
@@ -46,6 +46,18 @@ Deno.serve(async (req) => {
             
             let html = '';
             switch(variant) {
+                case 'ring':
+                    html = '<div style="position: relative; width: 140px; height: 140px; display: flex; align-items: center; justify-content: center; font-family: sans-serif;">' +
+                        '<svg width="140" height="140" viewBox="0 0 140 140" style="transform: rotate(-90deg);">' +
+                        '<circle cx="70" cy="70" r="58" stroke="#e5e7eb" stroke-width="12" fill="none" />' +
+                        '<circle cx="70" cy="70" r="58" stroke="#10B981" stroke-width="12" fill="none" stroke-dasharray="364" stroke-dashoffset="120" stroke-linecap="round" />' +
+                        '</svg>' +
+                        '<div style="position: absolute; text-align: center;">' +
+                        '<div style="font-size: 24px; font-weight: 800; color: #111827;">' + carbonSavedFormatted + '</div>' +
+                        '<div style="font-size: 10px; font-weight: 600; color: #6b7280; letter-spacing: 1px; margin-top: 2px;">KG CO2</div>' +
+                        '</div>' +
+                        '</div>';
+                    break;
                 case 'card':
                 default:
                     html = '<div style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 20px; max-width: 320px; text-align: center;">' +
