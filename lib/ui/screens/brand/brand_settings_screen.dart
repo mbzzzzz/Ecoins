@@ -1,4 +1,5 @@
 import 'package:ecoins/core/theme.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -18,7 +19,7 @@ class _BrandSettingsScreenState extends State<BrandSettingsScreen> {
   final _websiteController = TextEditingController();
   bool _isLoading = true;
   String? _logoUrl;
-  File? _logoFile;
+  XFile? _logoFile;
   final SupabaseClient _supabase = Supabase.instance.client;
   String? _brandId;
 
@@ -67,7 +68,7 @@ class _BrandSettingsScreenState extends State<BrandSettingsScreen> {
 
     if (pickedFile != null) {
       setState(() {
-        _logoFile = File(pickedFile.path);
+        _logoFile = pickedFile;
       });
     }
   }
@@ -86,7 +87,7 @@ class _BrandSettingsScreenState extends State<BrandSettingsScreen> {
         final fileName =
             '$_brandId/logo_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
 
-        await _supabase.storage.from('brand-logos').upload(fileName, _logoFile!,
+        await _supabase.storage.from('brand-logos').uploadBinary(fileName, await _logoFile!.readAsBytes(),
             fileOptions: const FileOptions(upsert: true));
         logoUrl = _supabase.storage.from('brand-logos').getPublicUrl(fileName);
       }
@@ -154,7 +155,10 @@ class _BrandSettingsScreenState extends State<BrandSettingsScreen> {
                           Border.all(color: AppTheme.primaryGreen, width: 2),
                       image: _logoFile != null
                           ? DecorationImage(
-                              image: FileImage(_logoFile!), fit: BoxFit.cover)
+                              image: kIsWeb
+                                  ? NetworkImage(_logoFile!.path)
+                                  : FileImage(File(_logoFile!.path)) as ImageProvider,
+                              fit: BoxFit.cover)
                           : (_logoUrl != null
                               ? DecorationImage(
                                   image: NetworkImage(_logoUrl!),

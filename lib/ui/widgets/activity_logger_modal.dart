@@ -127,7 +127,14 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
       Map<String, dynamic> deviceInfo = {};
       try {
         final deviceInfoPlugin = DeviceInfoPlugin();
-        if (Platform.isAndroid) {
+        if (kIsWeb) {
+          final webInfo = await deviceInfoPlugin.webBrowserInfo;
+          deviceInfo = {
+            'platform': 'Web',
+            'browserName': webInfo.browserName.name,
+            'userAgent': webInfo.userAgent,
+          };
+        } else if (Platform.isAndroid) {
           final androidInfo = await deviceInfoPlugin.androidInfo;
           deviceInfo = {
             'platform': 'Android',

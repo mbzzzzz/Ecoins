@@ -13,23 +13,23 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _opacityAnimation;
+  late Animation<double> _pulseAnimation;
+  late Animation<double> _progressAnimation;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
+      duration: const Duration(seconds: 3),
     )..repeat(reverse: true);
 
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.02).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
 
-    _opacityAnimation = Tween<double>(begin: 0.2, end: 0.4).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    _progressAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
     );
 
     _redirect();
@@ -56,248 +56,271 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFF13ec13);
+    // Colors from CSS
+    const primary = Color(0xFF5F9E6E);
+    const primaryTeal = Color(0xFF6B9AC4);
+    const backgroundLight = Color(0xFFf6f8f6);
+    const backgroundDark = Color(0xFF102210);
+    const brandDark = Color(0xFF2D3748);
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final backgroundColor =
-        isDark ? const Color(0xFF102210) : const Color(0xFFf6f8f6);
-    final textColor = isDark ? Colors.white : const Color(0xFF0d1b0d);
+    final backgroundColor = isDark ? backgroundDark : backgroundLight;
+    final textColor = isDark ? Colors.white : brandDark;
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      body: Stack(
-        children: [
-          // overflow-hidden equivalent - relying on Stack clipping if contained,
-          // but Scaffold body clips by default usually.
-          // Background Shapes
-          Positioned(
-            top: -100,
-            left: -100,
-            child: Container(
-              width: 400,
-              height: 400,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: primaryColor.withOpacity(isDark ? 0.2 : 0.1),
-              ),
-            ),
-          ),
-          // We use simple gradients to mimic the blurs
-          Positioned(
-            top: -100,
-            left: -100,
-            child: Container(
-              width: 384,
-              height: 384,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [primaryColor.withOpacity(0.5), Colors.transparent],
-                  stops: const [0.0, 0.7],
+      body: SizedBox(
+        height: MediaQuery.of(context).size.height,
+        width: MediaQuery.of(context).size.width,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Background Blobs
+            // 1. Top-Left Blob
+            Positioned(
+              top: -96, // -24rem
+              left: -96,
+              child: Container(
+                width: 384, // 96rem
+                height: 384,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: primary.withOpacity(isDark ? 0.2 : 0.1),
                 ),
-              ),
-            ),
-          ),
-          Positioned(
-            top: MediaQuery.of(context).size.height / 2 - 100,
-            right: -128,
-            child: Container(
-              width: 320,
-              height: 320,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [primaryColor.withOpacity(0.4), Colors.transparent],
-                  stops: const [0.0, 0.7],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -100,
-            left: MediaQuery.of(context).size.width / 2 - 250,
-            child: Container(
-              width: 500,
-              height: 500,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  center: Alignment.bottomCenter,
-                  colors: [
-                    primaryColor.withOpacity(isDark ? 0.1 : 0.05),
-                    Colors.transparent
-                  ],
-                  stops: const [0.0, 0.7],
-                ),
-              ),
-            ),
-          ),
-
-          // Main Content
-          SafeArea(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Spacer(),
-
-                // Central Brand Area
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AnimatedBuilder(
-                      animation: _controller,
-                      builder: (context, child) {
-                        return Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            // Outer Glow Ring
-                            Transform.scale(
-                              scale: _scaleAnimation.value,
-                              child: Container(
-                                width: 140,
-                                height: 140,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: primaryColor
-                                      .withOpacity(_opacityAnimation.value),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: primaryColor.withOpacity(0.5),
-                                      blurRadius: 20,
-                                      spreadRadius: 2,
-                                    )
-                                  ],
-                                ),
-                              ),
-                            ),
-                            // Logo Circle
-                            Container(
-                              width: 128,
-                              height: 128, // w-32 h-32
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? const Color(0xFF1a2e1a)
-                                    : Colors.white,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                    color: primaryColor.withOpacity(0.1)),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: primaryColor.withOpacity(0.2),
-                                    blurRadius: 25,
-                                    offset: const Offset(0, 4),
-                                  )
-                                ],
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(20.0),
-                                child: Image.asset(
-                                  'assets/images/logo.png',
-                                  fit: BoxFit.contain,
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 32),
-                    Text(
-                      'Ecoins',
-                      style: GoogleFonts.outfit(
-                        // Using Outfit as closest to Spline Sans
-                        fontSize: 48,
-                        fontWeight: FontWeight.bold,
-                        color: textColor,
-                        letterSpacing: -1,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Sustainable Rewards',
-                      style: GoogleFonts.outfit(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                        color: textColor.withOpacity(0.7),
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
-
-                const Spacer(),
-
-                // Bottom Area: Loading & Tagline
-                Padding(
-                  padding:
-                      const EdgeInsets.only(bottom: 48.0, left: 24, right: 24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Loading Indicator
-                      SizedBox(
-                        width: double.infinity,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding:
-                                  const EdgeInsets.only(bottom: 8.0, left: 4),
-                              child: Text(
-                                'LOADING ASSETS',
-                                style: GoogleFonts.inter(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: primaryColor,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                            ),
-                            // Custom Progress Bar
-                            Container(
-                              height: 6,
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? Colors.white.withOpacity(0.1)
-                                    : Colors.grey[200],
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: LayoutBuilder(
-                                builder: (context, constraints) {
-                                  return Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: Container(
-                                      width: constraints.maxWidth * 0.45,
-                                      height: double.infinity,
-                                      decoration: BoxDecoration(
-                                        color: primaryColor,
-                                        borderRadius:
-                                            BorderRadius.circular(999),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        'Earn while you save the planet',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          color: textColor.withOpacity(0.4),
-                        ),
-                      ),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: primary.withOpacity(isDark ? 0.2 : 0.1),
+                        blurRadius: 100,
+                        spreadRadius: 50,
+                      )
                     ],
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
-        ],
+            // 2. Middle-Right Blob
+            Positioned(
+              top: MediaQuery.of(context).size.height / 2 - 160,
+              right: -128,
+              child: Container(
+                width: 320,
+                height: 320,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: primaryTeal.withOpacity(isDark ? 0.1 : 0.15),
+                ),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: primaryTeal.withOpacity(isDark ? 0.1 : 0.15),
+                        blurRadius: 80,
+                        spreadRadius: 40,
+                      )
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // 3. Bottom-Center Blob
+            Positioned(
+              bottom: -96,
+              left: MediaQuery.of(context).size.width / 2 - 250,
+              child: Container(
+                width: 500, // 500px in CSS
+                height: 500,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      primary.withOpacity(isDark ? 0.1 : 0.05),
+                      Colors.transparent
+                    ],
+                  ),
+                ),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: primary.withOpacity(isDark ? 0.1 : 0.05),
+                        blurRadius: 100,
+                        spreadRadius: 20,
+                      )
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Main Content
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  children: [
+                    const Spacer(flex: 1),
+
+                    // Center Content
+                    Expanded(
+                      flex: 2,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          AnimatedBuilder(
+                            animation: _pulseAnimation,
+                            builder: (context, child) {
+                              return Transform.scale(
+                                scale: _pulseAnimation.value,
+                                child: Opacity(
+                                  opacity: isDark
+                                      ? 0.95
+                                      : 1.0, // Slight opacity animation handled by controller if needed, but fixed here
+                                  child: child,
+                                ),
+                              );
+                            },
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Logo Image
+                                Image.asset(
+                                  'assets/images/icon.png',
+                                  width: 120, // Adjust size as needed
+                                  height: 120,
+                                ),
+                                const SizedBox(height: 16),
+                                // Gradient Text Title
+                                ShaderMask(
+                                  shaderCallback: (bounds) =>
+                                      const LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      primary,
+                                      primaryTeal,
+                                      primary,
+                                    ],
+                                  ).createShader(bounds),
+                                  child: Text(
+                                    'Ecoins',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 64, // ~7xl/8xl
+                                      fontWeight: FontWeight.w900,
+                                      height: 1.0,
+                                      color: Colors.white, // Required for mask
+                                      letterSpacing: -2,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Eco-Rewards & Redemptions',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
+                                    color: textColor.withOpacity(0.7),
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Bottom Content
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        SizedBox(
+                          width: double.infinity,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 8.0, left: 4),
+                                child: Text(
+                                  'LOADING ASSETS',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: primary,
+                                    letterSpacing: 1.5, // tracking-widest
+                                  ),
+                                ),
+                              ),
+                              // Loading Bar
+                              Container(
+                                height: 6, // h-1.5
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? Colors.white.withOpacity(0.1)
+                                      : Colors.grey[200],
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    return Stack(
+                                      children: [
+                                        // Animated Bar
+                                        // Simple pulse animation for width or position
+                                        // The CSS uses a width of 45% and animate-pulse
+                                        // We'll mimic a static 45% bar with gradient for now
+                                        AnimatedBuilder(
+                                          animation: _progressAnimation,
+                                          builder: (context, child) {
+                                            return Container(
+                                              width: constraints.maxWidth *
+                                                  _progressAnimation.value,
+                                              height: double.infinity,
+                                              decoration: BoxDecoration(
+                                                borderRadius:
+                                                    BorderRadius.circular(999),
+                                                gradient: const LinearGradient(
+                                                  colors: [
+                                                    primary,
+                                                    primaryTeal
+                                                  ],
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          'Earn while you save the planet',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: textColor.withOpacity(0.4),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

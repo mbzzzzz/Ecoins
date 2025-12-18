@@ -111,6 +111,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         'display_name': _nameController.text.trim(),
         'bio': _bioController.text.trim(),
         'avatar_url': avatarUrl,
+        'email': _supabase.auth.currentUser!.email,
         'updated_at': DateTime.now().toIso8601String(),
       });
 

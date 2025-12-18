@@ -70,7 +70,12 @@ class RoleSelectScreen extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.eco, color: Color(0xFF10b77f), size: 32),
+                      const Image(
+                        image: AssetImage('assets/images/APP icon.png'),
+                        width: 32,
+                        height: 32,
+                        fit: BoxFit.contain,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'Ecoins',

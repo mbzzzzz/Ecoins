@@ -48,17 +48,10 @@ class _BrandAuthScreenState extends State<BrandAuthScreen> {
           final role = profileToCheck?['role'] as String? ?? 'user';
 
           if (role == 'user') {
-            await _supabase.auth.signOut();
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                      'This email is registered as an Individual User. Brand access denied.'),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            }
-            return;
+            // Auto-upgrade user to brand_admin for seamless onboarding
+            await _supabase
+                .from('profiles')
+                .update({'role': 'brand_admin'}).eq('id', user.id);
           }
 
           // Role is valid (brand_admin or maybe null/admin), check brand existence
@@ -70,10 +63,10 @@ class _BrandAuthScreenState extends State<BrandAuthScreen> {
 
           if (brandData == null) {
             // No brand found, stay on dashboard which will show onboarding
-            if (mounted) context.go('/brand-portal');
+            if (mounted) context.go('/brand-dashboard');
           } else {
             // Brand exists, go to dashboard
-            if (mounted) context.go('/brand-portal');
+            if (mounted) context.go('/brand-dashboard');
           }
         }
       } else {
@@ -88,7 +81,7 @@ class _BrandAuthScreenState extends State<BrandAuthScreen> {
 
         // After signup, redirect to brand portal for onboarding
         if (!mounted) return;
-        context.go('/brand-portal');
+        context.go('/brand-dashboard');
       }
     } on AuthException catch (e) {
       if (mounted) {

@@ -1,4 +1,5 @@
 import 'package:ecoins/core/theme.dart';
+import 'package:flutter/foundation.dart';
 import 'package:ecoins/ui/screens/brand/offer_management_screen.dart';
 import 'package:ecoins/ui/screens/brand/widget_integration_screen.dart';
 import 'package:ecoins/ui/screens/brand/brand_settings_screen.dart';
@@ -500,7 +501,7 @@ class _CreateBrandScreenState extends State<CreateBrandScreen> {
   final _nameController = TextEditingController();
   final _websiteController = TextEditingController();
   bool _isLoading = false;
-  File? _logoFile;
+  XFile? _logoFile;
   String? _logoPreview;
   bool _isDragging = false;
   final _supabase = Supabase.instance.client;
@@ -519,7 +520,7 @@ class _CreateBrandScreenState extends State<CreateBrandScreen> {
           await _imagePicker.pickImage(source: ImageSource.gallery);
       if (pickedFile != null) {
         setState(() {
-          _logoFile = File(pickedFile.path);
+          _logoFile = pickedFile;
           _logoPreview = pickedFile.path;
         });
       }
@@ -698,12 +699,19 @@ class _CreateBrandScreenState extends State<CreateBrandScreen> {
                           children: [
                             ClipRRect(
                               borderRadius: BorderRadius.circular(16),
-                              child: Image.file(
-                                File(_logoPreview!),
-                                width: double.infinity,
-                                height: double.infinity,
-                                fit: BoxFit.cover,
-                              ),
+                              child: kIsWeb
+                                  ? Image.network(
+                                      _logoPreview!,
+                                      width: double.infinity,
+                                      height: double.infinity,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Image.file(
+                                      File(_logoPreview!),
+                                      width: double.infinity,
+                                      height: double.infinity,
+                                      fit: BoxFit.cover,
+                                    ),
                             ),
                             Positioned(
                               top: 8,
