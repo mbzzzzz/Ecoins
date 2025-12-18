@@ -8,9 +8,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'dart:async';
 
 class LoginScreen extends StatefulWidget {
-  final bool isBrand;
-
-  const LoginScreen({super.key, this.isBrand = false});
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -20,29 +18,69 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  
+
   bool _isLoading = false;
   bool _isSignUp = false;
   bool _rememberMe = false;
   bool _isPasswordVisible = false;
-  
+
   late final StreamSubscription<AuthState> _authStateSubscription;
 
   @override
   void initState() {
     super.initState();
-    _authStateSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    _authStateSubscription =
+        Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       if (data.session != null && mounted) {
-        _navigateHome();
+        _checkRoleAndNavigate();
       }
     });
   }
 
-  void _navigateHome() {
-    if (widget.isBrand) {
-      context.go('/brand-dashboard');
-    } else {
-      context.go('/home');
+  Future<void> _checkRoleAndNavigate() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    // Prevent double navigation if already loading or disposed
+    // (Managed by go_router effectively, but we add a small delay or check mounted)
+
+    try {
+      final data = await Supabase.instance.client
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      if (!mounted) return;
+
+      final role = data?['role'] as String? ?? 'user';
+
+      if (role == 'user') {
+        context.go('/home');
+      } else {
+        // Brand trying to log in as user
+        await Supabase.instance.client.auth.signOut();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content:
+                  Text('This account is a Brand. Please use the Brand Portal.'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Role check error: $e');
+      // If error, safeguard by staying or letting through?
+      // For now, let through as user if unsure, but usually this means network error.
+      // Better to show error.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error verifying account credentials.')),
+        );
+      }
     }
   }
 
@@ -51,14 +89,18 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       await Supabase.instance.client.auth.signInWithOAuth(
         OAuthProvider.google,
-        redirectTo: kIsWeb ? 'http://localhost:8080' : 'io.supabase.ecoins://login-callback',
+        redirectTo: kIsWeb
+            ? 'http://localhost:8080'
+            : 'io.supabase.ecoins://login-callback',
       );
       // Navigation handled by auth listener
     } catch (error) {
-       debugPrint('Google Sign In Error: $error');
-       if (mounted) {
+      debugPrint('Google Sign In Error: $error');
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Google Sign-In failed'), backgroundColor: Colors.red),
+          const SnackBar(
+              content: Text('Google Sign-In failed'),
+              backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -76,7 +118,9 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('GitHub Sign In Error: $error'), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text('GitHub Sign In Error: $error'),
+              backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -86,7 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     setState(() => _isLoading = true);
     try {
       final email = _emailController.text.trim();
@@ -119,7 +163,9 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Unexpected error occurred'), backgroundColor: Colors.red),
+          const SnackBar(
+              content: Text('Unexpected error occurred'),
+              backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -138,10 +184,12 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final backgroundColor = isDark ? const Color(0xFF10221c) : Colors.white; 
+    final backgroundColor = isDark ? const Color(0xFF10221c) : Colors.white;
     final textColor = isDark ? Colors.white : const Color(0xFF111827);
-    final subTextColor = isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280);
-    final borderColor = isDark ? const Color(0xFF374151) : const Color(0xFFD1D5DB);
+    final subTextColor =
+        isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280);
+    final borderColor =
+        isDark ? const Color(0xFF374151) : const Color(0xFFD1D5DB);
     final inputFillColor = isDark ? const Color(0xFF1f2937) : Colors.white;
 
     final Size screenSize = MediaQuery.of(context).size;
@@ -206,7 +254,8 @@ class _LoginScreenState extends State<LoginScreen> {
             child: SafeArea(
               child: Center(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 420),
                     child: Form(
@@ -216,10 +265,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           // Mobile-only logo/header logic could go here, but keeping it clean
-                          
+
                           // Header
                           Text(
-                            _isSignUp ? 'Create an account' : (widget.isBrand ? 'Brand Access' : 'Welcome back'),
+                            _isSignUp ? 'Create an account' : 'Welcome back',
                             style: GoogleFonts.inter(
                               fontSize: 30,
                               fontWeight: FontWeight.bold,
@@ -229,7 +278,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            _isSignUp ? 'Start your eco-journey today.' : 'Please enter your details to sign in.',
+                            _isSignUp
+                                ? 'Start your eco-journey today.'
+                                : 'Please enter your details to sign in.',
                             style: GoogleFonts.inter(
                               fontSize: 16,
                               color: subTextColor,
@@ -238,39 +289,42 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(height: 32),
 
                           // Social Logins
-                          if (!widget.isBrand) ...[
-                            _SocialButton(
-                              icon: Icons.g_mobiledata, // Or custom Google SVG
-                              label: 'Continue with Google',
-                              onPressed: _googleSignIn,
-                              isDark: isDark,
-                              textColor: textColor,
-                              borderColor: borderColor,
-                            ),
-                            const SizedBox(height: 12),
-                            _SocialButton(
-                              icon: FontAwesomeIcons.github,
-                              label: 'Continue with GitHub',
-                              onPressed: _githubSignIn,
-                              isDark: isDark,
-                              textColor: textColor,
-                              borderColor: borderColor,
-                              iconSize: 20,
-                            ),
-                            const SizedBox(height: 24),
-                            
-                            Row(
-                              children: [
-                                Expanded(child: Divider(color: borderColor)),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                                  child: Text('OR', style: GoogleFonts.inter(fontSize: 12, color: subTextColor, fontWeight: FontWeight.w500)),
-                                ),
-                                Expanded(child: Divider(color: borderColor)),
-                              ],
-                            ),
-                            const SizedBox(height: 24),
-                          ],
+                          _SocialButton(
+                            icon: Icons.g_mobiledata, // Or custom Google SVG
+                            label: 'Continue with Google',
+                            onPressed: _googleSignIn,
+                            isDark: isDark,
+                            textColor: textColor,
+                            borderColor: borderColor,
+                          ),
+                          const SizedBox(height: 12),
+                          _SocialButton(
+                            icon: FontAwesomeIcons.github,
+                            label: 'Continue with GitHub',
+                            onPressed: _githubSignIn,
+                            isDark: isDark,
+                            textColor: textColor,
+                            borderColor: borderColor,
+                            iconSize: 20,
+                          ),
+                          const SizedBox(height: 24),
+
+                          Row(
+                            children: [
+                              Expanded(child: Divider(color: borderColor)),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 16),
+                                child: Text('OR',
+                                    style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        color: subTextColor,
+                                        fontWeight: FontWeight.w500)),
+                              ),
+                              Expanded(child: Divider(color: borderColor)),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
 
                           // Inputs
                           _Label(text: 'Email', color: textColor),
@@ -278,19 +332,30 @@ class _LoginScreenState extends State<LoginScreen> {
                           TextFormField(
                             controller: _emailController,
                             style: GoogleFonts.inter(color: textColor),
-                            validator: (val) => (val == null || val.isEmpty || !val.contains('@')) ? 'Invalid email' : null,
-                            decoration: _inputDecoration(hint: 'Enter your email', isDark: isDark, borderColor: borderColor, fillColor: inputFillColor, subTextColor: subTextColor),
+                            validator: (val) => (val == null ||
+                                    val.isEmpty ||
+                                    !val.contains('@'))
+                                ? 'Invalid email'
+                                : null,
+                            decoration: _inputDecoration(
+                                hint: 'Enter your email',
+                                isDark: isDark,
+                                borderColor: borderColor,
+                                fillColor: inputFillColor,
+                                subTextColor: subTextColor),
                           ),
-                          
+
                           const SizedBox(height: 20),
-                          
+
                           _Label(text: 'Password', color: textColor),
                           const SizedBox(height: 8),
                           TextFormField(
                             controller: _passwordController,
                             style: GoogleFonts.inter(color: textColor),
                             obscureText: !_isPasswordVisible,
-                            validator: (val) => (val == null || val.length < 6) ? 'Min 6 chars' : null,
+                            validator: (val) => (val == null || val.length < 6)
+                                ? 'Min 6 chars'
+                                : null,
                             decoration: _inputDecoration(
                               hint: '••••••••',
                               isDark: isDark,
@@ -300,11 +365,14 @@ class _LoginScreenState extends State<LoginScreen> {
                             ).copyWith(
                               suffixIcon: IconButton(
                                 icon: Icon(
-                                  _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                                  _isPasswordVisible
+                                      ? Icons.visibility
+                                      : Icons.visibility_off,
                                   color: subTextColor,
                                   size: 20,
                                 ),
-                                onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+                                onPressed: () => setState(() =>
+                                    _isPasswordVisible = !_isPasswordVisible),
                               ),
                             ),
                           ),
@@ -324,22 +392,30 @@ class _LoginScreenState extends State<LoginScreen> {
                                       value: _rememberMe,
                                       activeColor: const Color(0xFF10b77f),
                                       side: BorderSide(color: subTextColor),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                                      onChanged: (val) => setState(() => _rememberMe = val ?? false),
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(4)),
+                                      onChanged: (val) => setState(
+                                          () => _rememberMe = val ?? false),
                                     ),
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
                                     'Remember me',
-                                    style: GoogleFonts.inter(fontSize: 14, color: subTextColor),
+                                    style: GoogleFonts.inter(
+                                        fontSize: 14, color: subTextColor),
                                   ),
                                 ],
                               ),
-                              
+
                               if (!_isSignUp)
                                 TextButton(
                                   onPressed: () {}, // TODO: Forgot Password
-                                  style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                                  style: TextButton.styleFrom(
+                                      padding: EdgeInsets.zero,
+                                      minimumSize: Size.zero,
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap),
                                   child: Text(
                                     'Forgot password',
                                     style: GoogleFonts.inter(
@@ -361,14 +437,21 @@ class _LoginScreenState extends State<LoginScreen> {
                               foregroundColor: const Color(0xFF11221c),
                               elevation: 0,
                               padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8)),
                             ),
-                            child: _isLoading 
-                              ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                              : Text(
-                                  _isSignUp ? 'Sign up' : 'Log in',
-                                  style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600),
-                                ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                        color: Colors.white, strokeWidth: 2))
+                                : Text(
+                                    _isSignUp ? 'Sign up' : 'Log in',
+                                    style: GoogleFonts.inter(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600),
+                                  ),
                           ),
 
                           const SizedBox(height: 24),
@@ -377,15 +460,19 @@ class _LoginScreenState extends State<LoginScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                _isSignUp ? 'Already have an account? ' : "Don't have an account? ",
-                                style: GoogleFonts.inter(color: subTextColor, fontSize: 14),
+                                _isSignUp
+                                    ? 'Already have an account? '
+                                    : "Don't have an account? ",
+                                style: GoogleFonts.inter(
+                                    color: subTextColor, fontSize: 14),
                               ),
                               GestureDetector(
-                                onTap: () => setState(() => _isSignUp = !_isSignUp),
+                                onTap: () =>
+                                    setState(() => _isSignUp = !_isSignUp),
                                 child: Text(
                                   _isSignUp ? 'Log in' : 'Sign up',
                                   style: GoogleFonts.inter(
-                                    color: const Color(0xFF10b77f), 
+                                    color: const Color(0xFF10b77f),
                                     fontWeight: FontWeight.w600,
                                     fontSize: 14,
                                   ),

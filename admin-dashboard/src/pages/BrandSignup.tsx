@@ -88,16 +88,27 @@ export default function BrandSignup() {
             if (authError) throw authError
             if (!authData.user) throw new Error('No user created')
 
-            // 3. Create Brand
+            // 3. Create Brand (associate with this auth user as owner)
+            const brandPayload = {
+                owner_user_id: authData.user.id,
+                name: brandName,
+                logo_url: publicLogoUrl,
+                website_url: null as string | null,
+            }
+            console.log('Creating brand with payload', brandPayload)
+
             const { data: brandData, error: brandError } = await supabase
                 .from('brands')
-                .insert([{ name: brandName, logo_url: publicLogoUrl }])
+                .insert([brandPayload])
                 .select()
                 .single()
 
-            if (brandError) throw brandError
+            if (brandError) {
+                console.error('Brand creation error', brandError)
+                throw brandError
+            }
 
-            // 4. Link Profile
+            // 4. Link Profile (optional, if profiles.brand_id exists)
             const { error: profileError } = await supabase
                 .from('profiles')
                 .update({ brand_id: brandData.id })

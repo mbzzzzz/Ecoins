@@ -60,7 +60,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppTheme.backgroundDark : AppTheme.backgroundLight,
+      backgroundColor:
+          isDark ? AppTheme.backgroundDark : AppTheme.backgroundLight,
       body: SafeArea(
         child: Column(
           children: [
@@ -123,13 +124,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primaryGreen,
                       foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 32, vertical: 16),
                     ),
                     child: _isLoading
                         ? const SizedBox(
                             width: 20,
                             height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.black),
                           )
                         : Text(
                             _currentStep < 2 ? 'Next' : 'Get Started',
@@ -158,7 +161,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               color: AppTheme.primaryGreen.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.eco, color: AppTheme.primaryGreen, size: 64),
+            child:
+                const Icon(Icons.eco, color: AppTheme.primaryGreen, size: 64),
           ),
           const SizedBox(height: 32),
           Text(
@@ -242,7 +246,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               color: AppTheme.primaryGreen.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.check_circle, color: AppTheme.primaryGreen, size: 64),
+            child: const Icon(Icons.check_circle,
+                color: AppTheme.primaryGreen, size: 64),
           ),
           const SizedBox(height: 32),
           Text(
@@ -268,4 +273,3 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 }
-

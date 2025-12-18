@@ -44,7 +44,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   Future<void> _markAsRead(String id) async {
     try {
-      await _supabase.from('notifications').update({'is_read': true}).eq('id', id);
+      await _supabase
+          .from('notifications')
+          .update({'is_read': true}).eq('id', id);
       setState(() {
         final index = _notifications.indexWhere((n) => n['id'] == id);
         if (index != -1) {
@@ -80,7 +82,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                       ),
                       title: Text(
                         note['title'],
-                        style: TextStyle(fontWeight: isRead ? FontWeight.normal : FontWeight.bold),
+                        style: TextStyle(
+                            fontWeight:
+                                isRead ? FontWeight.normal : FontWeight.bold),
                       ),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -89,7 +93,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           const SizedBox(height: 4),
                           Text(
                             timeago_lib.format(created),
-                            style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+                            style: TextStyle(
+                                fontSize: 10, color: Colors.grey.shade500),
                           ),
                         ],
                       ),
@@ -102,10 +107,14 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   IconData _getIcon(String? type) {
     switch (type) {
-      case 'friend_request': return Icons.person_add;
-      case 'challenge': return Icons.emoji_events;
-      case 'reward': return Icons.card_giftcard;
-      default: return Icons.notifications;
+      case 'friend_request':
+        return Icons.person_add;
+      case 'challenge':
+        return Icons.emoji_events;
+      case 'reward':
+        return Icons.card_giftcard;
+      default:
+        return Icons.notifications;
     }
   }
 }

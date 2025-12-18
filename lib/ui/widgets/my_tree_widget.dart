@@ -5,7 +5,7 @@ class MyTreeWidget extends StatefulWidget {
   final double size;
 
   const MyTreeWidget({
-    super.key, 
+    super.key,
     required this.points,
     this.size = 200,
   });
@@ -14,10 +14,11 @@ class MyTreeWidget extends StatefulWidget {
   State<MyTreeWidget> createState() => _MyTreeWidgetState();
 }
 
-class _MyTreeWidgetState extends State<MyTreeWidget> with SingleTickerProviderStateMixin {
+class _MyTreeWidgetState extends State<MyTreeWidget>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
-  
+
   @override
   void initState() {
     super.initState();
@@ -25,10 +26,9 @@ class _MyTreeWidgetState extends State<MyTreeWidget> with SingleTickerProviderSt
       vsync: this,
       duration: const Duration(seconds: 4),
     )..repeat(reverse: true); // Breathing effect
-    
-    _scaleAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut)
-    );
+
+    _scaleAnimation = Tween<double>(begin: 0.95, end: 1.05)
+        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -38,11 +38,18 @@ class _MyTreeWidgetState extends State<MyTreeWidget> with SingleTickerProviderSt
   }
 
   String _getAssetForStage() {
-    if (widget.points < 100) return 'assets/images/tree_stage_1.png';
-    if (widget.points < 300) return 'assets/images/tree_stage_2.png';
-    if (widget.points < 800) return 'assets/images/tree_stage_3.png';
-    if (widget.points < 2000) return 'assets/images/tree_stage_4.png';
-    return 'assets/images/tree_stage_5.png';
+    if (widget.points < 500) return 'assets/images/tree_stage_1.png';
+    if (widget.points < 1500) return 'assets/images/tree_stage_2.png';
+    if (widget.points < 3500) return 'assets/images/tree_stage_3.png';
+    if (widget.points < 7500) return 'assets/images/tree_stage_4.png';
+    if (widget.points < 15000) return 'assets/images/tree_stage_5.png';
+    if (widget.points < 30000) return 'assets/images/tree_stage_6.png';
+    if (widget.points < 60000) return 'assets/images/tree_stage_7.png';
+    if (widget.points < 120000) return 'assets/images/tree_stage_8.png';
+    if (widget.points < 250000) return 'assets/images/tree_stage_9.png';
+    if (widget.points < 500000) return 'assets/images/tree_stage_10.png';
+    if (widget.points < 1000000) return 'assets/images/tree_stage_11.png';
+    return 'assets/images/tree_stage_12.png';
   }
 
   @override

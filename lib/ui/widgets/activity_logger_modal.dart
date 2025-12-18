@@ -24,7 +24,7 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
   final _descriptionController = TextEditingController();
   double _sliderValue = 1.0;
   bool _isSubmitting = false;
-  
+
   // Verification State
   XFile? _evidenceImage;
   bool _isVerifying = false;
@@ -55,11 +55,11 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
     try {
       // 1. Pick Image (Prefer Camera)
       final XFile? photo = await _picker.pickImage(
-        source: ImageSource.camera, 
+        source: ImageSource.camera,
         imageQuality: 50, // Reduce size for API
         maxWidth: 800,
       );
-      
+
       if (photo == null) {
         setState(() => _isVerifying = false);
         return;
@@ -74,7 +74,8 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
         if (permission == LocationPermission.denied) {
           permission = await Geolocator.requestPermission();
         }
-        if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
+        if (permission == LocationPermission.whileInUse ||
+            permission == LocationPermission.always) {
           devicePosition = await Geolocator.getCurrentPosition();
         }
       } catch (e) {
@@ -85,7 +86,7 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
       DateTime? imageDate;
       Map<String, dynamic>? exifData;
       Map<String, dynamic>? imageLocation;
-      
+
       if (!kIsWeb && !this.isEmpty(photo.path)) {
         try {
           final exif = await Exif.fromPath(photo.path);
@@ -93,17 +94,20 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
           if (dateString != null) {
             imageDate = dateString;
           }
-          
+
           // Get GPS location from EXIF if available
           try {
             final latLong = await exif.getLatLong();
             if (latLong != null) {
-              imageLocation = {'latitude': latLong.latitude, 'longitude': latLong.longitude};
+              imageLocation = {
+                'latitude': latLong.latitude,
+                'longitude': latLong.longitude
+              };
             }
           } catch (e) {
             debugPrint('EXIF GPS error: $e');
           }
-          
+
           // Get device model from EXIF
           try {
             final make = await exif.getAttribute('Make');
@@ -112,7 +116,7 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
           } catch (e) {
             debugPrint('EXIF device error: $e');
           }
-          
+
           await exif.close();
         } catch (e) {
           debugPrint('Exif error: $e');
@@ -154,7 +158,8 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
         final diff = now.difference(imageDate).inMinutes.abs();
         if (diff > 60) {
           setState(() {
-            _verificationError = 'Image is too old (${diff.toInt()} minutes). Please take a new photo within the last hour.';
+            _verificationError =
+                'Image is too old (${diff.toInt()} minutes). Please take a new photo within the last hour.';
             _isVerifying = false;
           });
           return;
@@ -175,7 +180,8 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
         // Allow up to 100m difference (GPS accuracy)
         if (distance > 100) {
           setState(() {
-            _verificationError = 'Location mismatch detected. Please ensure GPS is enabled and take photo at the activity location.';
+            _verificationError =
+                'Location mismatch detected. Please ensure GPS is enabled and take photo at the activity location.';
             _isVerifying = false;
           });
           return;
@@ -192,40 +198,43 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
       }
 
       final result = await _verifyWithEdgeFunction(
-        photo, 
+        photo,
         _selectedCategory!,
         deviceInfo,
-        devicePosition != null ? {
-          'latitude': devicePosition.latitude,
-          'longitude': devicePosition.longitude,
-          'accuracy': devicePosition.accuracy,
-        } : null,
+        devicePosition != null
+            ? {
+                'latitude': devicePosition.latitude,
+                'longitude': devicePosition.longitude,
+                'accuracy': devicePosition.accuracy,
+              }
+            : null,
         imageDate?.toIso8601String(),
       );
-      
+
       setState(() {
         _verificationResult = result;
         _deviceInfo = deviceInfo;
         _imageMetadata = exifData;
-        _deviceLocation = devicePosition != null ? {
-          'latitude': devicePosition.latitude,
-          'longitude': devicePosition.longitude,
-          'accuracy': devicePosition.accuracy,
-        } : null;
+        _deviceLocation = devicePosition != null
+            ? {
+                'latitude': devicePosition.latitude,
+                'longitude': devicePosition.longitude,
+                'accuracy': devicePosition.accuracy,
+              }
+            : null;
         _imageTimestamp = imageDate;
         // Auto-update slider if AI confident
         if (result['carbon_saved_estimate'] != null) {
-           double kg = (result['carbon_saved_estimate'] as num).toDouble();
-           double slider = (kg / 0.5); 
-           if (slider < 1) slider = 1;
-           if (slider > 10) slider = 10;
-           _sliderValue = slider;
+          double kg = (result['carbon_saved_estimate'] as num).toDouble();
+          double slider = (kg / 0.5);
+          if (slider < 1) slider = 1;
+          if (slider > 10) slider = 10;
+          _sliderValue = slider;
         }
         if (result['description'] != null) {
           _descriptionController.text = result['description'];
         }
       });
-
     } catch (e) {
       setState(() => _verificationError = 'Verification failed: $e');
     } finally {
@@ -242,28 +251,51 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
     Map<String, dynamic>? location,
     String? imageTimestamp,
   ) async {
-    final bytes = await image.readAsBytes();
-    final base64Image = base64Encode(bytes);
+    try {
+      final bytes = await image.readAsBytes();
+      final base64Image = base64Encode(bytes);
 
-    final functions = Supabase.instance.client.functions;
-    final response = await functions.invoke(
-      'verify-activity',
-      body: {
-        'imageBase64': base64Image,
-        'category': category,
-        'deviceInfo': deviceInfo,
-        'location': location,
-        'imageTimestamp': imageTimestamp,
-      },
-    );
+      final functions = Supabase.instance.client.functions;
+      // ENABLE REAL EDGE FUNCTION
+      const bool useRealEdgeFunction = true;
 
-    final result = response.data ?? {};
+      if (useRealEdgeFunction) {
+        final response = await functions.invoke(
+          'verify-activity',
+          body: {
+            'imageBase64': base64Image,
+            'category': category,
+            'deviceInfo': deviceInfo,
+            'location': location,
+            'imageTimestamp': imageTimestamp,
+          },
+        );
 
-    if (result['error'] != null && result['verified'] == false) {
-      throw Exception(result['error'] ?? 'Verification failed');
+        final result = response.data ?? {};
+
+        // Handle explicit backend errors (e.g., config missing)
+        if (result['error'] != null && result['verified'] == false) {
+           // If it's a configuration error, make it user-friendly but honest
+           if (result['error'].toString().contains('API key')) {
+             throw Exception('Server Configuration Error: AI Provider Key missing.');
+           }
+           throw Exception(result['error']);
+        }
+
+        return Map<String, dynamic>.from(result);
+      } else {
+        throw Exception('Edge function disabled');
+      }
+
+    } catch (e) {
+      debugPrint('Verification Failed: $e');
+      // No more mock fallback. Return error state.
+      // This ensures we are not "faking" success.
+      return {
+          'verified': false,
+          'error': 'Verification failed: ${e.toString().replaceAll('Exception:', '').trim()}',
+      };
     }
-
-    return Map<String, dynamic>.from(result);
   }
 
   void _submit() async {
@@ -278,18 +310,19 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
       int points = (_sliderValue * 10).toInt();
 
       final user = Supabase.instance.client.auth.currentUser;
-      
+
       if (user == null) {
         if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please log in to save activities.')));
-           Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('Please log in to save activities.')));
+          Navigator.pop(context);
         }
         return;
       }
 
-      String description = _descriptionController.text.isEmpty 
-              ? 'Logged $_selectedCategory' 
-              : _descriptionController.text;
+      String description = _descriptionController.text.isEmpty
+          ? 'Logged $_selectedCategory'
+          : _descriptionController.text;
 
       String? evidenceImageUrl;
       // Upload Evidence Image if exists
@@ -297,18 +330,24 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
         try {
           final bytes = await _evidenceImage!.readAsBytes();
           // On web, blob URLs don't have a real file extension; default to jpeg.
-          final fileExt = kIsWeb ? 'jpeg' : _evidenceImage!.path.split('.').last;
+          final fileExt =
+              kIsWeb ? 'jpeg' : _evidenceImage!.path.split('.').last;
           // Format: activity_evidence/{userId}/{timestamp}.ext
-          final fileName = '${user.id}/${DateTime.now().microsecondsSinceEpoch}.$fileExt';
+          final fileName =
+              '${user.id}/${DateTime.now().microsecondsSinceEpoch}.$fileExt';
           final storagePath = 'activity_evidence/$fileName';
 
-          await Supabase.instance.client.storage.from('activity_evidence').uploadBinary(
-            storagePath,
-            bytes,
-            fileOptions: FileOptions(contentType: 'image/$fileExt'),
-          );
+          await Supabase.instance.client.storage
+              .from('activity_evidence')
+              .uploadBinary(
+                storagePath,
+                bytes,
+                fileOptions: FileOptions(contentType: 'image/$fileExt'),
+              );
 
-          evidenceImageUrl = Supabase.instance.client.storage.from('activity_evidence').getPublicUrl(storagePath);
+          evidenceImageUrl = Supabase.instance.client.storage
+              .from('activity_evidence')
+              .getPublicUrl(storagePath);
         } catch (e) {
           debugPrint('Image upload failed: $e');
           description += '\n[Image Upload Failed]';
@@ -316,15 +355,18 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
       }
 
       // Handle Verification Bonus & Data
-      if (_verificationResult != null && _verificationResult!['verified'] == true) {
-         points += 50; // Bonus
-         if (_verificationResult!['carbon_saved_estimate'] != null) {
-           carbonSaved = (_verificationResult!['carbon_saved_estimate'] as num).toDouble();
-         }
-         description += '\n\n[Verified by AI: Carbon=${carbonSaved}kg, Confidence=${_verificationResult!['confidence']}]';
-         if (_verificationResult!['reasoning'] != null) {
-           description += '\nReason: ${_verificationResult!['reasoning']}';
-         }
+      if (_verificationResult != null &&
+          _verificationResult!['verified'] == true) {
+        points += 50; // Bonus
+        if (_verificationResult!['carbon_saved_estimate'] != null) {
+          carbonSaved =
+              (_verificationResult!['carbon_saved_estimate'] as num).toDouble();
+        }
+        description +=
+            '\n\n[Verified by AI: Carbon=${carbonSaved}kg, Confidence=${_verificationResult!['confidence']}]';
+        if (_verificationResult!['reasoning'] != null) {
+          description += '\nReason: ${_verificationResult!['reasoning']}';
+        }
       }
 
       // Ensure profile exists for this user to satisfy foreign key constraints
@@ -353,14 +395,19 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
         'description': description,
         'carbon_saved': carbonSaved,
         'points_earned': points,
-        'is_verified': _verificationResult != null && _verificationResult!['verified'] == true,
+        'is_verified': _verificationResult != null &&
+            _verificationResult!['verified'] == true,
         'verification_data': _verificationResult,
         'evidence_url': evidenceImageUrl,
-        'logged_at': DateTime.now().toIso8601String(), 
+        'logged_at': DateTime.now().toIso8601String(),
       });
 
       // 2. Update Profile (Fetch first then update)
-      final profile = await Supabase.instance.client.from('profiles').select().eq('id', user.id).single();
+      final profile = await Supabase.instance.client
+          .from('profiles')
+          .select()
+          .eq('id', user.id)
+          .single();
       final currentPoints = (profile['points_balance'] as num?) ?? 0;
       final currentCarbon = (profile['carbon_saved_kg'] as num?) ?? 0.0;
 
@@ -402,11 +449,10 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: EdgeInsets.only(
-        left: 24, 
-        right: 24, 
-        top: 24, 
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24
-      ),
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24),
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -417,19 +463,22 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
               children: [
                 Text(
                   'Log Activity',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(context)
+                      .textTheme
+                      .headlineSmall
+                      ?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 if (_isVerifying)
                   const SizedBox(
-                    width: 20, 
-                    height: 20, 
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF10B981))
-                  ),
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Color(0xFF10B981))),
               ],
             ),
             const SizedBox(height: 24),
-            
-            Text('Select Category', style: Theme.of(context).textTheme.titleSmall),
+            Text('Select Category',
+                style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 12),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -439,14 +488,20 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
                   return Padding(
                     padding: const EdgeInsets.only(right: 12),
                     child: InkWell(
-                      onTap: () => setState(() => _selectedCategory = entry.key),
+                      onTap: () =>
+                          setState(() => _selectedCategory = entry.key),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFF10B981) : Colors.grey.shade100,
+                          color: isSelected
+                              ? const Color(0xFF10B981)
+                              : Colors.grey.shade100,
                           borderRadius: BorderRadius.circular(30),
                           border: Border.all(
-                            color: isSelected ? const Color(0xFF10B981) : Colors.transparent,
+                            color: isSelected
+                                ? const Color(0xFF10B981)
+                                : Colors.transparent,
                           ),
                         ),
                         child: Row(
@@ -455,13 +510,18 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
                             Icon(
                               entry.value,
                               size: 18,
-                              color: isSelected ? Colors.white : Colors.grey.shade700,
+                              color: isSelected
+                                  ? Colors.white
+                                  : Colors.grey.shade700,
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              entry.key[0].toUpperCase() + entry.key.substring(1),
+                              entry.key[0].toUpperCase() +
+                                  entry.key.substring(1),
                               style: TextStyle(
-                                color: isSelected ? Colors.white : Colors.grey.shade700,
+                                color: isSelected
+                                    ? Colors.white
+                                    : Colors.grey.shade700,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -473,10 +533,9 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
                 }).toList(),
               ),
             ),
-
             if (_selectedCategory != null) ...[
               const SizedBox(height: 24),
-              
+
               // Image Preview Section
               if (_evidenceImage != null)
                 Padding(
@@ -486,15 +545,17 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
                     child: SizedBox(
                       height: 200,
                       width: double.infinity,
-                      child: kIsWeb 
-                          ? Image.network(_evidenceImage!.path, fit: BoxFit.cover)
-                          : Image.file(File(_evidenceImage!.path), fit: BoxFit.cover),
+                      child: kIsWeb
+                          ? Image.network(_evidenceImage!.path,
+                              fit: BoxFit.cover)
+                          : Image.file(File(_evidenceImage!.path),
+                              fit: BoxFit.cover),
                     ),
                   ),
                 ),
 
               // AI Verification Section
-               Container(
+              Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.blue.withOpacity(0.05),
@@ -508,23 +569,33 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
                       children: [
                         const Icon(Icons.verified_user, color: Colors.blue),
                         const SizedBox(width: 8),
-                        const Text('AI Authentication', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+                        const Text('AI Authentication',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue)),
                         const Spacer(),
-                        if (_verificationResult != null && _verificationResult!['verified'])
-                           const Icon(Icons.check_circle, color: Colors.green)
+                        if (_verificationResult != null &&
+                            _verificationResult!['verified'])
+                          const Icon(Icons.check_circle, color: Colors.green)
                       ],
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      _verificationResult == null 
+                      _verificationResult == null
                           ? 'Take a photo to verify this activity and earn Double Points!'
-                          : (_verificationResult!['reasoning'] ?? (_verificationResult!['verified'] ? 'Verified!' : 'Could not verify.')),
-                      style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                          : (_verificationResult!['reasoning'] ??
+                              (_verificationResult!['verified']
+                                  ? 'Verified!'
+                                  : 'Could not verify.')),
+                      style:
+                          TextStyle(color: Colors.grey.shade700, fontSize: 13),
                     ),
                     if (_verificationError != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
-                        child: Text(_verificationError!, style: const TextStyle(color: Colors.red, fontSize: 12)),
+                        child: Text(_verificationError!,
+                            style: const TextStyle(
+                                color: Colors.red, fontSize: 12)),
                       ),
                     const SizedBox(height: 12),
                     if (_verificationResult == null)
@@ -537,7 +608,10 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
                         ),
                       ),
                     // Show Verification Metadata
-                    if (_verificationResult != null && (_deviceInfo != null || _imageMetadata != null || _deviceLocation != null))
+                    if (_verificationResult != null &&
+                        (_deviceInfo != null ||
+                            _imageMetadata != null ||
+                            _deviceLocation != null))
                       Padding(
                         padding: const EdgeInsets.only(top: 12),
                         child: _buildVerificationMetadata(),
@@ -548,36 +622,52 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
 
               const SizedBox(height: 24),
               // Impact Section: Show Slider OR Verified details
-              if (_verificationResult != null && _verificationResult!['verified']) ...[
-                 Container(
+              if (_verificationResult != null &&
+                  _verificationResult!['verified']) ...[
+                Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: const Color(0xFF10B981).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
+                    border: Border.all(
+                        color: const Color(0xFF10B981).withOpacity(0.3)),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       Column(
                         children: [
-                          const Text('Verified Impact', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          const Text('Verified Impact',
+                              style:
+                                  TextStyle(fontSize: 12, color: Colors.grey)),
                           const SizedBox(height: 4),
-                          Text('${(_sliderValue * 0.5).toStringAsFixed(1)} kg CO₂', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF10B981))),
+                          Text(
+                              '${(_sliderValue * 0.5).toStringAsFixed(1)} kg CO₂',
+                              style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF10B981))),
                         ],
                       ),
-                       Column(
+                      Column(
                         children: [
-                          const Text('Points Earned', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          const Text('Points Earned',
+                              style:
+                                  TextStyle(fontSize: 12, color: Colors.grey)),
                           const SizedBox(height: 4),
-                          Text('${(_sliderValue * 10).toInt() + 50}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.amber)),
+                          Text('${(_sliderValue * 10).toInt() + 50}',
+                              style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.amber)),
                         ],
                       ),
                     ],
                   ),
                 ),
               ] else ...[
-                Text('Impact Estimate', style: Theme.of(context).textTheme.titleSmall),
+                Text('Impact Estimate',
+                    style: Theme.of(context).textTheme.titleSmall),
                 Slider(
                   value: _sliderValue,
                   min: 1,
@@ -588,7 +678,7 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
                   onChanged: (val) => setState(() => _sliderValue = val),
                 ),
               ],
-              
+
               const SizedBox(height: 16),
               TextField(
                 controller: _descriptionController,
@@ -597,7 +687,7 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
                   border: OutlineInputBorder(),
                 ),
               ),
-              
+
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
@@ -607,11 +697,22 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
                     backgroundColor: const Color(0xFF10B981),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: _isSubmitting 
-                    ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : Text(_verificationResult != null && _verificationResult!['verified'] ? 'Log Verified Activity' : 'Log Activity', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2))
+                      : Text(
+                          _verificationResult != null &&
+                                  _verificationResult!['verified']
+                              ? 'Log Verified Activity'
+                              : 'Log Activity',
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -628,7 +729,8 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
       leading: const Icon(Icons.info_outline, size: 18, color: Colors.blue),
       title: const Text(
         'Verification Metadata',
-        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.blue),
+        style: TextStyle(
+            fontSize: 12, fontWeight: FontWeight.w600, color: Colors.blue),
       ),
       children: [
         // Device Information
@@ -640,7 +742,7 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
           ),
           const SizedBox(height: 8),
         ],
-        
+
         // Image Metadata (EXIF)
         if (_imageMetadata != null && _imageMetadata!.isNotEmpty) ...[
           _buildMetadataSection(
@@ -650,21 +752,24 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
           ),
           const SizedBox(height: 8),
         ],
-        
+
         // Device Location
         if (_deviceLocation != null) ...[
           _buildMetadataSection(
             'Device Location',
             Icons.location_on,
             {
-              'Latitude': _deviceLocation!['latitude']?.toStringAsFixed(6) ?? 'N/A',
-              'Longitude': _deviceLocation!['longitude']?.toStringAsFixed(6) ?? 'N/A',
-              'Accuracy': '${(_deviceLocation!['accuracy'] ?? 0).toStringAsFixed(1)}m',
+              'Latitude':
+                  _deviceLocation!['latitude']?.toStringAsFixed(6) ?? 'N/A',
+              'Longitude':
+                  _deviceLocation!['longitude']?.toStringAsFixed(6) ?? 'N/A',
+              'Accuracy':
+                  '${(_deviceLocation!['accuracy'] ?? 0).toStringAsFixed(1)}m',
             },
           ),
           const SizedBox(height: 8),
         ],
-        
+
         // Image Timestamp
         if (_imageTimestamp != null) ...[
           _buildMetadataSection(
@@ -677,20 +782,26 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
           ),
           const SizedBox(height: 8),
         ],
-        
+
         // Verification Result Metadata
         if (_verificationResult != null) ...[
           _buildMetadataSection(
             'Verification Result',
             Icons.verified,
             {
-              'Verified': _verificationResult!['verified'] == true ? 'Yes' : 'No',
-              'Confidence': _verificationResult!['confidence'] != null 
+              'Verified':
+                  _verificationResult!['verified'] == true ? 'Yes' : 'No',
+              'Confidence': _verificationResult!['confidence'] != null
                   ? '${((_verificationResult!['confidence'] as num) * 100).toStringAsFixed(1)}%'
                   : 'N/A',
-              'Verification Time': _verificationResult!['verification_timestamp'] != null
-                  ? DateTime.parse(_verificationResult!['verification_timestamp']).toLocal().toString().split('.')[0]
-                  : 'N/A',
+              'Verification Time':
+                  _verificationResult!['verification_timestamp'] != null
+                      ? DateTime.parse(
+                              _verificationResult!['verification_timestamp'])
+                          .toLocal()
+                          .toString()
+                          .split('.')[0]
+                      : 'N/A',
             },
           ),
         ],
@@ -698,7 +809,8 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
     );
   }
 
-  Widget _buildMetadataSection(String title, IconData icon, Map<String, dynamic> data) {
+  Widget _buildMetadataSection(
+      String title, IconData icon, Map<String, dynamic> data) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -725,34 +837,34 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
           ),
           const SizedBox(height: 8),
           ...data.entries.map((entry) => Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: 100,
-                  child: Text(
-                    '${entry.key}:',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.grey.shade600,
-                      fontWeight: FontWeight.w500,
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 100,
+                      child: Text(
+                        '${entry.key}:',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    entry.value.toString(),
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.grey.shade800,
-                      fontFamily: 'monospace',
+                    Expanded(
+                      child: Text(
+                        entry.value.toString(),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey.shade800,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
-          )),
+              )),
         ],
       ),
     );
@@ -761,7 +873,7 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
   String _getTimeSince(DateTime dateTime) {
     final now = DateTime.now();
     final diff = now.difference(dateTime);
-    
+
     if (diff.inMinutes < 1) {
       return 'Just now';
     } else if (diff.inMinutes < 60) {

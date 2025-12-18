@@ -26,100 +26,160 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get GROQ API key from secrets
+    // 1. Try GROQ first (Fastest/Cheapest)
     const groqApiKey = Deno.env.get('GROQ_API_KEY');
-    
-    if (!groqApiKey) {
-      return new Response(JSON.stringify({ 
-        error: 'API key not configured',
-        verified: false 
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+
+    let aiResponse;
+    let provider = '';
+    let result;
+
+    if (groqApiKey) {
+      provider = 'Groq';
+      aiResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${groqApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama-3.2-11b-vision-preview',
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: `Act as a strict Eco-Verification AI. Your goal is to prevent fraud while regarding genuine effort.
+                  
+                  Analyze if this image is CREDIBLE PROOF for the activity: "${category}".
+
+                  CRITERIA:
+                  1. Visual Evidence: Does the image show the action (e.g. riding a bike, recycling) or proof (ticket, receipt)?
+                  2. Authenticity: Reject photos of screens, blurry blobs, or obvious stock photos.
+                  3. Cross-Verification (Crucial): 
+                     - Does the lighting (Day/Night) match the timestamp?
+                     - Does the scenery (City/Rural/Indoor) match the location coordinates?
+
+                  METADATA:
+                  - Device: ${JSON.stringify(deviceInfo)}
+                  - Location: ${JSON.stringify(location)}
+                  - Timestamp: ${imageTimestamp || 'N/A'}
+
+                  Output JSON only (no markdown):
+                  {
+                    "verified": boolean, // true ONLY if you are >85% confident
+                    "confidence": number, // 0.0 to 1.0
+                    "carbon_saved_estimate": number, // conservative estimate in kg
+                    "reasoning": string, // Explain any inconsistencies found (e.g. "Photo is daylight but timestamp is 11PM")
+                    "fraud_score": number // 0-1
+                  }`
+                },
+                {
+                  type: 'image_url',
+                  image_url: { url: `data:image/jpeg;base64,${imageBase64}` }
+                }
+              ]
+            }
+          ],
+          temperature: 0.1,
+          max_tokens: 400,
+          response_format: { type: 'json_object' }
+        }),
+      });
+
+      if (aiResponse.ok) {
+        const data = await aiResponse.json();
+        const content = data.choices[0].message.content;
+        result = JSON.parse(content);
+      }
+
+    } else if (geminiApiKey) {
+      // 2. Fallback to Gemini 1.5 Flash (Google)
+      provider = 'Gemini';
+      aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              {
+                text: `Act as a strict Eco-Verification AI. Your goal is to prevent fraud while regarding genuine effort.
+                  
+                  Analyze if this image is CREDIBLE PROOF for the activity: "${category}".
+
+                  CRITERIA:
+                  1. Visual Evidence: Does the image show the action or proof?
+                  2. Authenticity: Reject photos of screens, blurry blobs, or stock photos.
+                  3. Cross-Verification (Crucial): 
+                     - Does the lighting (Day/Night) match the timestamp?
+                     - Does the scenery match the location?
+
+                  METADATA:
+                  - Device: ${JSON.stringify(deviceInfo)}
+                  - Location: ${JSON.stringify(location)}
+                  - Timestamp: ${imageTimestamp || 'N/A'}
+
+                  Output JSON only (no markdown):
+                  {
+                    "verified": boolean,
+                    "confidence": number,
+                    "carbon_saved_estimate": number,
+                    "reasoning": string,
+                    "fraud_score": number
+                  }` },
+              { inline_data: { mime_type: "image/jpeg", data: imageBase64 } }
+            ]
+          }],
+          generationConfig: {
+            response_mime_type: "application/json"
+          }
+        }),
+      });
+
+      if (aiResponse.ok) {
+        const data = await aiResponse.json();
+        // Parse Gemini specific response structure
+        const content = data.candidates[0].content.parts[0].text;
+        result = JSON.parse(content);
+      }
+    } else {
+      return new Response(JSON.stringify({
+        error: 'Server AI Configuration Missing. Please set GROQ_API_KEY or GEMINI_API_KEY secrets.',
+        verified: false
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Verify timestamp - must be within last hour
-    if (imageTimestamp) {
-      const imageDate = new Date(imageTimestamp);
-      const now = new Date();
-      const diffMinutes = (now.getTime() - imageDate.getTime()) / (1000 * 60);
-      
-      if (diffMinutes > 60 || diffMinutes < 0) {
-        return new Response(JSON.stringify({
-          verified: false,
-          error: 'Image timestamp is not within the last hour',
-          confidence: 0,
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-    }
-
-    // Call Groq AI Vision API
-    const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${groqApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'llama-3.2-11b-vision-preview',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: `Verify if this image represents the eco-friendly activity category: "${category}". 
-                Consider: device info (${JSON.stringify(deviceInfo)}), location (${JSON.stringify(location)}), timestamp validation.
-                Output JSON only with keys: verified (bool), confidence (0-1), carbon_saved_estimate (kg, conservative), reasoning (string), description (short summary), category_suggestion (string).`
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: `data:image/jpeg;base64,${imageBase64}`
-                }
-              }
-            ]
-          }
-        ],
-        temperature: 0.1,
-        max_tokens: 400,
-        response_format: { type: 'json_object' }
-      }),
-    });
-
-    if (groqResponse.ok) {
-      const data = await groqResponse.json();
-      const content = data.choices[0].message.content;
-      const result = JSON.parse(content);
-      
+    if (result) {
       // Add metadata to result
       result.device_info = deviceInfo;
       result.location = location;
       result.image_timestamp = imageTimestamp;
       result.verification_timestamp = new Date().toISOString();
-      
+      result.provider = provider;
+
       return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     } else {
-      const errorText = await groqResponse.text();
+      const errorText = await aiResponse.text();
       return new Response(JSON.stringify({
         verified: false,
-        error: `Groq API Error: ${groqResponse.status} - ${errorText}`,
+        error: `${provider} API Error: ${aiResponse.status} - ${errorText}`,
         confidence: 0,
       }), {
-        status: groqResponse.status,
+        status: aiResponse.status,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
   } catch (error) {
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       error: error.message,
-      verified: false 
+      verified: false
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

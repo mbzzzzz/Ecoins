@@ -34,17 +34,40 @@ class _BrandAuthScreenState extends State<BrandAuthScreen> {
           email: email,
           password: password,
         );
-        
-        // Check if brand exists after login
+
+        // Strict Role Check
         if (!mounted) return;
         final user = _supabase.auth.currentUser;
         if (user != null) {
+          final profileToCheck = await _supabase
+              .from('profiles')
+              .select('role')
+              .eq('id', user.id)
+              .maybeSingle();
+
+          final role = profileToCheck?['role'] as String? ?? 'user';
+
+          if (role == 'user') {
+            await _supabase.auth.signOut();
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                      'This email is registered as an Individual User. Brand access denied.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+            return;
+          }
+
+          // Role is valid (brand_admin or maybe null/admin), check brand existence
           final brandData = await _supabase
               .from('brands')
               .select()
               .eq('owner_user_id', user.id)
               .maybeSingle();
-          
+
           if (brandData == null) {
             // No brand found, stay on dashboard which will show onboarding
             if (mounted) context.go('/brand-portal');
@@ -58,9 +81,11 @@ class _BrandAuthScreenState extends State<BrandAuthScreen> {
         await _supabase.auth.signUp(
           email: email,
           password: password,
-          data: {'role': 'brand'},
+          data: {
+            'role': 'brand_admin'
+          }, // Ensure enum match (was 'brand', enum is 'brand_admin')
         );
-        
+
         // After signup, redirect to brand portal for onboarding
         if (!mounted) return;
         context.go('/brand-portal');
@@ -276,7 +301,9 @@ class _BrandAuthScreenState extends State<BrandAuthScreen> {
                           ),
                         )
                       : Text(
-                          _isLogin ? 'Enter Brand Portal' : 'Create Brand Account',
+                          _isLogin
+                              ? 'Enter Brand Portal'
+                              : 'Create Brand Account',
                           style: const TextStyle(
                               fontWeight: FontWeight.bold, fontSize: 16),
                         ),
@@ -289,7 +316,3 @@ class _BrandAuthScreenState extends State<BrandAuthScreen> {
     );
   }
 }
-
-
-
-

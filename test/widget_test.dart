@@ -18,7 +18,8 @@ void main() {
   });
 
   group('LoginScreen Tests', () {
-    testWidgets('Should render Sign In UI correctly', (WidgetTester tester) async {
+    testWidgets('Should render Sign In UI correctly',
+        (WidgetTester tester) async {
       // Build our app and trigger a frame.
       await tester.pumpWidget(MaterialApp(
         theme: AppTheme.lightTheme,
@@ -34,11 +35,12 @@ void main() {
 
       // Verify Buttons exist
       // 'Sign In' appears in AppBar and on the ElevatedButton
-      expect(find.text('Sign In'), findsAtLeastNWidgets(1)); 
+      expect(find.text('Sign In'), findsAtLeastNWidgets(1));
       expect(find.text('Continue with Google'), findsOneWidget);
     });
 
-    testWidgets('Should toggle between Sign In and Sign Up', (WidgetTester tester) async {
+    testWidgets('Should toggle between Sign In and Sign Up',
+        (WidgetTester tester) async {
       await tester.pumpWidget(MaterialApp(
         theme: AppTheme.lightTheme,
         home: const LoginScreen(),

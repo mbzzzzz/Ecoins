@@ -7,7 +7,7 @@ class AppTheme {
   static const Color primaryDark = Color(0xFF047857); // Emerald 700
   static const Color primaryLight = Color(0xFFD1FAE5); // Emerald 100
   static const Color accentYellow = Color(0xFFFDE047); // Sunny Yellow
-  
+
   static const Color textDark = Color(0xFF1F2937); // Gray 800
   static const Color textLight = Color(0xFF6B7280); // Gray 500
   static const Color surfaceWhite = Colors.white;
@@ -34,13 +34,29 @@ class AppTheme {
         background: background,
         surfaceTint: Colors.white,
       ),
-      
+
       // Typography
       textTheme: const TextTheme(
-        displayLarge: TextStyle(fontFamily: 'Outfit', fontSize: 32, fontWeight: FontWeight.bold, color: textDark),
-        displayMedium: TextStyle(fontFamily: 'Outfit', fontSize: 28, fontWeight: FontWeight.bold, color: textDark),
-        titleLarge: TextStyle(fontFamily: 'Outfit', fontSize: 22, fontWeight: FontWeight.w600, color: textDark),
-        titleMedium: TextStyle(fontFamily: 'Outfit', fontSize: 18, fontWeight: FontWeight.w600, color: textDark),
+        displayLarge: TextStyle(
+            fontFamily: 'Outfit',
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+            color: textDark),
+        displayMedium: TextStyle(
+            fontFamily: 'Outfit',
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: textDark),
+        titleLarge: TextStyle(
+            fontFamily: 'Outfit',
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+            color: textDark),
+        titleMedium: TextStyle(
+            fontFamily: 'Outfit',
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: textDark),
         bodyLarge: TextStyle(fontSize: 16, color: textDark),
         bodyMedium: TextStyle(fontSize: 14, color: textLight),
       ),
@@ -50,12 +66,17 @@ class AppTheme {
         backgroundColor: Colors.transparent, // Glassmorphism ready
         elevation: 0,
         scrolledUnderElevation: 0,
-        titleTextStyle: TextStyle(fontFamily: 'Outfit', fontSize: 20, fontWeight: FontWeight.w600, color: textDark),
+        titleTextStyle: TextStyle(
+            fontFamily: 'Outfit',
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: textDark),
         iconTheme: IconThemeData(color: textDark),
       ),
-      
+
       cardTheme: CardThemeData(
-        color: surfaceWhite.withOpacity(0.8), // Semi-transparent for glass effect
+        color:
+            surfaceWhite.withOpacity(0.8), // Semi-transparent for glass effect
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20), // Softer corners
@@ -71,8 +92,10 @@ class AppTheme {
           elevation: 4, // Tactics
           shadowColor: seedColor.withOpacity(0.4),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 16),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          textStyle:
+              GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 16),
         ),
       ),
 
@@ -81,15 +104,17 @@ class AppTheme {
           foregroundColor: seedColor,
           side: BorderSide(color: seedColor, width: 2),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600),
         ),
       ),
-      
+
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.white.withOpacity(0.7),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
@@ -105,21 +130,22 @@ class AppTheme {
         labelStyle: GoogleFonts.inter(color: textLight),
         hintStyle: GoogleFonts.inter(color: textLight.withOpacity(0.7)),
       ),
-      
+
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: Colors.white.withOpacity(0.9),
         indicatorColor: seedColor.withOpacity(0.2), // Lighter indicator
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return IconThemeData(color: seedColor.withOpacity(0.8)); // Darker icon
+            return IconThemeData(
+                color: seedColor.withOpacity(0.8)); // Darker icon
           }
           return const IconThemeData(color: textLight);
         }),
       ),
     );
   }
-  
+
   // Backward compatibility
   static ThemeData get lightTheme => getTheme(primaryGreen);
 }

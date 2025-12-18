@@ -5,6 +5,7 @@ import 'package:ecoins/ui/screens/login_screen.dart';
 import 'package:ecoins/ui/screens/profile_screen.dart';
 import 'package:ecoins/ui/screens/rewards_screen.dart';
 import 'package:ecoins/ui/screens/brand/brand_dashboard_screen.dart';
+import 'package:ecoins/ui/screens/brand/brand_auth_screen.dart';
 import 'package:ecoins/ui/screens/role_select_screen.dart';
 import 'package:ecoins/ui/screens/social_screen.dart';
 import 'package:ecoins/ui/screens/splash_screen.dart';
@@ -16,10 +17,10 @@ import 'package:provider/provider.dart';
 
 Future<void> _setupFCM() async {
   final messaging = FirebaseMessaging.instance;
-  
+
   // Request permission
   await messaging.requestPermission();
-  
+
   // Get Token
   final token = await messaging.getToken();
   if (token != null) {
@@ -27,13 +28,16 @@ Future<void> _setupFCM() async {
     // Save to Supabase (if user is logged in)
     final supabase = Supabase.instance.client;
     if (supabase.auth.currentUser != null) {
-      await supabase.from('profiles').update({'fcm_token': token}).eq('id', supabase.auth.currentUser!.id);
+      await supabase
+          .from('profiles')
+          .update({'fcm_token': token}).eq('id', supabase.auth.currentUser!.id);
     }
-    
+
     // Listen for token refresh
     messaging.onTokenRefresh.listen((newToken) {
       if (supabase.auth.currentUser != null) {
-        supabase.from('profiles').update({'fcm_token': newToken}).eq('id', supabase.auth.currentUser!.id);
+        supabase.from('profiles').update({'fcm_token': newToken}).eq(
+            'id', supabase.auth.currentUser!.id);
       }
     });
   }
@@ -76,7 +80,7 @@ final _router = GoRouter(
     ),
     GoRoute(
       path: '/brand-auth',
-      builder: (context, state) => const LoginScreen(isBrand: true),
+      builder: (context, state) => const BrandAuthScreen(),
     ),
     GoRoute(
       path: '/brand-dashboard',

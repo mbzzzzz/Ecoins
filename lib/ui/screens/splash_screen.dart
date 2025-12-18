@@ -27,7 +27,7 @@ class _SplashScreenState extends State<SplashScreen>
     _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
-    
+
     _opacityAnimation = Tween<double>(begin: 0.2, end: 0.4).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
@@ -58,15 +58,16 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     const primaryColor = Color(0xFF13ec13);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final backgroundColor = isDark ? const Color(0xFF102210) : const Color(0xFFf6f8f6);
+    final backgroundColor =
+        isDark ? const Color(0xFF102210) : const Color(0xFFf6f8f6);
     final textColor = isDark ? Colors.white : const Color(0xFF0d1b0d);
 
     return Scaffold(
       backgroundColor: backgroundColor,
       body: Stack(
         children: [
-          // overflow-hidden equivalent - relying on Stack clipping if contained, 
-          // but Scaffold body clips by default usually. 
+          // overflow-hidden equivalent - relying on Stack clipping if contained,
+          // but Scaffold body clips by default usually.
           // Background Shapes
           Positioned(
             top: -100,
@@ -78,11 +79,10 @@ class _SplashScreenState extends State<SplashScreen>
                 shape: BoxShape.circle,
                 color: primaryColor.withOpacity(isDark ? 0.2 : 0.1),
               ),
-
             ),
           ),
           // We use simple gradients to mimic the blurs
-           Positioned(
+          Positioned(
             top: -100,
             left: -100,
             child: Container(
@@ -106,7 +106,7 @@ class _SplashScreenState extends State<SplashScreen>
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
-                   colors: [primaryColor.withOpacity(0.4), Colors.transparent],
+                  colors: [primaryColor.withOpacity(0.4), Colors.transparent],
                   stops: const [0.0, 0.7],
                 ),
               ),
@@ -118,11 +118,14 @@ class _SplashScreenState extends State<SplashScreen>
             child: Container(
               width: 500,
               height: 500,
-               decoration: BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   center: Alignment.bottomCenter,
-                   colors: [primaryColor.withOpacity(isDark ? 0.1 : 0.05), Colors.transparent],
+                  colors: [
+                    primaryColor.withOpacity(isDark ? 0.1 : 0.05),
+                    Colors.transparent
+                  ],
                   stops: const [0.0, 0.7],
                 ),
               ),
@@ -135,7 +138,7 @@ class _SplashScreenState extends State<SplashScreen>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Spacer(),
-                
+
                 // Central Brand Area
                 Column(
                   mainAxisSize: MainAxisSize.min,
@@ -154,7 +157,8 @@ class _SplashScreenState extends State<SplashScreen>
                                 height: 140,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: primaryColor.withOpacity(_opacityAnimation.value),
+                                  color: primaryColor
+                                      .withOpacity(_opacityAnimation.value),
                                   boxShadow: [
                                     BoxShadow(
                                       color: primaryColor.withOpacity(0.5),
@@ -170,9 +174,12 @@ class _SplashScreenState extends State<SplashScreen>
                               width: 128,
                               height: 128, // w-32 h-32
                               decoration: BoxDecoration(
-                                color: isDark ? const Color(0xFF1a2e1a) : Colors.white,
+                                color: isDark
+                                    ? const Color(0xFF1a2e1a)
+                                    : Colors.white,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: primaryColor.withOpacity(0.1)),
+                                border: Border.all(
+                                    color: primaryColor.withOpacity(0.1)),
                                 boxShadow: [
                                   BoxShadow(
                                     color: primaryColor.withOpacity(0.2),
@@ -181,16 +188,12 @@ class _SplashScreenState extends State<SplashScreen>
                                   )
                                 ],
                               ),
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  const Icon(Icons.eco, size: 64, color: primaryColor), // Material Symbols: eco
-                                  Positioned(
-                                    top: 28,
-                                    right: 28,
-                                    child: Icon(Icons.monetization_on, size: 28, color: primaryColor.withOpacity(0.8)),
-                                  ),
-                                ],
+                              child: Padding(
+                                padding: const EdgeInsets.all(20.0),
+                                child: Image.asset(
+                                  'assets/images/logo.png',
+                                  fit: BoxFit.contain,
+                                ),
                               ),
                             ),
                           ],
@@ -200,7 +203,8 @@ class _SplashScreenState extends State<SplashScreen>
                     const SizedBox(height: 32),
                     Text(
                       'Ecoins',
-                      style: GoogleFonts.outfit( // Using Outfit as closest to Spline Sans
+                      style: GoogleFonts.outfit(
+                        // Using Outfit as closest to Spline Sans
                         fontSize: 48,
                         fontWeight: FontWeight.bold,
                         color: textColor,
@@ -224,7 +228,8 @@ class _SplashScreenState extends State<SplashScreen>
 
                 // Bottom Area: Loading & Tagline
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 48.0, left: 24, right: 24),
+                  padding:
+                      const EdgeInsets.only(bottom: 48.0, left: 24, right: 24),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -235,7 +240,8 @@ class _SplashScreenState extends State<SplashScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Padding(
-                              padding: const EdgeInsets.only(bottom: 8.0, left: 4),
+                              padding:
+                                  const EdgeInsets.only(bottom: 8.0, left: 4),
                               child: Text(
                                 'LOADING ASSETS',
                                 style: GoogleFonts.inter(
@@ -251,7 +257,9 @@ class _SplashScreenState extends State<SplashScreen>
                               height: 6,
                               width: double.infinity,
                               decoration: BoxDecoration(
-                                color: isDark ? Colors.white.withOpacity(0.1) : Colors.grey[200],
+                                color: isDark
+                                    ? Colors.white.withOpacity(0.1)
+                                    : Colors.grey[200],
                                 borderRadius: BorderRadius.circular(999),
                               ),
                               child: LayoutBuilder(
@@ -263,7 +271,8 @@ class _SplashScreenState extends State<SplashScreen>
                                       height: double.infinity,
                                       decoration: BoxDecoration(
                                         color: primaryColor,
-                                        borderRadius: BorderRadius.circular(999),
+                                        borderRadius:
+                                            BorderRadius.circular(999),
                                       ),
                                     ),
                                   );

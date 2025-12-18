@@ -18,7 +18,7 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     // Access the notifier and current color
     final themeNotifier = Provider.of<ThemeNotifier>(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('App Settings'),
@@ -35,9 +35,11 @@ class SettingsScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Accent Color', style: TextStyle(fontWeight: FontWeight.w600)),
+                const Text('Accent Color',
+                    style: TextStyle(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 12),
-                const Text('Choose a color accent for the entire app.', style: TextStyle(color: Colors.grey)),
+                const Text('Choose a color accent for the entire app.',
+                    style: TextStyle(color: Colors.grey)),
                 const SizedBox(height: 16),
                 Wrap(
                   spacing: 12,
@@ -52,7 +54,7 @@ class SettingsScreen extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: color,
                           shape: BoxShape.circle,
-                          border: isSelected 
+                          border: isSelected
                               ? Border.all(color: Colors.black, width: 3)
                               : Border.all(color: Colors.transparent),
                           boxShadow: [
@@ -63,8 +65,8 @@ class SettingsScreen extends StatelessWidget {
                             )
                           ],
                         ),
-                        child: isSelected 
-                            ? const Icon(Icons.check, color: Colors.white) 
+                        child: isSelected
+                            ? const Icon(Icons.check, color: Colors.white)
                             : null,
                       ),
                     );
@@ -73,31 +75,29 @@ class SettingsScreen extends StatelessWidget {
               ],
             ),
           ),
-          
           const SizedBox(height: 32),
-          
           const Text(
             'About',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-           _buildSectionCard(
-             child: Column(
-               children: const [
-                 ListTile(
-                   contentPadding: EdgeInsets.zero,
-                   title: Text('Version'),
-                   trailing: Text('1.0.0'),
-                 ),
-                 Divider(),
-                 ListTile(
-                   contentPadding: EdgeInsets.zero,
-                   title: Text('Terms of Service'),
-                   trailing: Icon(Icons.chevron_right),
-                 ),
-               ],
-             ),
-           ),
+          _buildSectionCard(
+            child: Column(
+              children: const [
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text('Version'),
+                  trailing: Text('1.0.0'),
+                ),
+                Divider(),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text('Terms of Service'),
+                  trailing: Icon(Icons.chevron_right),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

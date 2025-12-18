@@ -24,78 +24,72 @@ class _RewardsScreenState extends State<RewardsScreen> {
   }
 
   Future<void> _fetchData() async {
+    setState(() => _isLoading = true);
     try {
       final user = _supabase.auth.currentUser;
-      
       if (user == null) {
-        // MOCK DATA
-        await Future.delayed(const Duration(milliseconds: 600));
-        if (mounted) {
-          setState(() {
-            _userPoints = 1250;
-            _rewards = [
-              {
-                'id': 'mock1',
-                'title': '10% Off EcoStore',
-                'cost_points': 500,
-                'code_prefix': 'ECO10',
-                'description': 'Get 10% off your next purchase at EcoStore.',
-                'brands': {'name': 'EcoStore', 'logo_url': null}
-              },
-              {
-                'id': 'mock2',
-                'title': 'Free Coffee',
-                'cost_points': 300,
-                'code_prefix': 'COFFEE',
-                'description': 'One free organic coffee.',
-                'brands': {'name': 'GreenCafe', 'logo_url': null}
-              },
-              {
-                'id': 'mock3',
-                'title': 'Bus Pass (1 Day)',
-                'cost_points': 800,
-                'code_prefix': 'BUS',
-                'description': 'Unlimited travel for one day.',
-                'brands': {'name': 'CityTransit', 'logo_url': null}
-              },
-            ];
-            _isLoading = false;
-          });
-        }
+        // Handle guest/logged out state if necessary
+        setState(() => _isLoading = false);
         return;
       }
 
       final userId = user.id;
-      
-      // Fetch User Points
-      final profile = await _supabase.from('profiles').select('points_balance').eq('id', userId).single();
-      
-      // Fetch Rewards with Brands
-      final rewards = await _supabase
-          .from('rewards')
+
+      // 1. Fetch User Points
+      final profile = await _supabase
+          .from('profiles')
+          .select('points_balance')
+          .eq('id', userId)
+          .single();
+
+      // 2. Fetch Real Offers (Unified table)
+      // We join with brands to get name and logo
+      final List<dynamic> offersData = await _supabase
+          .from('offers')
           .select('*, brands(name, logo_url)')
           .eq('is_active', true)
-          .order('cost_points', ascending: true);
+          .order('points_cost',
+              ascending: true); // Note: points_cost in offers table
 
       if (mounted) {
         setState(() {
           _userPoints = profile['points_balance'] ?? 0;
-          _rewards = List<Map<String, dynamic>>.from(rewards);
+          _rewards = offersData
+              .map((offer) {
+                // Map DB fields to UI expected fields if they differ
+                return {
+                  'id': offer['id'],
+                  'title': offer['title'],
+                  'description': offer['description'],
+                  'cost_points': offer[
+                      'points_cost'], // Mapping points_cost -> cost_points
+                  'code_prefix': offer['code_prefix'],
+                  'brands': offer['brands'],
+                };
+              })
+              .toList()
+              .cast<Map<String, dynamic>>();
           _isLoading = false;
         });
       }
     } catch (e) {
       debugPrint('Error fetching rewards: $e');
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading rewards: $e')),
+        );
+      }
     }
   }
 
   Future<void> _redeem(Map<String, dynamic> reward) async {
     final cost = reward['cost_points'] as int;
-    
+
     if (_userPoints < cost) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Not enough points!'), backgroundColor: Colors.red),
+        const SnackBar(
+            content: Text('Not enough points!'), backgroundColor: Colors.red),
       );
       return;
     }
@@ -107,10 +101,14 @@ class _RewardsScreenState extends State<RewardsScreen> {
         title: const Text('Confirm Redemption'),
         content: Text('Redeem "${reward['title']}" for $cost points?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryGreen, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryGreen,
+                foregroundColor: Colors.white),
             child: const Text('Redeem'),
           ),
         ],
@@ -120,22 +118,18 @@ class _RewardsScreenState extends State<RewardsScreen> {
     if (confirm != true) return;
 
     try {
-      if (_supabase.auth.currentUser == null) {
-        // MOCK REDEMPTION
-         if (mounted) {
-            final mockCode = '${reward['code_prefix'] ?? 'ECO'}-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
-            setState(() {
-              _userPoints -= cost;
-            });
-            _showSuccessDialog(mockCode);
-         }
-         return;
-      }
-      
-      final userId = _supabase.auth.currentUser!.id;
-      final code = '${reward['code_prefix'] ?? 'ECO'}-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
+      final user = _supabase.auth.currentUser;
+      if (user == null) return;
 
-      // 1. Create Redemption
+      final userId = user.id;
+      // Generate a unique code (in a real app, this might come from the server or a pre-generated pool)
+      final codePrefix = reward['code_prefix'] ?? 'ECO';
+      final uniqueSuffix =
+          DateTime.now().millisecondsSinceEpoch.toString().substring(8);
+      final code = '$codePrefix-$uniqueSuffix';
+
+      // 1. Create Redemption Record
+      // Note: we use 'reward_id' column which now points to 'offers' table via FK
       await _supabase.from('redemptions').insert({
         'user_id': userId,
         'reward_id': reward['id'],
@@ -143,20 +137,23 @@ class _RewardsScreenState extends State<RewardsScreen> {
         'status': 'active'
       });
 
-      // 2. Deduct Points (Client side update, assume secure RPC/trigger in real prod)
-      await _supabase.from('profiles').update({
-        'points_balance': _userPoints - cost
-      }).eq('id', userId);
+      // 2. Deduct Points
+      // In a real app, use an RPC function to ensure atomicity
+      await _supabase
+          .from('profiles')
+          .update({'points_balance': _userPoints - cost}).eq('id', userId);
 
-      await _fetchData(); // Refresh
+      // Refresh Data
+      await _fetchData();
 
       if (mounted) {
         _showSuccessDialog(code);
       }
-
     } catch (e) {
+      debugPrint('Redemption Error: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Redemption failed: $e')));
       }
     }
   }
@@ -170,15 +167,20 @@ class _RewardsScreenState extends State<RewardsScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.check_circle, color: AppTheme.primaryGreen, size: 64),
+            const Icon(Icons.check_circle,
+                color: AppTheme.primaryGreen, size: 64),
             const SizedBox(height: 16),
-            Text('Your code: $code', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18)),
+            Text('Your code: $code',
+                style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold, fontSize: 18)),
             const SizedBox(height: 8),
             const Text('Show this code at checkout.'),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close')),
         ],
       ),
     );
@@ -189,7 +191,11 @@ class _RewardsScreenState extends State<RewardsScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text('Redeem Rewards', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22)),
+        title: Text('Redeem Rewards',
+            style: GoogleFonts.outfit(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 22)),
         centerTitle: false,
         backgroundColor: Colors.transparent,
         automaticallyImplyLeading: false, // Or handling back button if needed
@@ -203,11 +209,13 @@ class _RewardsScreenState extends State<RewardsScreen> {
               opacity: 0.2,
               child: Row(
                 children: [
-                  const Icon(Icons.monetization_on, color: AppTheme.accentYellow, size: 18),
+                  const Icon(Icons.monetization_on,
+                      color: AppTheme.accentYellow, size: 18),
                   const SizedBox(width: 4),
                   Text(
                     '$_userPoints',
-                    style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold),
+                    style: GoogleFonts.outfit(
+                        color: Colors.white, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -217,14 +225,14 @@ class _RewardsScreenState extends State<RewardsScreen> {
       ),
       body: Stack(
         children: [
-           // Background
+          // Background
           Positioned.fill(
             child: Image.asset(
               'assets/images/background.png',
               fit: BoxFit.cover,
             ),
           ),
-          
+
           SafeArea(
             child: Column(
               children: [
@@ -244,14 +252,15 @@ class _RewardsScreenState extends State<RewardsScreen> {
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
                         focusedBorder: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                        contentPadding:
+                            const EdgeInsets.symmetric(vertical: 14),
                       ),
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Filters
                 SizedBox(
                   height: 36,
@@ -269,18 +278,23 @@ class _RewardsScreenState extends State<RewardsScreen> {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
 
                 // Grid
                 Expanded(
-                  child: _isLoading 
-                      ? const Center(child: CircularProgressIndicator(color: Colors.white)) 
-                      : _rewards.isEmpty 
-                          ? Center(child: Text('No rewards found', style: GoogleFonts.inter(color: Colors.white)))
+                  child: _isLoading
+                      ? const Center(
+                          child: CircularProgressIndicator(color: Colors.white))
+                      : _rewards.isEmpty
+                          ? Center(
+                              child: Text('No rewards found',
+                                  style:
+                                      GoogleFonts.inter(color: Colors.white)))
                           : GridView.builder(
                               padding: const EdgeInsets.all(16),
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2,
                                 childAspectRatio: 0.70, // Taller cards
                                 crossAxisSpacing: 16,
@@ -289,13 +303,15 @@ class _RewardsScreenState extends State<RewardsScreen> {
                               itemCount: _rewards.length,
                               itemBuilder: (context, index) {
                                 final reward = _rewards[index];
-                                final brand = reward['brands'] as Map<String, dynamic>?;
-                                
+                                final brand =
+                                    reward['brands'] as Map<String, dynamic>?;
+
                                 return GlassContainer(
                                   padding: const EdgeInsets.all(0),
                                   opacity: 0.2, // Slightly more opaque
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       // Image Section
                                       Expanded(
@@ -303,11 +319,15 @@ class _RewardsScreenState extends State<RewardsScreen> {
                                         child: Container(
                                           margin: const EdgeInsets.all(8),
                                           decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(12),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
                                             image: DecorationImage(
-                                              image: brand?['logo_url'] != null 
-                                                  ? NetworkImage(brand!['logo_url']) 
-                                                  : const AssetImage('assets/images/logo.png') as ImageProvider, // Placeholder
+                                              image: brand?['logo_url'] != null
+                                                  ? NetworkImage(
+                                                      brand!['logo_url'])
+                                                  : const AssetImage(
+                                                          'assets/images/logo.png')
+                                                      as ImageProvider, // Placeholder
                                               fit: BoxFit.cover,
                                             ),
                                           ),
@@ -317,14 +337,25 @@ class _RewardsScreenState extends State<RewardsScreen> {
                                                 top: 6,
                                                 right: 6,
                                                 child: Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4),
                                                   decoration: BoxDecoration(
-                                                    color: Colors.white.withOpacity(0.9),
-                                                    borderRadius: BorderRadius.circular(12),
+                                                    color: Colors.white
+                                                        .withOpacity(0.9),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12),
                                                   ),
                                                   child: Text(
                                                     '${reward['cost_points']} pts',
-                                                    style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.textDark),
+                                                    style: GoogleFonts.inter(
+                                                        fontSize: 10,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color:
+                                                            AppTheme.textDark),
                                                   ),
                                                 ),
                                               )
@@ -332,25 +363,32 @@ class _RewardsScreenState extends State<RewardsScreen> {
                                           ),
                                         ),
                                       ),
-                                      
+
                                       // Info Section
                                       Expanded(
                                         flex: 3,
                                         child: Padding(
-                                          padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 10.0),
                                           child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
                                               Text(
                                                 brand?['name'] ?? 'Partner',
-                                                style: GoogleFonts.inter(color: Colors.white70, fontSize: 11),
+                                                style: GoogleFonts.inter(
+                                                    color: Colors.white70,
+                                                    fontSize: 11),
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                               ),
                                               const SizedBox(height: 2),
                                               Text(
                                                 reward['title'] ?? 'Reward',
-                                                style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                                                style: GoogleFonts.outfit(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 14),
                                                 maxLines: 2,
                                                 overflow: TextOverflow.ellipsis,
                                               ),
@@ -359,14 +397,21 @@ class _RewardsScreenState extends State<RewardsScreen> {
                                                 width: double.infinity,
                                                 height: 32,
                                                 child: ElevatedButton(
-                                                  onPressed: () => _redeem(reward),
-                                                  style: ElevatedButton.styleFrom(
-                                                    backgroundColor: const Color(0xFF10B981).withOpacity(0.9),
-                                                    foregroundColor: Colors.white,
+                                                  onPressed: () =>
+                                                      _redeem(reward),
+                                                  style:
+                                                      ElevatedButton.styleFrom(
+                                                    backgroundColor:
+                                                        const Color(0xFF10B981)
+                                                            .withOpacity(0.9),
+                                                    foregroundColor:
+                                                        Colors.white,
                                                     padding: EdgeInsets.zero,
                                                     elevation: 0,
                                                   ),
-                                                  child: const Text('Redeem 🌿', style: TextStyle(fontSize: 12)),
+                                                  child: const Text('Redeem 🌿',
+                                                      style: TextStyle(
+                                                          fontSize: 12)),
                                                 ),
                                               ),
                                               const SizedBox(height: 10),

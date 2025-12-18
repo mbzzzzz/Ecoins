@@ -6,7 +6,8 @@ import 'package:ecoins/core/theme.dart';
 import 'package:ecoins/ui/widgets/glass_container.dart';
 
 // Conditional import for health package (mobile only)
-import 'steps_tracker_mobile.dart' if (dart.library.html) 'steps_tracker_web.dart';
+import 'steps_tracker_mobile.dart'
+    if (dart.library.html) 'steps_tracker_web.dart';
 
 class StepsTrackerWidget extends StatefulWidget {
   const StepsTrackerWidget({super.key});
@@ -44,7 +45,7 @@ class _StepsTrackerWidgetState extends State<StepsTrackerWidget> {
           _saveStepsToDatabase(steps);
         }
       });
-      
+
       final initialSteps = await StepsTrackerMobile.getTodaySteps();
       if (mounted) {
         setState(() {
@@ -187,7 +188,8 @@ class _StepsTrackerWidgetState extends State<StepsTrackerWidget> {
     if (_isLoading) {
       return GlassContainer(
         padding: const EdgeInsets.all(16),
-        child: const Center(child: CircularProgressIndicator(color: Colors.white)),
+        child:
+            const Center(child: CircularProgressIndicator(color: Colors.white)),
       );
     }
 
@@ -237,19 +239,22 @@ class _StepsTrackerWidgetState extends State<StepsTrackerWidget> {
                     color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.directions_walk, color: Colors.white, size: 24),
+                  child: const Icon(Icons.directions_walk,
+                      color: Colors.white, size: 24),
                 ),
                 const Spacer(),
                 if (!_isTracking && !kIsWeb)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.red.withOpacity(0.3),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       'Not Tracking',
-                      style: GoogleFonts.inter(color: Colors.white, fontSize: 10),
+                      style:
+                          GoogleFonts.inter(color: Colors.white, fontSize: 10),
                     ),
                   ),
               ],

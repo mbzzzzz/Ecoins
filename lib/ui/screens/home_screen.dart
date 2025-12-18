@@ -49,7 +49,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 'category': 'food',
                 'description': 'Vegan Lunch (Mock)',
                 'points_earned': 30,
-                'logged_at': DateTime.now().subtract(const Duration(hours: 2)).toIso8601String(),
+                'logged_at': DateTime.now()
+                    .subtract(const Duration(hours: 2))
+                    .toIso8601String(),
               },
             ];
             _isLoading = false;
@@ -108,7 +110,9 @@ class _HomeScreenState extends State<HomeScreen> {
       return Scaffold(
         body: Stack(
           children: [
-            Positioned.fill(child: Image.asset('assets/images/background.png', fit: BoxFit.cover)),
+            Positioned.fill(
+                child: Image.asset('assets/images/background.png',
+                    fit: BoxFit.cover)),
             const Center(child: CircularProgressIndicator(color: Colors.white)),
           ],
         ),
@@ -126,7 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
               fit: BoxFit.cover,
             ),
           ),
-          
+
           SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 180.0),
@@ -148,7 +152,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           Text(
-                            _supabase.auth.currentUser?.email?.split('@')[0] ?? 'Eco Warrior',
+                            _supabase.auth.currentUser?.email?.split('@')[0] ??
+                                'Eco Warrior',
                             style: GoogleFonts.outfit(
                               color: Colors.white,
                               fontSize: 24,
@@ -160,14 +165,21 @@ class _HomeScreenState extends State<HomeScreen> {
                       Container(
                         decoration: BoxDecoration(
                           shape: BoxShape.circle, // Ensure circular shape
-                          border: Border.all(color: Colors.white.withOpacity(0.3), width: 2), // Outer border
+                          border: Border.all(
+                              color: Colors.white.withOpacity(0.3),
+                              width: 2), // Outer border
                         ),
                         child: CircleAvatar(
                           radius: 24,
-                          backgroundColor: Colors.white.withOpacity(0.2), // Semi-transparent Glassy background
+                          backgroundColor: Colors.white.withOpacity(
+                              0.2), // Semi-transparent Glassy background
                           child: Text(
-                            _supabase.auth.currentUser?.email?[0].toUpperCase() ?? 'U',
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            _supabase.auth.currentUser?.email?[0]
+                                    .toUpperCase() ??
+                                'U',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
@@ -179,9 +191,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   Center(
                     child: GestureDetector(
                       onTap: () {
-                         Navigator.push(
+                        Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const LeaderboardScreen()),
+                          MaterialPageRoute(
+                              builder: (context) => const LeaderboardScreen()),
                         );
                       },
                       child: Column(
@@ -197,7 +210,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(0xFF10B981).withOpacity(0.3),
+                                      color: const Color(0xFF10B981)
+                                          .withOpacity(0.3),
                                       blurRadius: 60,
                                       spreadRadius: 20,
                                     ),
@@ -238,7 +252,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   // Steps Tracker Widget
                   const StepsTrackerWidget(),
-                  
+
                   const SizedBox(height: 16),
 
                   // Daily Progress & Quick Action Grid
@@ -257,19 +271,24 @@ class _HomeScreenState extends State<HomeScreen> {
                                   color: Colors.white.withOpacity(0.2),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: const Icon(Icons.directions_bike, color: Colors.white, size: 24),
+                                child: const Icon(Icons.directions_bike,
+                                    color: Colors.white, size: 24),
                               ),
                               const SizedBox(height: 12),
                               Text(
                                 'Daily Challenge',
-                                style: GoogleFonts.inter(color: Colors.white70, fontSize: 12),
+                                style: GoogleFonts.inter(
+                                    color: Colors.white70, fontSize: 12),
                               ),
                               Text(
                                 'Bike to Work',
-                                style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                                style: GoogleFonts.outfit(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16),
                               ),
                               const SizedBox(height: 8),
-                               LinearProgressIndicator(
+                              LinearProgressIndicator(
                                 value: 0.8,
                                 backgroundColor: Colors.white.withOpacity(0.2),
                                 color: AppTheme.accentYellow,
@@ -279,7 +298,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               const SizedBox(height: 4),
                               Text(
                                 '80% • 4/5 km ridden',
-                                style: GoogleFonts.inter(color: Colors.white70, fontSize: 10),
+                                style: GoogleFonts.inter(
+                                    color: Colors.white70, fontSize: 10),
                               ),
                             ],
                           ),
@@ -293,31 +313,37 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                               Container(
+                              Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withOpacity(0.2),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: const Icon(Icons.local_fire_department, color: Colors.orangeAccent, size: 24),
+                                child: const Icon(Icons.local_fire_department,
+                                    color: Colors.orangeAccent, size: 24),
                               ),
                               const SizedBox(height: 12),
-                               Text(
+                              Text(
                                 'Current Streak',
-                                style: GoogleFonts.inter(color: Colors.white70, fontSize: 12),
+                                style: GoogleFonts.inter(
+                                    color: Colors.white70, fontSize: 12),
                               ),
                               Text(
                                 '5 Days',
-                                style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                                style: GoogleFonts.outfit(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16),
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 'Keep it up!',
-                                style: GoogleFonts.inter(color: Colors.white70, fontSize: 10),
+                                style: GoogleFonts.inter(
+                                    color: Colors.white70, fontSize: 10),
                               ),
-                              const SizedBox(height: 4), 
+                              const SizedBox(height: 4),
                               // Visual spacer to match height of neighbor roughly if needed, or just let it adjust
-                              const SizedBox(height: 18), 
+                              const SizedBox(height: 18),
                             ],
                           ),
                         ),
@@ -326,39 +352,60 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
 
                   const SizedBox(height: 24),
+
+                  // Log Activity Button (Inline)
+                  Center(
+                    child: GestureDetector(
+                      onTap: _showLoggerModal,
+                      child: GlassContainer(
+                        borderRadius: BorderRadius.circular(30),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 12),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: AppTheme.primaryGreen),
+                              padding: const EdgeInsets.all(8),
+                              child: const Icon(Icons.add,
+                                  color: Colors.white, size: 20),
+                            ),
+                            const SizedBox(width: 12),
+                            Text('Log Activity',
+                                style: GoogleFonts.outfit(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showLoggerModal,
-        backgroundColor: Colors.white.withOpacity(0.2), // Glass FAB
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30), 
-            side: BorderSide(color: Colors.white.withOpacity(0.5))
-        ),
-        icon: Container(
-          decoration: const BoxDecoration(shape: BoxShape.circle, color: AppTheme.primaryGreen),
-          padding: const EdgeInsets.all(8),
-          child: const Icon(Icons.add, color: Colors.white, size: 20),
-        ),
-        label: Text('Log Activity', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w600)),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
   IconData _getIconForCategory(String? category) {
     switch (category) {
-      case 'transport': return Icons.directions_bus;
-      case 'energy': return Icons.bolt;
-      case 'food': return Icons.restaurant;
-      case 'recycle': return Icons.recycling;
-      case 'shopping': return Icons.shopping_bag;
-      default: return Icons.eco;
+      case 'transport':
+        return Icons.directions_bus;
+      case 'energy':
+        return Icons.bolt;
+      case 'food':
+        return Icons.restaurant;
+      case 'recycle':
+        return Icons.recycling;
+      case 'shopping':
+        return Icons.shopping_bag;
+      default:
+        return Icons.eco;
     }
   }
 }

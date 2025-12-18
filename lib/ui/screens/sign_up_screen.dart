@@ -61,7 +61,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Unexpected error: $error'), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text('Unexpected error: $error'),
+              backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -80,22 +82,23 @@ class _SignUpScreenState extends State<SignUpScreen> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Google Sign-In failed: $error'), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text('Google Sign-In failed: $error'),
+              backgroundColor: Colors.red),
         );
         setState(() => _isLoading = false);
       }
     }
   }
-  
-   Future<void> _appleSignIn() async {
-     // Apple Sign In logic placeholder
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Apple Sign-In not fully configured')),
-        );
-      }
-  }
 
+  Future<void> _appleSignIn() async {
+    // Apple Sign In logic placeholder
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Apple Sign-In not fully configured')),
+      );
+    }
+  }
 
   @override
   void dispose() {
@@ -108,16 +111,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
-      backgroundColor: isDark ? AppTheme.backgroundDark : AppTheme.backgroundLight,
+      backgroundColor:
+          isDark ? AppTheme.backgroundDark : AppTheme.backgroundLight,
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-               const SizedBox(height: 20),
+              const SizedBox(height: 20),
               // Header Image
               AspectRatio(
                 aspectRatio: 4 / 3,
@@ -126,7 +130,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
                     image: const DecorationImage(
-                      image: NetworkImage("https://lh3.googleusercontent.com/aida-public/AB6AXuB3ein4_E2NpfSZMjfa2ZFacUyYJD3cfOhr5f_Ys8A7KnD_a_xSn19jZ4IciAxzxN_uhX7a50u8wiAx41E2cgLw2QaHhnTIl3eZevHq4dJJPHOl2-XJfIVkvATi-b0OiTjKfcERGVP4JJ_HQrCqYFf3q0Sll_uWRKqUnfsCIll8376kEuvaDSR_RFNmM34QAfAA_P-AfcL2-C29I64O_g3FxPXcRpP1B5BGXybwVwgGJg8W2j_ofUMVNe8_0W2Wf_LogtBsgmP5nnc"),
+                      image: NetworkImage(
+                          "https://lh3.googleusercontent.com/aida-public/AB6AXuB3ein4_E2NpfSZMjfa2ZFacUyYJD3cfOhr5f_Ys8A7KnD_a_xSn19jZ4IciAxzxN_uhX7a50u8wiAx41E2cgLw2QaHhnTIl3eZevHq4dJJPHOl2-XJfIVkvATi-b0OiTjKfcERGVP4JJ_HQrCqYFf3q0Sll_uWRKqUnfsCIll8376kEuvaDSR_RFNmM34QAfAA_P-AfcL2-C29I64O_g3FxPXcRpP1B5BGXybwVwgGJg8W2j_ofUMVNe8_0W2Wf_LogtBsgmP5nnc"),
                       fit: BoxFit.cover,
                     ),
                     boxShadow: [
@@ -143,7 +148,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       gradient: LinearGradient(
                         begin: Alignment.bottomCenter,
                         end: Alignment.topCenter,
-                        colors: [Colors.black.withOpacity(0.4), Colors.transparent],
+                        colors: [
+                          Colors.black.withOpacity(0.4),
+                          Colors.transparent
+                        ],
                       ),
                     ),
                     padding: const EdgeInsets.all(16),
@@ -151,19 +159,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     child: const Row(
                       children: [
                         Icon(Icons.eco, color: AppTheme.primaryGreen),
-                         SizedBox(width: 8),
+                        SizedBox(width: 8),
                         Text(
                           'Ecoins',
-                          style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               Text(
                 'Start earning Ecoins today.',
                 textAlign: TextAlign.center,
@@ -174,13 +185,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   height: 1.1,
                 ),
               ),
-               const SizedBox(height: 8),
-               Text(
+              const SizedBox(height: 8),
+              Text(
                 'Join thousands making a difference for the planet.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.notoSans(
                   fontSize: 16,
-                  color: isDark ? const Color(0xFFA0BCA0) : const Color(0xFF405640),
+                  color: isDark
+                      ? const Color(0xFFA0BCA0)
+                      : const Color(0xFF405640),
                 ),
               ),
 
@@ -190,107 +203,126 @@ class _SignUpScreenState extends State<SignUpScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                   Padding(
+                  Padding(
                     padding: const EdgeInsets.only(left: 12, bottom: 6),
-                    child: Text('Full Name', style: TextStyle(
-                      fontSize: 14, 
-                      fontWeight: FontWeight.w500,
-                      color: isDark ? Colors.grey[200] : const Color(0xFF0D1B0D)
-                    )),
+                    child: Text('Full Name',
+                        style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: isDark
+                                ? Colors.grey[200]
+                                : const Color(0xFF0D1B0D))),
                   ),
                   TextField(
                     controller: _nameController,
                     decoration: InputDecoration(
-                       hintText: 'e.g. Alex Johnson',
-                       fillColor: isDark ? const Color(0xFF1A2E1A) : Colors.white,
-                       enabledBorder: OutlineInputBorder(
-                         borderRadius: BorderRadius.circular(999), 
-                         borderSide: BorderSide(color: isDark ? const Color(0xFF2A452A) : const Color(0xFFCFE7CF))
-                       ),
-                       focusedBorder: OutlineInputBorder(
-                         borderRadius: BorderRadius.circular(999), 
-                         borderSide: const BorderSide(color: AppTheme.primaryGreen)
-                       ),
+                      hintText: 'e.g. Alex Johnson',
+                      fillColor:
+                          isDark ? const Color(0xFF1A2E1A) : Colors.white,
+                      enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(999),
+                          borderSide: BorderSide(
+                              color: isDark
+                                  ? const Color(0xFF2A452A)
+                                  : const Color(0xFFCFE7CF))),
+                      focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(999),
+                          borderSide:
+                              const BorderSide(color: AppTheme.primaryGreen)),
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
                   Padding(
                     padding: const EdgeInsets.only(left: 12, bottom: 6),
-                    child: Text('Email Address', style: TextStyle(
-                      fontSize: 14, 
-                      fontWeight: FontWeight.w500,
-                      color: isDark ? Colors.grey[200] : const Color(0xFF0D1B0D)
-                    )),
+                    child: Text('Email Address',
+                        style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: isDark
+                                ? Colors.grey[200]
+                                : const Color(0xFF0D1B0D))),
                   ),
                   TextField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                     decoration: InputDecoration(
-                       hintText: 'name@example.com',
-                       fillColor: isDark ? const Color(0xFF1A2E1A) : Colors.white,
-                       enabledBorder: OutlineInputBorder(
-                         borderRadius: BorderRadius.circular(999), 
-                         borderSide: BorderSide(color: isDark ? const Color(0xFF2A452A) : const Color(0xFFCFE7CF))
-                       ),
-                       focusedBorder: OutlineInputBorder(
-                         borderRadius: BorderRadius.circular(999), 
-                         borderSide: const BorderSide(color: AppTheme.primaryGreen)
-                       ),
+                    decoration: InputDecoration(
+                      hintText: 'name@example.com',
+                      fillColor:
+                          isDark ? const Color(0xFF1A2E1A) : Colors.white,
+                      enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(999),
+                          borderSide: BorderSide(
+                              color: isDark
+                                  ? const Color(0xFF2A452A)
+                                  : const Color(0xFFCFE7CF))),
+                      focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(999),
+                          borderSide:
+                              const BorderSide(color: AppTheme.primaryGreen)),
                     ),
                   ),
-
-                   const SizedBox(height: 16),
-                  
+                  const SizedBox(height: 16),
                   Padding(
                     padding: const EdgeInsets.only(left: 12, bottom: 6),
-                    child: Text('Password', style: TextStyle(
-                      fontSize: 14, 
-                      fontWeight: FontWeight.w500,
-                      color: isDark ? Colors.grey[200] : const Color(0xFF0D1B0D)
-                    )),
+                    child: Text('Password',
+                        style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: isDark
+                                ? Colors.grey[200]
+                                : const Color(0xFF0D1B0D))),
                   ),
                   TextField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
-                     decoration: InputDecoration(
-                       hintText: 'Min. 8 characters',
-                       fillColor: isDark ? const Color(0xFF1A2E1A) : Colors.white,
-                       enabledBorder: OutlineInputBorder(
-                         borderRadius: BorderRadius.circular(999), 
-                         borderSide: BorderSide(color: isDark ? const Color(0xFF2A452A) : const Color(0xFFCFE7CF))
-                       ),
-                       focusedBorder: OutlineInputBorder(
-                         borderRadius: BorderRadius.circular(999), 
-                         borderSide: const BorderSide(color: AppTheme.primaryGreen)
-                       ),
-                       suffixIcon: IconButton(
-                         icon: Icon(_obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined),
-                         onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                         color: isDark ? const Color(0xFF88A888) : const Color(0xFF405640),
-                       )
-                    ),
+                    decoration: InputDecoration(
+                        hintText: 'Min. 8 characters',
+                        fillColor:
+                            isDark ? const Color(0xFF1A2E1A) : Colors.white,
+                        enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(999),
+                            borderSide: BorderSide(
+                                color: isDark
+                                    ? const Color(0xFF2A452A)
+                                    : const Color(0xFFCFE7CF))),
+                        focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(999),
+                            borderSide:
+                                const BorderSide(color: AppTheme.primaryGreen)),
+                        suffixIcon: IconButton(
+                          icon: Icon(_obscurePassword
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined),
+                          onPressed: () => setState(
+                              () => _obscurePassword = !_obscurePassword),
+                          color: isDark
+                              ? const Color(0xFF88A888)
+                              : const Color(0xFF405640),
+                        )),
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 8),
               Row(
-                 mainAxisSize: MainAxisSize.min,
-                 children: [
-                   const SizedBox(width: 8),
-                   const Icon(Icons.verified_user, color: AppTheme.primaryGreen, size: 18),
-                   const SizedBox(width: 8),
-                   Text('100% Free & Secure Data', style: TextStyle(
-                     fontSize: 12, 
-                     fontWeight: FontWeight.w500,
-                     color: isDark ? const Color(0xFFA0BCA0) : const Color(0xFF405640)
-                   )),
-                 ],
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(width: 8),
+                  const Icon(Icons.verified_user,
+                      color: AppTheme.primaryGreen, size: 18),
+                  const SizedBox(width: 8),
+                  Text('100% Free & Secure Data',
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: isDark
+                              ? const Color(0xFFA0BCA0)
+                              : const Color(0xFF405640))),
+                ],
               ),
 
               const SizedBox(height: 16),
-              
+
               SizedBox(
                 height: 56,
                 child: ElevatedButton(
@@ -300,32 +332,49 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     foregroundColor: const Color(0xFF052905),
                     elevation: 4,
                     shadowColor: AppTheme.primaryGreen.withOpacity(0.4),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(999)),
                   ),
-                  child: _isLoading 
-                    ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black)) 
-                    : const Text('Create Account', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.black))
+                      : const Text('Create Account',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold)),
                 ),
               ),
 
               const SizedBox(height: 24),
-              
+
               Row(
                 children: [
-                   Expanded(child: Divider(color: isDark ? const Color(0xFF2A452A) : const Color(0xFFCFE7CF))),
-                   Padding(
-                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                     child: Text('Or continue with', style: TextStyle(
-                       fontSize: 14,
-                       color: isDark ? const Color(0xFFA0BCA0) : const Color(0xFF405640)
-                     )),
-                   ),
-                   Expanded(child: Divider(color: isDark ? const Color(0xFF2A452A) : const Color(0xFFCFE7CF))),
+                  Expanded(
+                      child: Divider(
+                          color: isDark
+                              ? const Color(0xFF2A452A)
+                              : const Color(0xFFCFE7CF))),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text('Or continue with',
+                        style: TextStyle(
+                            fontSize: 14,
+                            color: isDark
+                                ? const Color(0xFFA0BCA0)
+                                : const Color(0xFF405640))),
+                  ),
+                  Expanded(
+                      child: Divider(
+                          color: isDark
+                              ? const Color(0xFF2A452A)
+                              : const Color(0xFFCFE7CF))),
                 ],
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               Row(
                 children: [
                   Expanded(
@@ -334,57 +383,82 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       child: OutlinedButton.icon(
                         onPressed: _isLoading ? null : _googleSignIn,
                         icon: const Icon(FontAwesomeIcons.google, size: 20),
-                        label: Text('Google', style: TextStyle(fontWeight: FontWeight.w600, color: isDark ? Colors.white : const Color(0xFF0D1B0D))),
+                        label: Text('Google',
+                            style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF0D1B0D))),
                         style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: isDark ? const Color(0xFF2A452A) : const Color(0xFFCFE7CF)),
-                          backgroundColor: isDark ? const Color(0xFF1A2E1A) : Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                          side: BorderSide(
+                              color: isDark
+                                  ? const Color(0xFF2A452A)
+                                  : const Color(0xFFCFE7CF)),
+                          backgroundColor:
+                              isDark ? const Color(0xFF1A2E1A) : Colors.white,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999)),
                         ),
                       ),
                     ),
                   ),
-                   const SizedBox(width: 12),
-                   Expanded(
+                  const SizedBox(width: 12),
+                  Expanded(
                     child: SizedBox(
                       height: 48,
                       child: OutlinedButton.icon(
                         onPressed: _isLoading ? null : _appleSignIn,
                         icon: const Icon(FontAwesomeIcons.apple, size: 22),
-                        label: Text('Apple', style: TextStyle(fontWeight: FontWeight.w600, color: isDark ? Colors.white : const Color(0xFF0D1B0D))),
-                         style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: isDark ? const Color(0xFF2A452A) : const Color(0xFFCFE7CF)),
-                           backgroundColor: isDark ? const Color(0xFF1A2E1A) : Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                        label: Text('Apple',
+                            style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF0D1B0D))),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(
+                              color: isDark
+                                  ? const Color(0xFF2A452A)
+                                  : const Color(0xFFCFE7CF)),
+                          backgroundColor:
+                              isDark ? const Color(0xFF1A2E1A) : Colors.white,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999)),
                         ),
                       ),
                     ),
                   ),
                 ],
               ),
-              
-               const SizedBox(height: 32),
-               
-               Center(
-                 child: GestureDetector(
-                   onTap: () => context.go('/login'),
-                   child: RichText(
-                     text: TextSpan(
-                       style: TextStyle(fontSize: 14, color: isDark ? const Color(0xFFA0BCA0) : const Color(0xFF405640)),
-                       children: [
-                         const TextSpan(text: 'Already a member? '),
-                         TextSpan(
-                           text: 'Log In',
-                           style: TextStyle(
-                             color: isDark ? AppTheme.primaryGreen : const Color(0xFF0D1B0D),
-                             fontWeight: FontWeight.bold,
-                             decoration: TextDecoration.underline
-                           ),
-                         ),
-                       ],
-                     ),
-                   ),
-                 ),
-               ),
+
+              const SizedBox(height: 32),
+
+              Center(
+                child: GestureDetector(
+                  onTap: () => context.go('/login'),
+                  child: RichText(
+                    text: TextSpan(
+                      style: TextStyle(
+                          fontSize: 14,
+                          color: isDark
+                              ? const Color(0xFFA0BCA0)
+                              : const Color(0xFF405640)),
+                      children: [
+                        const TextSpan(text: 'Already a member? '),
+                        TextSpan(
+                          text: 'Log In',
+                          style: TextStyle(
+                              color: isDark
+                                  ? AppTheme.primaryGreen
+                                  : const Color(0xFF0D1B0D),
+                              fontWeight: FontWeight.bold,
+                              decoration: TextDecoration.underline),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),

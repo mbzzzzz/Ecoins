@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:ecoins/services/safepay_service.dart';
 import 'dart:io';
 
 class BrandDashboardScreen extends StatefulWidget {
@@ -78,7 +79,8 @@ class _BrandDashboardScreenState extends State<BrandDashboardScreen> {
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: AppTheme.backgroundLight,
-        body: Center(child: CircularProgressIndicator(color: AppTheme.primaryGreen)),
+        body: Center(
+            child: CircularProgressIndicator(color: AppTheme.primaryGreen)),
       );
     }
 
@@ -89,12 +91,17 @@ class _BrandDashboardScreenState extends State<BrandDashboardScreen> {
     }
 
     return Scaffold(
-      backgroundColor: isDark ? AppTheme.backgroundDark : AppTheme.backgroundLight,
+      backgroundColor:
+          isDark ? AppTheme.backgroundDark : AppTheme.backgroundLight,
       appBar: AppBar(
-        title: Text('Brand Portal', style: GoogleFonts.outfit(color: isDark ? Colors.white : AppTheme.textMain, fontWeight: FontWeight.bold)),
+        title: Text('Brand Portal',
+            style: GoogleFonts.outfit(
+                color: isDark ? Colors.white : AppTheme.textMain,
+                fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: IconThemeData(color: isDark ? Colors.white : AppTheme.textMain),
+        iconTheme:
+            IconThemeData(color: isDark ? Colors.white : AppTheme.textMain),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
@@ -120,15 +127,17 @@ class _BrandDashboardScreenState extends State<BrandDashboardScreen> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: isDark 
-                      ? [const Color(0xFF1B5E20), const Color(0xFF004D40)] 
-                      : [AppTheme.primaryGreen, Colors.teal.shade400], 
-                  begin: Alignment.topLeft, 
-                  end: Alignment.bottomRight
-                ),
+                    colors: isDark
+                        ? [const Color(0xFF1B5E20), const Color(0xFF004D40)]
+                        : [AppTheme.primaryGreen, Colors.teal.shade400],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight),
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
-                  BoxShadow(color: AppTheme.primaryGreen.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))
+                  BoxShadow(
+                      color: AppTheme.primaryGreen.withOpacity(0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4))
                 ],
               ),
               child: Row(
@@ -139,11 +148,20 @@ class _BrandDashboardScreenState extends State<BrandDashboardScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       shape: BoxShape.circle,
-                      image: _brand!['logo_url'] != null ? DecorationImage(image: NetworkImage(_brand!['logo_url']), fit: BoxFit.cover) : null,
+                      image: _brand!['logo_url'] != null
+                          ? DecorationImage(
+                              image: NetworkImage(_brand!['logo_url']),
+                              fit: BoxFit.cover)
+                          : null,
                     ),
-                    child: _brand!['logo_url'] == null 
-                      ? Center(child: Text(_brand!['name'][0], style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.primaryGreen)))
-                      : null,
+                    child: _brand!['logo_url'] == null
+                        ? Center(
+                            child: Text(_brand!['name'][0],
+                                style: GoogleFonts.outfit(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppTheme.primaryGreen)))
+                        : null,
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -152,21 +170,137 @@ class _BrandDashboardScreenState extends State<BrandDashboardScreen> {
                       children: [
                         Text(
                           _brand!['name'],
-                          style: GoogleFonts.outfit(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                          style: GoogleFonts.outfit(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold),
                         ),
                         Text(
                           _brand!['website_url'] ?? 'No website',
-                          style: GoogleFonts.inter(color: Colors.white.withOpacity(0.8), fontSize: 14),
+                          style: GoogleFonts.inter(
+                              color: Colors.white.withOpacity(0.8),
+                              fontSize: 14),
                         ),
                       ],
                     ),
                   ),
+                  if (_brand!['subscription_tier'] == 'pro')
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white.withOpacity(0.5)),
+                      ),
+                      child: Text('PRO',
+                          style: GoogleFonts.outfit(
+                              color: Colors.white, fontWeight: FontWeight.bold)),
+                    ),
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
+            // UPGRADE BANNER (Only if not pro)
+            if (_brand!['subscription_tier'] != 'pro')
+              GestureDetector(
+                onTap: () {
+                  // Navigate to Payment
+                  // Replace with your Actual Plan Token from Safepay Dashboard
+                  const String planToken = "plan_token_placeholder"; 
+                  const String checkoutUrl = "https://sandbox.api.safepay.pk/components?plan_id=$planToken&mode=payment";
+                  
+                  // Or use the service to build it dynamically
+                  // For now, simpler is better for demo
+                  
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => SafepayPaymentScreen(
+                        paymentUrl: checkoutUrl,
+                        onSuccess: (url) async {
+                          Navigator.pop(context); // Close webview
+                          // Update DB
+                           await _supabase.from('brands').update({
+                             'subscription_tier': 'pro',
+                             'subscription_status': 'active'
+                           }).eq('id', _brand!['id']);
+                           
+                           await _fetchBrandData();
+                           
+                           ScaffoldMessenger.of(context).showSnackBar(
+                             const SnackBar(content: Text('Welcome to Brand Pro! 🚀')),
+                           );
+                        },
+                        onCancel: () => Navigator.pop(context),
+                      ),
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF6A11CB), Color(0xFF2575FC)], // Premium Purple/Blue
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF2575FC).withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.verified, color: Colors.white, size: 32),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Upgrade to Brand Pro',
+                              style: GoogleFonts.outfit(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'Unlock Analytics & Unlimited Offers',
+                              style: GoogleFonts.inter(
+                                color: Colors.white.withOpacity(0.9),
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          'Start',
+                          style: GoogleFonts.outfit(
+                            color: const Color(0xFF2575FC),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
+            if (_brand!['subscription_tier'] != 'pro')
+              const SizedBox(height: 24),
+
             // Stats Grid
             GridView.count(
               crossAxisCount: 2,
@@ -176,22 +310,31 @@ class _BrandDashboardScreenState extends State<BrandDashboardScreen> {
               childAspectRatio: 1.5,
               physics: const NeverScrollableScrollPhysics(),
               children: [
-                _buildStatCard('Carbon Saved', '0 kg', Icons.cloud_outlined, Colors.teal, isDark),
-                _buildStatCard('Active Offers', '$_activeOffersCount', Icons.local_offer_outlined, Colors.orange, isDark),
+                _buildStatCard('Carbon Saved', '0 kg', Icons.cloud_outlined,
+                    Colors.teal, isDark),
+                _buildStatCard('Active Offers', '$_activeOffersCount',
+                    Icons.local_offer_outlined, Colors.orange, isDark),
               ],
             ),
-            
+
             const SizedBox(height: 24),
-            Text('Management', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppTheme.textMain)),
+            Text('Management',
+                style: GoogleFonts.outfit(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : AppTheme.textMain)),
             const SizedBox(height: 16),
-            
+
             _buildMenuTile(
               title: 'Campaigns & Offers',
               subtitle: 'Create and manage discount codes',
               icon: Icons.campaign_outlined,
               color: Colors.purple,
               isDark: isDark,
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OfferManagementScreen())),
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const OfferManagementScreen())),
             ),
             const SizedBox(height: 12),
             _buildMenuTile(
@@ -200,16 +343,22 @@ class _BrandDashboardScreenState extends State<BrandDashboardScreen> {
               icon: Icons.code,
               color: Colors.blue,
               isDark: isDark,
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WidgetIntegrationScreen())),
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const WidgetIntegrationScreen())),
             ),
-             const SizedBox(height: 12),
+            const SizedBox(height: 12),
             _buildMenuTile(
               title: 'Brand Settings',
               subtitle: 'Update profile and billing',
               icon: Icons.storefront_outlined,
               color: Colors.grey,
               isDark: isDark,
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BrandSettingsScreen())),
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const BrandSettingsScreen())),
             ),
           ],
         ),
@@ -219,9 +368,11 @@ class _BrandDashboardScreenState extends State<BrandDashboardScreen> {
 
   Widget _buildOnboardingView(bool isDark) {
     return Scaffold(
-      backgroundColor: isDark ? AppTheme.backgroundDark : AppTheme.backgroundLight,
+      backgroundColor:
+          isDark ? AppTheme.backgroundDark : AppTheme.backgroundLight,
       appBar: AppBar(
-        title: Text('Partner with Eco Rewards', style: TextStyle(color: isDark ? Colors.white : Colors.black)),
+        title: Text('Partner with Eco Rewards',
+            style: TextStyle(color: isDark ? Colors.white : Colors.black)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black),
@@ -230,22 +381,29 @@ class _BrandDashboardScreenState extends State<BrandDashboardScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.store, size: 80, color: isDark ? Colors.grey[700] : Colors.grey),
+            Icon(Icons.store,
+                size: 80, color: isDark ? Colors.grey[700] : Colors.grey),
             const SizedBox(height: 20),
-            Text('No Brand Found', style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppTheme.textMain)),
-             const SizedBox(height: 10),
-            Text('Register your sustainable brand to get started.', style: GoogleFonts.inter(color: isDark ? Colors.grey[400] : Colors.grey)),
+            Text('No Brand Found',
+                style: GoogleFonts.outfit(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : AppTheme.textMain)),
+            const SizedBox(height: 10),
+            Text('Register your sustainable brand to get started.',
+                style: GoogleFonts.inter(
+                    color: isDark ? Colors.grey[400] : Colors.grey)),
             const SizedBox(height: 30),
             ElevatedButton(
               onPressed: () async {
-                 final result = await Navigator.push(
-                   context,
-                   MaterialPageRoute(builder: (_) => const CreateBrandScreen()),
-                 );
-                 // Refresh data after returning from creation
-                 if (mounted && result == true) {
-                   await _fetchBrandData();
-                 }
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CreateBrandScreen()),
+                );
+                // Refresh data after returning from creation
+                if (mounted && result == true) {
+                  await _fetchBrandData();
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryGreen,
@@ -259,14 +417,21 @@ class _BrandDashboardScreenState extends State<BrandDashboardScreen> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color, bool isDark) {
+  Widget _buildStatCard(
+      String title, String value, IconData icon, Color color, bool isDark) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark ? AppTheme.surfaceDark : Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey.shade100),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.01), blurRadius: 10, offset: const Offset(0, 4))],
+        border: Border.all(
+            color: isDark ? Colors.grey[800]! : Colors.grey.shade100),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.01),
+              blurRadius: 10,
+              offset: const Offset(0, 4))
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -274,21 +439,34 @@ class _BrandDashboardScreenState extends State<BrandDashboardScreen> {
         children: [
           Icon(icon, color: color),
           const Spacer(),
-          Text(value, style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppTheme.textMain)),
-          Text(title, style: GoogleFonts.inter(color: isDark ? Colors.grey[400] : Colors.grey, fontSize: 13)),
+          Text(value,
+              style: GoogleFonts.outfit(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : AppTheme.textMain)),
+          Text(title,
+              style: GoogleFonts.inter(
+                  color: isDark ? Colors.grey[400] : Colors.grey,
+                  fontSize: 13)),
         ],
       ),
     );
   }
 
-  Widget _buildMenuTile({required String title, required String subtitle, required IconData icon, required Color color, required bool isDark, required VoidCallback onTap}) {
+  Widget _buildMenuTile(
+      {required String title,
+      required String subtitle,
+      required IconData icon,
+      required Color color,
+      required bool isDark,
+      required VoidCallback onTap}) {
     return ListTile(
       onTap: onTap,
       contentPadding: const EdgeInsets.all(16),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20), 
-        side: BorderSide(color: isDark ? Colors.grey[800]! : Colors.grey.shade100)
-      ),
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+              color: isDark ? Colors.grey[800]! : Colors.grey.shade100)),
       tileColor: isDark ? AppTheme.surfaceDark : Colors.white,
       leading: Container(
         padding: const EdgeInsets.all(12),
@@ -298,9 +476,15 @@ class _BrandDashboardScreenState extends State<BrandDashboardScreen> {
         ),
         child: Icon(icon, color: color),
       ),
-      title: Text(title, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppTheme.textMain)),
-      subtitle: Text(subtitle, style: GoogleFonts.inter(color: isDark ? Colors.grey[400] : Colors.grey)),
-      trailing: Icon(Icons.chevron_right, color: isDark ? Colors.grey[600] : Colors.grey),
+      title: Text(title,
+          style: GoogleFonts.outfit(
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : AppTheme.textMain)),
+      subtitle: Text(subtitle,
+          style: GoogleFonts.inter(
+              color: isDark ? Colors.grey[400] : Colors.grey)),
+      trailing: Icon(Icons.chevron_right,
+          color: isDark ? Colors.grey[600] : Colors.grey),
     );
   }
 }
@@ -331,7 +515,8 @@ class _CreateBrandScreenState extends State<CreateBrandScreen> {
 
   Future<void> _pickImage() async {
     try {
-      final pickedFile = await _imagePicker.pickImage(source: ImageSource.gallery);
+      final pickedFile =
+          await _imagePicker.pickImage(source: ImageSource.gallery);
       if (pickedFile != null) {
         setState(() {
           _logoFile = File(pickedFile.path);
@@ -380,41 +565,54 @@ class _CreateBrandScreenState extends State<CreateBrandScreen> {
       if (_logoFile != null) {
         try {
           final fileExt = _logoFile!.path.split('.').last;
-          final fileName = '${user.id}/logo_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
-          
+          final fileName =
+              '${user.id}/logo_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+
           final bytes = await _logoFile!.readAsBytes();
           await _supabase.storage.from('brand-logos').uploadBinary(
-            fileName,
-            bytes,
-            fileOptions: const FileOptions(
-              contentType: 'image/jpeg',
-              upsert: true,
-            ),
-          );
-          logoUrl = _supabase.storage.from('brand-logos').getPublicUrl(fileName);
+                fileName,
+                bytes,
+                fileOptions: const FileOptions(
+                  contentType: 'image/jpeg',
+                  upsert: true,
+                ),
+              );
+          logoUrl =
+              _supabase.storage.from('brand-logos').getPublicUrl(fileName);
         } catch (e) {
           debugPrint('Error uploading logo: $e');
           // Continue without logo if upload fails
         }
       }
 
-      // Create brand
-      await _supabase.from('brands').insert({
+      // Create brand with detailed logging and error handling
+      final payload = {
         'owner_user_id': user.id,
         'name': _nameController.text.trim(),
-        'website_url': _websiteController.text.trim().isEmpty 
-            ? null 
+        'website_url': _websiteController.text.trim().isEmpty
+            ? null
             : _websiteController.text.trim(),
         'logo_url': logoUrl,
-      });
-      
+      };
+
+      debugPrint('Creating brand with payload: $payload');
+
+      final response =
+          await _supabase.from('brands').insert(payload).select().maybeSingle();
+
+      debugPrint('Create brand response: $response');
+
+      if (response == null) {
+        throw Exception('Brand insert returned null response');
+      }
+
       if (mounted) {
         // Navigate back to dashboard which will refresh and show the brand
         Navigator.pop(context, true);
         // The dashboard will automatically refresh when we return
         // because it checks in initState or we can trigger refresh
       }
-    } catch(e) {
+    } catch (e) {
       debugPrint('Error creating brand: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -431,12 +629,16 @@ class _CreateBrandScreenState extends State<CreateBrandScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppTheme.backgroundDark : AppTheme.backgroundLight,
+      backgroundColor:
+          isDark ? AppTheme.backgroundDark : AppTheme.backgroundLight,
       appBar: AppBar(
-        title: Text('Register Brand', style: GoogleFonts.outfit(color: isDark ? Colors.white : AppTheme.textMain)),
+        title: Text('Register Brand',
+            style: GoogleFonts.outfit(
+                color: isDark ? Colors.white : AppTheme.textMain)),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: IconThemeData(color: isDark ? Colors.white : AppTheme.textMain),
+        iconTheme:
+            IconThemeData(color: isDark ? Colors.white : AppTheme.textMain),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -513,7 +715,8 @@ class _CreateBrandScreenState extends State<CreateBrandScreen> {
                                     color: Colors.red,
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(Icons.close, color: Colors.white, size: 16),
+                                  child: const Icon(Icons.close,
+                                      color: Colors.white, size: 16),
                                 ),
                                 onPressed: () {
                                   setState(() {
@@ -531,7 +734,8 @@ class _CreateBrandScreenState extends State<CreateBrandScreen> {
                             Icon(
                               Icons.cloud_upload_outlined,
                               size: 48,
-                              color: isDark ? Colors.grey[600] : Colors.grey[400],
+                              color:
+                                  isDark ? Colors.grey[600] : Colors.grey[400],
                             ),
                             const SizedBox(height: 12),
                             Text(
@@ -539,7 +743,9 @@ class _CreateBrandScreenState extends State<CreateBrandScreen> {
                               style: GoogleFonts.inter(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
-                                color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                color: isDark
+                                    ? Colors.grey[400]
+                                    : Colors.grey[600],
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -547,7 +753,9 @@ class _CreateBrandScreenState extends State<CreateBrandScreen> {
                               'or tap to browse',
                               style: GoogleFonts.inter(
                                 fontSize: 12,
-                                color: isDark ? Colors.grey[500] : Colors.grey[500],
+                                color: isDark
+                                    ? Colors.grey[500]
+                                    : Colors.grey[500],
                               ),
                             ),
                           ],
@@ -576,15 +784,18 @@ class _CreateBrandScreenState extends State<CreateBrandScreen> {
                 fillColor: isDark ? AppTheme.surfaceDark : Colors.white,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: isDark ? Colors.grey[700]! : Colors.grey.shade300),
+                  borderSide: BorderSide(
+                      color: isDark ? Colors.grey[700]! : Colors.grey.shade300),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: isDark ? Colors.grey[700]! : Colors.grey.shade300),
+                  borderSide: BorderSide(
+                      color: isDark ? Colors.grey[700]! : Colors.grey.shade300),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppTheme.primaryGreen, width: 2),
+                  borderSide:
+                      const BorderSide(color: AppTheme.primaryGreen, width: 2),
                 ),
               ),
             ),
@@ -611,15 +822,18 @@ class _CreateBrandScreenState extends State<CreateBrandScreen> {
                 fillColor: isDark ? AppTheme.surfaceDark : Colors.white,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: isDark ? Colors.grey[700]! : Colors.grey.shade300),
+                  borderSide: BorderSide(
+                      color: isDark ? Colors.grey[700]! : Colors.grey.shade300),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: isDark ? Colors.grey[700]! : Colors.grey.shade300),
+                  borderSide: BorderSide(
+                      color: isDark ? Colors.grey[700]! : Colors.grey.shade300),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppTheme.primaryGreen, width: 2),
+                  borderSide:
+                      const BorderSide(color: AppTheme.primaryGreen, width: 2),
                 ),
               ),
             ),

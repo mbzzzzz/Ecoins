@@ -12,4 +12,3 @@ class StepsTrackerMobile {
     // No-op for web
   }
 }
-

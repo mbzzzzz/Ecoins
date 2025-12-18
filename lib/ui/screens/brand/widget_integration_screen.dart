@@ -11,7 +11,8 @@ class WidgetIntegrationScreen extends StatefulWidget {
   const WidgetIntegrationScreen({super.key});
 
   @override
-  State<WidgetIntegrationScreen> createState() => _WidgetIntegrationScreenState();
+  State<WidgetIntegrationScreen> createState() =>
+      _WidgetIntegrationScreenState();
 }
 
 class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
@@ -44,13 +45,13 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
     try {
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) return;
-      
+
       final data = await Supabase.instance.client
           .from('brands')
           .select('api_key')
           .eq('owner_user_id', user.id)
           .single();
-          
+
       if (mounted) {
         setState(() {
           _apiKey = data['api_key'];
@@ -68,7 +69,7 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
 
   Future<void> _fetchRealtimeData() async {
     if (_apiKey == null) return;
-    
+
     setState(() => _isLoadingData = true);
     try {
       final supabase = Supabase.instance.client;
@@ -93,8 +94,9 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
   String get _snippet {
     if (_apiKey == null) return 'Loading...';
     // Convert color to hex string
-    final accentHex = '#${_selectedAccent.value.toRadixString(16).substring(2).toUpperCase()}';
-    
+    final accentHex =
+        '#${_selectedAccent.value.toRadixString(16).substring(2).toUpperCase()}';
+
     return '''<div id="eco-rewards-widget"></div>
 <script src="https://gwmcmlpuqummaumjloci.supabase.co/functions/v1/serve-widget"
         data-key="$_apiKey"
@@ -113,28 +115,41 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
           children: [
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: _selectedAccent.withOpacity(0.1), shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                  color: _selectedAccent.withOpacity(0.1),
+                  shape: BoxShape.circle),
               child: Icon(Icons.eco, color: _selectedAccent, size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
-                 crossAxisAlignment: CrossAxisAlignment.start,
-                 mainAxisSize: MainAxisSize.min,
-                 children: [
-                   Text('Eco Impact', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14, color: isDark ? Colors.white : Colors.black)),
-                   if (_showRawValues) Text(
-                     _isLoadingData 
-                         ? 'Loading...' 
-                         : '${_realtimeCarbon.toStringAsFixed(1)} kg CO₂ saved',
-                     style: GoogleFonts.inter(fontSize: 12, color: isDark ? Colors.white70 : Colors.black54),
-                   ),
-                 ],
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Eco Impact',
+                      style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: isDark ? Colors.white : Colors.black)),
+                  if (_showRawValues)
+                    Text(
+                      _isLoadingData
+                          ? 'Loading...'
+                          : '${_realtimeCarbon.toStringAsFixed(1)} kg CO₂ saved',
+                      style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: isDark ? Colors.white70 : Colors.black54),
+                    ),
+                ],
               ),
             ),
             const SizedBox(width: 16),
             if (_showPercentage)
-              Text('65%', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: _selectedAccent)),
+              Text('65%',
+                  style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: _selectedAccent)),
           ],
         );
       case 'badge':
@@ -150,7 +165,11 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
               children: [
                 const Icon(Icons.verified, color: Colors.white, size: 16),
                 const SizedBox(width: 8),
-                Text('Sustainable Brand', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 12)),
+                Text('Sustainable Brand',
+                    style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 12)),
               ],
             ),
           ),
@@ -162,27 +181,36 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
             Icon(Icons.eco, color: _selectedAccent, size: 16),
             const SizedBox(width: 4),
             Text(
-              _isLoadingData 
-                  ? 'Loading...' 
+              _isLoadingData
+                  ? 'Loading...'
                   : '${_realtimeCarbon.toStringAsFixed(1)} kg CO₂',
-              style: GoogleFonts.robotoMono(fontWeight: FontWeight.bold, fontSize: 14, color: isDark ? Colors.white : Colors.black),
+              style: GoogleFonts.robotoMono(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: isDark ? Colors.white : Colors.black),
             ),
           ],
         );
       case 'compact':
-         return Column(
-           children: [
-             Icon(Icons.eco, color: _selectedAccent, size: 24),
-             const SizedBox(height: 4),
-             Text(
-              _isLoadingData 
-                  ? 'Loading...' 
+        return Column(
+          children: [
+            Icon(Icons.eco, color: _selectedAccent, size: 24),
+            const SizedBox(height: 4),
+            Text(
+              _isLoadingData
+                  ? 'Loading...'
                   : '${_realtimeCarbon.toStringAsFixed(1)} kg',
-              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: isDark ? Colors.white : Colors.black),
+              style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: isDark ? Colors.white : Colors.black),
             ),
-             Text('Carbon Saved', style: GoogleFonts.inter(fontSize: 10, color: isDark ? Colors.white54 : Colors.black54)),
-           ],
-         );
+            Text('Carbon Saved',
+                style: GoogleFonts.inter(
+                    fontSize: 10,
+                    color: isDark ? Colors.white54 : Colors.black54)),
+          ],
+        );
       case 'card':
       default:
         return Column(
@@ -204,8 +232,8 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
                     const SizedBox(width: 4),
                     if (_showRawValues)
                       Text(
-                        _isLoadingData 
-                            ? 'Loading...' 
+                        _isLoadingData
+                            ? 'Loading...'
                             : '${_realtimeCarbon.toStringAsFixed(1)} kg',
                         style: GoogleFonts.robotoMono(
                           fontWeight: FontWeight.bold,
@@ -222,7 +250,8 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
               height: 10,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
+                color:
+                    isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
                 borderRadius: BorderRadius.circular(5),
               ),
               child: Stack(
@@ -246,11 +275,16 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
                 children: [
                   Text(
                     'Progress to goal',
-                    style: TextStyle(fontSize: 11, color: isDark ? Colors.white54 : Colors.black54),
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: isDark ? Colors.white54 : Colors.black54),
                   ),
                   Text(
                     '65%',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isDark ? Colors.white54 : Colors.black54),
+                    style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white54 : Colors.black54),
                   ),
                 ],
               ),
@@ -262,7 +296,7 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     // Background Gradients
     final bgLightStart = AppTheme.backgroundLight;
     final bgLightEnd = const Color(0xFFE6F5EF);
@@ -275,9 +309,12 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
         leading: Padding(
           padding: const EdgeInsets.only(left: 16),
           child: CircleAvatar(
-            backgroundColor: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05),
+            backgroundColor: isDark
+                ? Colors.white.withOpacity(0.1)
+                : Colors.black.withOpacity(0.05),
             child: IconButton(
-              icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : const Color(0xFF0E1B17)),
+              icon: Icon(Icons.arrow_back,
+                  color: isDark ? Colors.white : const Color(0xFF0E1B17)),
               onPressed: () => Navigator.pop(context),
             ),
           ),
@@ -299,7 +336,8 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: isDark ? [bgDarkStart, bgDarkEnd] : [bgLightStart, bgLightEnd],
+            colors:
+                isDark ? [bgDarkStart, bgDarkEnd] : [bgLightStart, bgLightEnd],
           ),
         ),
         child: SafeArea(
@@ -323,7 +361,9 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
                   'Customize and integrate your sustainability impact widget.',
                   style: GoogleFonts.inter(
                     fontSize: 16,
-                    color: isDark ? Colors.white70 : const Color(0xFF0E1B17).withOpacity(0.7),
+                    color: isDark
+                        ? Colors.white70
+                        : const Color(0xFF0E1B17).withOpacity(0.7),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -341,7 +381,8 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
                           width: 128,
                           height: 128,
                           decoration: BoxDecoration(
-                            color: AppTheme.primaryGreen.withOpacity(isDark ? 0.2 : 0.1),
+                            color: AppTheme.primaryGreen
+                                .withOpacity(isDark ? 0.2 : 0.1),
                             shape: BoxShape.circle,
                           ),
                           child: BackdropFilter(
@@ -362,7 +403,8 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
                                   color: AppTheme.primaryGreen.withOpacity(0.1),
                                   shape: BoxShape.circle,
                                 ),
-                                child: const Icon(Icons.vpn_key, color: AppTheme.primaryGreen),
+                                child: const Icon(Icons.vpn_key,
+                                    color: AppTheme.primaryGreen),
                               ),
                               const SizedBox(width: 12),
                               Text(
@@ -370,7 +412,9 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
                                 style: GoogleFonts.outfit(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: isDark ? Colors.white : const Color(0xFF0E1B17),
+                                  color: isDark
+                                      ? Colors.white
+                                      : const Color(0xFF0E1B17),
                                 ),
                               ),
                             ],
@@ -379,10 +423,14 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: isDark ? Colors.black.withOpacity(0.2) : Colors.white.withOpacity(0.5),
+                              color: isDark
+                                  ? Colors.black.withOpacity(0.2)
+                                  : Colors.white.withOpacity(0.5),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+                                color: isDark
+                                    ? Colors.white.withOpacity(0.05)
+                                    : Colors.black.withOpacity(0.05),
                               ),
                             ),
                             child: Row(
@@ -393,7 +441,9 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
                                     style: GoogleFonts.jetBrainsMono(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
-                                      color: isDark ? Colors.white : const Color(0xFF0E1B17),
+                                      color: isDark
+                                          ? Colors.white
+                                          : const Color(0xFF0E1B17),
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -405,19 +455,23 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
                           _buildPrimaryButton(
                             label: 'Copy Key',
                             icon: Icons.copy,
-                            onPressed: _apiKey == null ? null : () {
-                              Clipboard.setData(ClipboardData(text: _apiKey!));
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('API Key copied')),
-                              );
-                            },
+                            onPressed: _apiKey == null
+                                ? null
+                                : () {
+                                    Clipboard.setData(
+                                        ClipboardData(text: _apiKey!));
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                          content: Text('API Key copied')),
+                                    );
+                                  },
                           ),
                         ],
                       ),
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
                 Text(
                   'Customize Widget',
@@ -443,12 +497,15 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
                             style: GoogleFonts.inter(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: isDark ? Colors.white54 : const Color(0xFF0E1B17).withOpacity(0.5),
+                              color: isDark
+                                  ? Colors.white54
+                                  : const Color(0xFF0E1B17).withOpacity(0.5),
                               letterSpacing: 1,
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
                               color: AppTheme.primaryGreen.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(20),
@@ -465,15 +522,18 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      
+
                       // Preview Box
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1A2E26) : Colors.white,
+                          color:
+                              isDark ? const Color(0xFF1A2E26) : Colors.white,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+                            color: isDark
+                                ? Colors.white.withOpacity(0.05)
+                                : Colors.black.withOpacity(0.05),
                           ),
                           boxShadow: [
                             BoxShadow(
@@ -485,9 +545,13 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
                         ),
                         child: _buildPreviewWidget(isDark),
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      Divider(color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05), height: 1),
+                      Divider(
+                          color: isDark
+                              ? Colors.white10
+                              : Colors.black.withOpacity(0.05),
+                          height: 1),
                       const SizedBox(height: 24),
 
                       // Controls
@@ -497,35 +561,57 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
                           // Widget Variant
                           Text(
                             'Widget Layout',
-                            style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: isDark ? Colors.white : const Color(0xFF0E1B17)),
+                            style: GoogleFonts.inter(
+                                fontWeight: FontWeight.w600,
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF0E1B17)),
                           ),
                           const SizedBox(height: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                             decoration: BoxDecoration(
-                              color: isDark ? Colors.black.withOpacity(0.2) : Colors.white.withOpacity(0.6),
+                              color: isDark
+                                  ? Colors.black.withOpacity(0.2)
+                                  : Colors.white.withOpacity(0.6),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05)),
+                              border: Border.all(
+                                  color: isDark
+                                      ? Colors.white10
+                                      : Colors.black.withOpacity(0.05)),
                             ),
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<String>(
                                 value: _selectedVariant,
                                 isExpanded: true,
-                                dropdownColor: isDark ? AppTheme.surfaceDark : Colors.white,
-                                items: _variantNames.entries.map((e) => DropdownMenuItem(
-                                  value: e.key,
-                                  child: Text(e.value, style: TextStyle(color: isDark ? Colors.white : AppTheme.textMain)),
-                                )).toList(),
-                                onChanged: (val) => setState(() => _selectedVariant = val!),
+                                dropdownColor: isDark
+                                    ? AppTheme.surfaceDark
+                                    : Colors.white,
+                                items: _variantNames.entries
+                                    .map((e) => DropdownMenuItem(
+                                          value: e.key,
+                                          child: Text(e.value,
+                                              style: TextStyle(
+                                                  color: isDark
+                                                      ? Colors.white
+                                                      : AppTheme.textMain)),
+                                        ))
+                                    .toList(),
+                                onChanged: (val) =>
+                                    setState(() => _selectedVariant = val!),
                               ),
                             ),
                           ),
-                          
+
                           const SizedBox(height: 20),
 
                           Text(
                             'Accent Color',
-                            style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: isDark ? Colors.white : const Color(0xFF0E1B17)),
+                            style: GoogleFonts.inter(
+                                fontWeight: FontWeight.w600,
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF0E1B17)),
                           ),
                           const SizedBox(height: 12),
                           Row(
@@ -541,43 +627,75 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
                               _buildColorBtn(const Color(0xFFEC4899)), // Pink
                             ],
                           ),
-                          
+
                           const SizedBox(height: 20),
-                          
-                           // Typography
+
+                          // Typography
                           Text(
                             'Typography',
-                            style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: isDark ? Colors.white : const Color(0xFF0E1B17)),
+                            style: GoogleFonts.inter(
+                                fontWeight: FontWeight.w600,
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF0E1B17)),
                           ),
                           const SizedBox(height: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                             decoration: BoxDecoration(
-                              color: isDark ? Colors.black.withOpacity(0.2) : Colors.white.withOpacity(0.6),
+                              color: isDark
+                                  ? Colors.black.withOpacity(0.2)
+                                  : Colors.white.withOpacity(0.6),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05)),
+                              border: Border.all(
+                                  color: isDark
+                                      ? Colors.white10
+                                      : Colors.black.withOpacity(0.05)),
                             ),
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<String>(
                                 value: _selectedFont,
                                 isExpanded: true,
-                                dropdownColor: isDark ? AppTheme.surfaceDark : Colors.white,
-                                items: ['Inter (Default)', 'Outfit', 'Roboto Mono', 'Open Sans'].map((f) => DropdownMenuItem(
-                                  value: f,
-                                  child: Text(f, style: TextStyle(color: isDark ? Colors.white : AppTheme.textMain)),
-                                )).toList(),
-                                onChanged: (val) => setState(() => _selectedFont = val!),
+                                dropdownColor: isDark
+                                    ? AppTheme.surfaceDark
+                                    : Colors.white,
+                                items: [
+                                  'Inter (Default)',
+                                  'Outfit',
+                                  'Roboto Mono',
+                                  'Open Sans'
+                                ]
+                                    .map((f) => DropdownMenuItem(
+                                          value: f,
+                                          child: Text(f,
+                                              style: TextStyle(
+                                                  color: isDark
+                                                      ? Colors.white
+                                                      : AppTheme.textMain)),
+                                        ))
+                                    .toList(),
+                                onChanged: (val) =>
+                                    setState(() => _selectedFont = val!),
                               ),
                             ),
                           ),
 
                           const SizedBox(height: 20),
-                          
-                          // Toggles
-                          _buildSwitchRow(isDark, 'Show Percentage', 'Display progress %', _showPercentage, (v) => setState(() => _showPercentage = v)),
-                          const SizedBox(height: 12),
-                          _buildSwitchRow(isDark, 'Raw CO₂ Values', 'Show kg saved', _showRawValues, (v) => setState(() => _showRawValues = v)),
 
+                          // Toggles
+                          _buildSwitchRow(
+                              isDark,
+                              'Show Percentage',
+                              'Display progress %',
+                              _showPercentage,
+                              (v) => setState(() => _showPercentage = v)),
+                          const SizedBox(height: 12),
+                          _buildSwitchRow(
+                              isDark,
+                              'Raw CO₂ Values',
+                              'Show kg saved',
+                              _showRawValues,
+                              (v) => setState(() => _showRawValues = v)),
                         ],
                       ),
                     ],
@@ -600,70 +718,83 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
                   isDark,
                   child: Column(
                     children: [
-                       Row(
-                         crossAxisAlignment: CrossAxisAlignment.start,
-                         children: [
-                           const Icon(Icons.code, color: AppTheme.primaryGreen),
-                           const SizedBox(width: 12),
-                           Expanded(
-                             child: Column(
-                               crossAxisAlignment: CrossAxisAlignment.start,
-                               children: [
-                                 Text(
-                                   'Install the script',
-                                   style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: isDark ? Colors.white : const Color(0xFF0E1B17)),
-                                 ),
-                                 const SizedBox(height: 4),
-                                 Text(
-                                   'Paste this code into your <head> tag.',
-                                    style: GoogleFonts.inter(fontSize: 12, color: isDark ? Colors.white60 : Colors.black54),
-                                 ),
-                               ],
-                             ),
-                           )
-                         ],
-                       ),
-                       const SizedBox(height: 16),
-                       Container(
-                         width: double.infinity,
-                         padding: const EdgeInsets.all(16),
-                         decoration: BoxDecoration(
-                           color: const Color(0xFF1E293B),
-                           borderRadius: BorderRadius.circular(12),
-                           border: Border.all(color: Colors.white10),
-                           boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
-                         ),
-                         child: SingleChildScrollView(
-                           scrollDirection: Axis.horizontal,
-                           child: Text(
-                             _snippet,
-                             style: GoogleFonts.jetBrainsMono(
-                               fontSize: 12,
-                               color: const Color(0xFFA5B4FC), // Indigo 200 light
-                             ),
-                           ),
-                         ),
-                       ),
-                       const SizedBox(height: 16),
-                       _buildPrimaryButton(
-                         label: 'Copy Snippet',
-                         icon: Icons.file_copy,
-                         onPressed: () {
-                              Clipboard.setData(ClipboardData(text: _snippet));
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Snippet copied')),
-                              );
-                         }
-                       ),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.code, color: AppTheme.primaryGreen),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Install the script',
+                                  style: GoogleFonts.inter(
+                                      fontWeight: FontWeight.w600,
+                                      color: isDark
+                                          ? Colors.white
+                                          : const Color(0xFF0E1B17)),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Paste this code into your <head> tag.',
+                                  style: GoogleFonts.inter(
+                                      fontSize: 12,
+                                      color: isDark
+                                          ? Colors.white60
+                                          : Colors.black54),
+                                ),
+                              ],
+                            ),
+                          )
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E293B),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.white10),
+                          boxShadow: const [
+                            BoxShadow(color: Colors.black12, blurRadius: 4)
+                          ],
+                        ),
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Text(
+                            _snippet,
+                            style: GoogleFonts.jetBrainsMono(
+                              fontSize: 12,
+                              color:
+                                  const Color(0xFFA5B4FC), // Indigo 200 light
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildPrimaryButton(
+                          label: 'Copy Snippet',
+                          icon: Icons.file_copy,
+                          onPressed: () {
+                            Clipboard.setData(ClipboardData(text: _snippet));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Snippet copied')),
+                            );
+                          }),
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 40),
                 Center(
                   child: TextButton(
                     onPressed: () {},
-                    child: Text('View documentation', style: TextStyle(color: AppTheme.primaryGreen, fontWeight: FontWeight.bold)),
+                    child: Text('View documentation',
+                        style: TextStyle(
+                            color: AppTheme.primaryGreen,
+                            fontWeight: FontWeight.bold)),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -679,10 +810,14 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? AppTheme.surfaceDark.withOpacity(0.7) : Colors.white.withOpacity(0.7),
+        color: isDark
+            ? AppTheme.surfaceDark.withOpacity(0.7)
+            : Colors.white.withOpacity(0.7),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.1) : Colors.white.withOpacity(0.5),
+          color: isDark
+              ? Colors.white.withOpacity(0.1)
+              : Colors.white.withOpacity(0.5),
         ),
         boxShadow: [
           BoxShadow(
@@ -692,7 +827,8 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
           ),
         ],
       ),
-      child: ClipRRect( // For potential backdrop filter if we wanted strict glass
+      child: ClipRRect(
+        // For potential backdrop filter if we wanted strict glass
         borderRadius: BorderRadius.circular(24),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -702,8 +838,8 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
           ),
         ),
       ),
-    ); 
-    // Correction: BackdropFilter applies to what's BEHIND the container. 
+    );
+    // Correction: BackdropFilter applies to what's BEHIND the container.
     // Putting it inside 'child' of Container with opacity might apply blur to the Container background itself if configured right.
     // The standard way: Stack -> [BackdropFilter, Container].
     // But since the Container has opacity, we can just wrap the child content? No.
@@ -712,7 +848,10 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
     // Actually, I'll remove the inner BackdropFilter for simplicity as the outer color opacity is robust.
   }
 
-  Widget _buildPrimaryButton({required String label, required IconData icon, VoidCallback? onPressed}) {
+  Widget _buildPrimaryButton(
+      {required String label,
+      required IconData icon,
+      VoidCallback? onPressed}) {
     return SizedBox(
       height: 48,
       width: double.infinity,
@@ -723,10 +862,12 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
           foregroundColor: Colors.white,
           elevation: 4,
           shadowColor: AppTheme.primaryGreen.withOpacity(0.4),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
         icon: Icon(icon, size: 20),
-        label: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+        label: Text(label,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
       ),
     );
   }
@@ -751,24 +892,33 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
               )
           ],
         ),
-        child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 18) : null,
+        child: isSelected
+            ? const Icon(Icons.check, color: Colors.white, size: 18)
+            : null,
       ),
     );
   }
 
-  Widget _buildSwitchRow(bool isDark, String title, String subtitle, bool value, Function(bool) onChanged) {
+  Widget _buildSwitchRow(bool isDark, String title, String subtitle, bool value,
+      Function(bool) onChanged) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: isDark ? Colors.white : const Color(0xFF0E1B17))),
-            Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: isDark ? Colors.white54 : Colors.black54)),
+            Text(title,
+                style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white : const Color(0xFF0E1B17))),
+            Text(subtitle,
+                style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: isDark ? Colors.white54 : Colors.black54)),
           ],
         ),
         Switch.adaptive(
-          value: value, 
+          value: value,
           onChanged: onChanged,
           activeColor: AppTheme.primaryGreen,
         ),

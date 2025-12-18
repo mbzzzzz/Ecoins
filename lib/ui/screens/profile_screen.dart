@@ -29,27 +29,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _fetchProfile() async {
     try {
       final user = _supabase.auth.currentUser;
-      
+
       if (user == null) {
         // MOCK DATA for development/preview
-         await Future.delayed(const Duration(milliseconds: 500));
-         if (mounted) {
-           setState(() {
-             _profile = {
-               'display_name': 'Eco Warrior', 
-               'avatar_url': null,
-               'points_balance': 1250,
-               'carbon_saved_kg': 42.5,
-               'bio': 'Saving the planet, one step at a time.'
-             };
-             _isLoading = false;
-           });
-         }
-         return;
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (mounted) {
+          setState(() {
+            _profile = {
+              'display_name': 'Eco Warrior',
+              'avatar_url': null,
+              'points_balance': 1250,
+              'carbon_saved_kg': 42.5,
+              'bio': 'Saving the planet, one step at a time.'
+            };
+            _isLoading = false;
+          });
+        }
+        return;
       }
 
       final userId = user.id;
-      final data = await _supabase.from('profiles').select().eq('id', userId).single();
+      final data =
+          await _supabase.from('profiles').select().eq('id', userId).single();
       if (mounted) {
         setState(() {
           _profile = data;
@@ -66,15 +67,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _signOut() async {
     await _supabase.auth.signOut();
     if (mounted) {
-      context.go('/role-select'); // Go back to role select instead of login to allow role re-choice
+      context.go(
+          '/role-select'); // Go back to role select instead of login to allow role re-choice
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColors = isDark 
-        ? [AppTheme.backgroundDark, const Color(0xFF1A1A2E)] 
+    final bgColors = isDark
+        ? [AppTheme.backgroundDark, const Color(0xFF1A1A2E)]
         : [AppTheme.backgroundLight, const Color(0xFFF0F9FF)];
 
     return Scaffold(
@@ -90,7 +92,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: bgColors[0].withOpacity(0.95),
         elevation: 0,
         centerTitle: true,
-        iconTheme: IconThemeData(color: isDark ? Colors.white : AppTheme.textMain),
+        iconTheme:
+            IconThemeData(color: isDark ? Colors.white : AppTheme.textMain),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout_rounded),
@@ -108,23 +111,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
         child: _isLoading
-            ? Center(child: CircularProgressIndicator(color: AppTheme.primaryGreen))
+            ? Center(
+                child: CircularProgressIndicator(color: AppTheme.primaryGreen))
             : SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.only(top: 20, bottom: 40, left: 20, right: 20),
+                padding: const EdgeInsets.only(
+                    top: 20, bottom: 40, left: 20, right: 20),
                 child: Column(
                   children: [
                     // Profile Header Card
                     _buildProfileHeader(isDark),
-                    
+
                     const SizedBox(height: 24),
 
                     // Stats Grid
                     Row(
                       children: [
-                        Expanded(child: _buildStatCard('Carbon Saved', '${_profile?['carbon_saved_kg']?.toStringAsFixed(1) ?? '0'} kg', Icons.cloud_outlined, const Color(0xFF10B981), isDark)),
+                        Expanded(
+                            child: _buildStatCard(
+                                'Carbon Saved',
+                                '${_profile?['carbon_saved_kg']?.toStringAsFixed(1) ?? '0'} kg',
+                                Icons.cloud_outlined,
+                                const Color(0xFF10B981),
+                                isDark)),
                         const SizedBox(width: 16),
-                        Expanded(child: _buildStatCard('Eco Points', '${_profile?['points_balance'] ?? '0'}', Icons.stars_rounded, const Color(0xFFF59E0B), isDark)),
+                        Expanded(
+                            child: _buildStatCard(
+                                'Eco Points',
+                                '${_profile?['points_balance'] ?? '0'}',
+                                Icons.stars_rounded,
+                                const Color(0xFFF59E0B),
+                                isDark)),
                       ],
                     ),
 
@@ -175,17 +192,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 3),
                 boxShadow: const [
-                  BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))
+                  BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 10,
+                      offset: Offset(0, 4))
                 ],
               ),
               child: CircleAvatar(
                 radius: 52,
                 backgroundColor: isDark ? Colors.grey[800] : Colors.grey[200],
-                backgroundImage: _profile?['avatar_url'] != null 
-                    ? NetworkImage(_profile!['avatar_url']) 
+                backgroundImage: _profile?['avatar_url'] != null
+                    ? NetworkImage(_profile!['avatar_url'])
                     : null,
-                child: _profile?['avatar_url'] == null 
-                    ? Icon(Icons.person, size: 55, color: isDark ? Colors.grey[500] : Colors.grey[600]) 
+                child: _profile?['avatar_url'] == null
+                    ? Icon(Icons.person,
+                        size: 55,
+                        color: isDark ? Colors.grey[500] : Colors.grey[600])
                     : null,
               ),
             ),
@@ -194,7 +216,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: 16),
         // Name
         Text(
-          _profile?['display_name'] ?? _supabase.auth.currentUser?.email?.split('@')[0] ?? 'Eco Warrior',
+          _profile?['display_name'] ??
+              _supabase.auth.currentUser?.email?.split('@')[0] ??
+              'Eco Warrior',
           style: GoogleFonts.outfit(
             fontSize: 24,
             fontWeight: FontWeight.bold,
@@ -232,13 +256,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color, bool isDark) {
+  Widget _buildStatCard(
+      String title, String value, IconData icon, Color color, bool isDark) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? AppTheme.surfaceDark.withOpacity(0.8) : Colors.white.withOpacity(0.8),
+        color: isDark
+            ? AppTheme.surfaceDark.withOpacity(0.8)
+            : Colors.white.withOpacity(0.8),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.white),
+        border: Border.all(
+            color: isDark ? Colors.white.withOpacity(0.05) : Colors.white),
         boxShadow: [
           BoxShadow(
             color: color.withOpacity(0.1),
@@ -285,9 +313,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? AppTheme.surfaceDark.withOpacity(0.8) : Colors.white.withOpacity(0.8),
+        color: isDark
+            ? AppTheme.surfaceDark.withOpacity(0.8)
+            : Colors.white.withOpacity(0.8),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.white),
+        border: Border.all(
+            color: isDark ? Colors.white.withOpacity(0.05) : Colors.white),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
@@ -325,9 +356,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             spacing: 12,
             runSpacing: 12,
             children: [
-              _buildAchievementChip('First Ride', Icons.directions_bike, Colors.blue, isDark),
-              _buildAchievementChip('Carbon Free', Icons.grass, Colors.green, isDark),
-              _buildAchievementChip('Early Adopter', Icons.verified, Colors.purple, isDark),
+              _buildAchievementChip(
+                  'First Ride', Icons.directions_bike, Colors.blue, isDark),
+              _buildAchievementChip(
+                  'Carbon Free', Icons.grass, Colors.green, isDark),
+              _buildAchievementChip(
+                  'Early Adopter', Icons.verified, Colors.purple, isDark),
             ],
           ),
         ],
@@ -335,7 +369,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildAchievementChip(String label, IconData icon, Color color, bool isDark) {
+  Widget _buildAchievementChip(
+      String label, IconData icon, Color color, bool isDark) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
@@ -423,8 +458,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         child: ListTile(
           onTap: onTap,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           leading: Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
@@ -456,19 +493,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: isDark ? AppTheme.surfaceDark : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Sign Out', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppTheme.textMain)),
-        content: Text('Are you sure you want to sign out?', style: GoogleFonts.inter(color: isDark ? Colors.grey[300] : AppTheme.textSub)),
+        title: Text('Sign Out',
+            style: GoogleFonts.outfit(
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : AppTheme.textMain)),
+        content: Text('Are you sure you want to sign out?',
+            style: GoogleFonts.inter(
+                color: isDark ? Colors.grey[300] : AppTheme.textSub)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey)),
+            child: Text('Cancel',
+                style:
+                    TextStyle(color: isDark ? Colors.grey[400] : Colors.grey)),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
               _signOut();
             },
-            child: const Text('Sign Out', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            child: const Text('Sign Out',
+                style:
+                    TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
           ),
         ],
       ),

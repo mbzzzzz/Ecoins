@@ -74,18 +74,20 @@ class _BrandSettingsScreenState extends State<BrandSettingsScreen> {
 
   Future<void> _saveChanges() async {
     if (_brandId == null) return;
-    
+
     setState(() => _isLoading = true);
-    
+
     try {
       String? logoUrl = _logoUrl;
-      
+
       // Upload Logo if changed
       if (_logoFile != null) {
         final fileExt = _logoFile!.path.split('.').last;
-        final fileName = '$_brandId/logo_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
-        
-        await _supabase.storage.from('brand-logos').upload(fileName, _logoFile!, fileOptions: const FileOptions(upsert: true));
+        final fileName =
+            '$_brandId/logo_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+
+        await _supabase.storage.from('brand-logos').upload(fileName, _logoFile!,
+            fileOptions: const FileOptions(upsert: true));
         logoUrl = _supabase.storage.from('brand-logos').getPublicUrl(fileName);
       }
 
@@ -96,11 +98,14 @@ class _BrandSettingsScreenState extends State<BrandSettingsScreen> {
       }).eq('id', _brandId!);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Settings updated!')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Settings updated!')));
         Navigator.pop(context);
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -109,21 +114,27 @@ class _BrandSettingsScreenState extends State<BrandSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: isDark ? AppTheme.backgroundDark : AppTheme.backgroundLight,
-        body: const Center(child: CircularProgressIndicator(color: AppTheme.primaryGreen)),
+        backgroundColor:
+            isDark ? AppTheme.backgroundDark : AppTheme.backgroundLight,
+        body: const Center(
+            child: CircularProgressIndicator(color: AppTheme.primaryGreen)),
       );
     }
 
     return Scaffold(
-      backgroundColor: isDark ? AppTheme.backgroundDark : AppTheme.backgroundLight,
+      backgroundColor:
+          isDark ? AppTheme.backgroundDark : AppTheme.backgroundLight,
       appBar: AppBar(
-        title: Text('Brand Settings', style: GoogleFonts.outfit(color: isDark ? Colors.white : AppTheme.textMain)),
+        title: Text('Brand Settings',
+            style: GoogleFonts.outfit(
+                color: isDark ? Colors.white : AppTheme.textMain)),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: IconThemeData(color: isDark ? Colors.white : AppTheme.textMain),
+        iconTheme:
+            IconThemeData(color: isDark ? Colors.white : AppTheme.textMain),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -133,48 +144,58 @@ class _BrandSettingsScreenState extends State<BrandSettingsScreen> {
             Center(
               child: Stack(
                 children: [
-                   Container(
-                     width: 100,
-                     height: 100,
-                     decoration: BoxDecoration(
-                       shape: BoxShape.circle,
-                       color: isDark ? Colors.grey[800] : Colors.white,
-                       border: Border.all(color: AppTheme.primaryGreen, width: 2),
-                       image: _logoFile != null 
-                         ? DecorationImage(image: FileImage(_logoFile!), fit: BoxFit.cover)
-                         : (_logoUrl != null ? DecorationImage(image: NetworkImage(_logoUrl!), fit: BoxFit.cover) : null),
-                     ),
-                     child: (_logoFile == null && _logoUrl == null)
-                       ? Icon(Icons.store, size: 50, color: isDark ? Colors.grey[400] : Colors.grey)
-                       : null,
-                   ),
-                   Positioned(
-                     bottom: 0,
-                     right: 0,
-                     child: InkWell(
-                       onTap: _pickImage,
-                       child: Container(
-                         padding: const EdgeInsets.all(8),
-                         decoration: const BoxDecoration(
-                           color: AppTheme.primaryGreen,
-                           shape: BoxShape.circle,
-                         ),
-                         child: const Icon(Icons.camera_alt, color: Colors.white, size: 16),
-                       ),
-                     ),
-                   ),
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isDark ? Colors.grey[800] : Colors.white,
+                      border:
+                          Border.all(color: AppTheme.primaryGreen, width: 2),
+                      image: _logoFile != null
+                          ? DecorationImage(
+                              image: FileImage(_logoFile!), fit: BoxFit.cover)
+                          : (_logoUrl != null
+                              ? DecorationImage(
+                                  image: NetworkImage(_logoUrl!),
+                                  fit: BoxFit.cover)
+                              : null),
+                    ),
+                    child: (_logoFile == null && _logoUrl == null)
+                        ? Icon(Icons.store,
+                            size: 50,
+                            color: isDark ? Colors.grey[400] : Colors.grey)
+                        : null,
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: InkWell(
+                      onTap: _pickImage,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: const BoxDecoration(
+                          color: AppTheme.primaryGreen,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.camera_alt,
+                            color: Colors.white, size: 16),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
             const SizedBox(height: 32),
-            
-            Text('Brand Profile', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppTheme.textMain)),
+            Text('Brand Profile',
+                style: GoogleFonts.outfit(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : AppTheme.textMain)),
             const SizedBox(height: 16),
-            
             _buildTextField('Brand Name', _nameController, isDark),
             const SizedBox(height: 16),
             _buildTextField('Website URL', _websiteController, isDark),
-            
             const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
@@ -184,14 +205,15 @@ class _BrandSettingsScreenState extends State<BrandSettingsScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryGreen,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
-                child: Text('Save Changes', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold)),
+                child: Text('Save Changes',
+                    style: GoogleFonts.outfit(
+                        fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             ),
-
             const SizedBox(height: 16),
-
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -200,11 +222,13 @@ class _BrandSettingsScreenState extends State<BrandSettingsScreen> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.redAccent,
                   side: const BorderSide(color: Colors.redAccent),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
                 child: Text(
                   'Sign Out',
-                  style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: GoogleFonts.outfit(
+                      fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -214,11 +238,15 @@ class _BrandSettingsScreenState extends State<BrandSettingsScreen> {
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller, bool isDark) {
+  Widget _buildTextField(
+      String label, TextEditingController controller, bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.grey[300] : Colors.grey[700])),
+        Text(label,
+            style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.grey[300] : Colors.grey[700])),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
@@ -226,9 +254,17 @@ class _BrandSettingsScreenState extends State<BrandSettingsScreen> {
           decoration: InputDecoration(
             filled: true,
             fillColor: isDark ? AppTheme.surfaceDark : Colors.white,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: isDark ? Colors.grey[700]! : Colors.grey.shade200)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: isDark ? Colors.grey[700]! : Colors.grey.shade200)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppTheme.primaryGreen)),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                    color: isDark ? Colors.grey[700]! : Colors.grey.shade200)),
+            enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                    color: isDark ? Colors.grey[700]! : Colors.grey.shade200)),
+            focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppTheme.primaryGreen)),
           ),
         ),
       ],

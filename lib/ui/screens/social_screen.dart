@@ -12,7 +12,8 @@ class SocialScreen extends StatefulWidget {
   State<SocialScreen> createState() => _SocialScreenState();
 }
 
-class _SocialScreenState extends State<SocialScreen> with SingleTickerProviderStateMixin {
+class _SocialScreenState extends State<SocialScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -27,20 +28,21 @@ class _SocialScreenState extends State<SocialScreen> with SingleTickerProviderSt
       extendBodyBehindAppBar: true,
       body: Stack(
         children: [
-           // Background
+          // Background
           Positioned.fill(
             child: Image.asset(
               'assets/images/background.png',
               fit: BoxFit.cover,
             ),
           ),
-          
+
           SafeArea(
             child: Column(
               children: [
                 // Custom Header
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 8.0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -53,9 +55,9 @@ class _SocialScreenState extends State<SocialScreen> with SingleTickerProviderSt
                         ),
                       ),
                       IconButton(
-                        onPressed: () {}, 
-                        icon: const Icon(Icons.notifications_outlined, color: Colors.white)
-                      )
+                          onPressed: () {},
+                          icon: const Icon(Icons.notifications_outlined,
+                              color: Colors.white))
                     ],
                   ),
                 ),
@@ -77,8 +79,8 @@ class _SocialScreenState extends State<SocialScreen> with SingleTickerProviderSt
                     unselectedLabelColor: Colors.white70,
                     dividerColor: Colors.transparent,
                     tabs: const [
-                       Tab(text: 'Activity Feed'),
-                       Tab(text: 'Friends'),
+                      Tab(text: 'Activity Feed'),
+                      Tab(text: 'Friends'),
                     ],
                   ),
                 ),
@@ -126,7 +128,7 @@ class _ActivityFeedTabState extends State<ActivityFeedTab> {
     if (!mounted) return;
     try {
       final user = _supabase.auth.currentUser;
-      
+
       if (user == null) {
         // MOCK DATA
         await Future.delayed(const Duration(milliseconds: 800));
@@ -140,7 +142,9 @@ class _ActivityFeedTabState extends State<ActivityFeedTab> {
                 'description': 'Cycled to work (15km)',
                 'points_earned': 150,
                 'carbon_saved': 2.4,
-                'logged_at': DateTime.now().subtract(const Duration(minutes: 45)).toIso8601String(),
+                'logged_at': DateTime.now()
+                    .subtract(const Duration(minutes: 45))
+                    .toIso8601String(),
               },
               {
                 'user_name': 'Mike Chen',
@@ -149,7 +153,9 @@ class _ActivityFeedTabState extends State<ActivityFeedTab> {
                 'description': 'Cooked a plant-based dinner',
                 'points_earned': 50,
                 'carbon_saved': 1.1,
-                'logged_at': DateTime.now().subtract(const Duration(hours: 3)).toIso8601String(),
+                'logged_at': DateTime.now()
+                    .subtract(const Duration(hours: 3))
+                    .toIso8601String(),
               },
               {
                 'user_name': 'Emma Wilson',
@@ -158,7 +164,9 @@ class _ActivityFeedTabState extends State<ActivityFeedTab> {
                 'description': 'Installed LED bulbs',
                 'points_earned': 200,
                 'carbon_saved': 5.0,
-                'logged_at': DateTime.now().subtract(const Duration(days: 1)).toIso8601String(),
+                'logged_at': DateTime.now()
+                    .subtract(const Duration(days: 1))
+                    .toIso8601String(),
               },
             ];
             _isLoading = false;
@@ -168,10 +176,10 @@ class _ActivityFeedTabState extends State<ActivityFeedTab> {
       }
 
       final data = await _supabase
-        .from('activity_feed')
-        .select()
-        .order('logged_at', ascending: false)
-        .limit(20);
+          .from('activity_feed')
+          .select()
+          .order('logged_at', ascending: false)
+          .limit(20);
 
       if (mounted) {
         setState(() {
@@ -187,16 +195,20 @@ class _ActivityFeedTabState extends State<ActivityFeedTab> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) return const Center(child: CircularProgressIndicator(color: Colors.white));
-    
+    if (_isLoading)
+      return const Center(
+          child: CircularProgressIndicator(color: Colors.white));
+
     if (_activities.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.feed_outlined, size: 64, color: Colors.white.withOpacity(0.5)),
+            Icon(Icons.feed_outlined,
+                size: 64, color: Colors.white.withOpacity(0.5)),
             const SizedBox(height: 16),
-            Text('No recent activity.', style: GoogleFonts.inter(color: Colors.white70)),
+            Text('No recent activity.',
+                style: GoogleFonts.inter(color: Colors.white70)),
           ],
         ),
       );
@@ -216,10 +228,13 @@ class _ActivityFeedTabState extends State<ActivityFeedTab> {
               CircleAvatar(
                 radius: 20,
                 backgroundColor: Colors.white.withOpacity(0.2),
-                backgroundImage: item['avatar_url'] != null ? NetworkImage(item['avatar_url']) : null,
-                child: item['avatar_url'] == null 
-                  ? Text((item['user_name'] ?? '?')[0], style: const TextStyle(color: Colors.white)) 
-                  : null,
+                backgroundImage: item['avatar_url'] != null
+                    ? NetworkImage(item['avatar_url'])
+                    : null,
+                child: item['avatar_url'] == null
+                    ? Text((item['user_name'] ?? '?')[0],
+                        style: const TextStyle(color: Colors.white))
+                    : null,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -231,41 +246,83 @@ class _ActivityFeedTabState extends State<ActivityFeedTab> {
                       children: [
                         Text(
                           item['user_name'] ?? 'Unknown',
-                          style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                          style: GoogleFonts.outfit(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16),
                         ),
                         Text(
                           _formatTime(item['logged_at']),
-                          style: GoogleFonts.inter(color: Colors.white54, fontSize: 12),
+                          style: GoogleFonts.inter(
+                              color: Colors.white54, fontSize: 12),
                         ),
                       ],
                     ),
                     const SizedBox(height: 4),
                     Text(
                       item['description'] ?? '',
-                      style: GoogleFonts.inter(color: Colors.white70, fontSize: 14),
+                      style: GoogleFonts.inter(
+                          color: Colors.white70, fontSize: 14),
                     ),
                     const SizedBox(height: 8),
+                    // Verified Badge & Carbon/Points
                     Row(
                       children: [
-                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        if (item['is_verified'] == true) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            margin: const EdgeInsets.only(right: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                  color: Colors.blue.withOpacity(0.5),
+                                  width: 0.5),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.verified,
+                                    size: 10, color: Colors.blue),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'VERIFIED',
+                                  style: GoogleFonts.inter(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.blue),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
                             color: AppTheme.primaryGreen.withOpacity(0.3),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.cloud_outlined, color: Color(0xFF10B981), size: 12),
+                              const Icon(Icons.cloud_outlined,
+                                  color: Color(0xFF10B981), size: 12),
                               const SizedBox(width: 4),
-                              Text('${item['carbon_saved']} kg', style: const TextStyle(color: Color(0xFF10B981), fontSize: 12, fontWeight: FontWeight.bold)),
+                              Text('${item['carbon_saved']} kg',
+                                  style: const TextStyle(
+                                      color: Color(0xFF10B981),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold)),
                             ],
                           ),
-                         ),
-                         const Spacer(),
-                         Text(
-                           '+${item['points_earned']} pts',
-                           style: GoogleFonts.outfit(color: AppTheme.accentYellow, fontWeight: FontWeight.bold),
-                         ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          '+${item['points_earned']} pts',
+                          style: GoogleFonts.outfit(
+                              color: AppTheme.accentYellow,
+                              fontWeight: FontWeight.bold),
+                        ),
                       ],
                     )
                   ],
@@ -308,35 +365,59 @@ class _FriendsTabState extends State<FriendsTab> {
     if (!mounted) return;
     try {
       final user = _supabase.auth.currentUser;
-      
+
       if (user == null) {
         // MOCK DATA for requests and friends
         await Future.delayed(const Duration(milliseconds: 600));
         if (mounted) {
           setState(() {
             _requests = [
-              {'id': 'req1', 'requester': {'display_name': 'New Joiner', 'email': 'new@eco.com'}, 'status': 'pending'}
+              {
+                'id': 'req1',
+                'requester': {
+                  'display_name': 'New Joiner',
+                  'email': 'new@eco.com'
+                },
+                'status': 'pending'
+              }
             ];
             _friends = [
-              {'id': 'f1', 'friend': {'display_name': 'Sarah Jenkins', 'email': 'sarah@eco.com', 'avatar_url': null}},
-              {'id': 'f2', 'friend': {'display_name': 'Mike Chen', 'email': 'mike@eco.com', 'avatar_url': null}},
+              {
+                'id': 'f1',
+                'friend': {
+                  'display_name': 'Sarah Jenkins',
+                  'email': 'sarah@eco.com',
+                  'avatar_url': null
+                }
+              },
+              {
+                'id': 'f2',
+                'friend': {
+                  'display_name': 'Mike Chen',
+                  'email': 'mike@eco.com',
+                  'avatar_url': null
+                }
+              },
             ];
             _isLoading = false;
           });
         }
         return;
       }
-      
+
       final userId = user.id;
 
       // 1. Fetch Friends (Accepted)
-      final friendsData = await _supabase.from('friendships')
-          .select('*, requester:requester_id(display_name, email, avatar_url), addressee:addressee_id(display_name, email, avatar_url)')
+      final friendsData = await _supabase
+          .from('friendships')
+          .select(
+              '*, requester:requester_id(display_name, email, avatar_url), addressee:addressee_id(display_name, email, avatar_url)')
           .or('requester_id.eq.$userId,addressee_id.eq.$userId')
           .eq('status', 'accepted');
 
       // 2. Fetch Requests (Pending where I am the addressee)
-      final requestsData = await _supabase.from('friendships')
+      final requestsData = await _supabase
+          .from('friendships')
           .select('*, requester:requester_id(display_name, email, avatar_url)')
           .eq('addressee_id', userId)
           .eq('status', 'pending');
@@ -344,14 +425,14 @@ class _FriendsTabState extends State<FriendsTab> {
       if (mounted) {
         setState(() {
           _friends = List<Map<String, dynamic>>.from(friendsData).map((f) {
-             // Normalize friend object
-             final isRequester = f['requester_id'] == userId;
-             return {
-               ...f,
-               'friend': isRequester ? f['addressee'] : f['requester']
-             };
+            // Normalize friend object
+            final isRequester = f['requester_id'] == userId;
+            return {
+              ...f,
+              'friend': isRequester ? f['addressee'] : f['requester']
+            };
           }).toList();
-          
+
           _requests = List<Map<String, dynamic>>.from(requestsData);
           _isLoading = false;
         });
@@ -369,9 +450,7 @@ class _FriendsTabState extends State<FriendsTab> {
         final req = _requests.firstWhere((r) => r['id'] == friendshipId);
         _requests.removeWhere((r) => r['id'] == friendshipId);
         if (accept) {
-          _friends.add({
-             'friend': req['requester']
-          });
+          _friends.add({'friend': req['requester']});
         }
       });
       return;
@@ -379,23 +458,27 @@ class _FriendsTabState extends State<FriendsTab> {
 
     try {
       if (accept) {
-        await _supabase.from('friendships').update({'status': 'accepted'}).eq('id', friendshipId);
+        await _supabase
+            .from('friendships')
+            .update({'status': 'accepted'}).eq('id', friendshipId);
       } else {
         await _supabase.from('friendships').delete().eq('id', friendshipId);
       }
       _fetchFriendsAndRequests();
-    } catch(e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
   Future<void> _sendRequest() async {
     final email = _searchController.text.trim();
     if (email.isEmpty) return;
-    
+
     if (_supabase.auth.currentUser == null) {
       _searchController.clear();
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Request sent (Mock)!')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Request sent (Mock)!')));
       return;
     }
 
@@ -409,14 +492,18 @@ class _FriendsTabState extends State<FriendsTab> {
           .maybeSingle();
 
       if (user == null) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User not found')));
+        if (mounted)
+          ScaffoldMessenger.of(context)
+              .showSnackBar(const SnackBar(content: Text('User not found')));
         return;
       }
 
       final addresseeId = user['id'];
       if (addresseeId == _supabase.auth.currentUser!.id) {
-         if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cannot add yourself')));
-         return;
+        if (mounted)
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Cannot add yourself')));
+        return;
       }
 
       // Check for existing friendship
@@ -431,17 +518,21 @@ class _FriendsTabState extends State<FriendsTab> {
 
       if (mounted) {
         _searchController.clear();
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Request sent!')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Request sent!')));
       }
-
     } catch (e) {
-       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) return const Center(child: CircularProgressIndicator(color: Colors.white));
+    if (_isLoading)
+      return const Center(
+          child: CircularProgressIndicator(color: Colors.white));
 
     return Column(
       children: [
@@ -467,7 +558,10 @@ class _FriendsTabState extends State<FriendsTab> {
                 ),
                 TextButton(
                   onPressed: _sendRequest,
-                  child: Text('Add', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: AppTheme.accentYellow)),
+                  child: Text('Add',
+                      style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.accentYellow)),
                 ),
               ],
             ),
@@ -480,7 +574,11 @@ class _FriendsTabState extends State<FriendsTab> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Align(
               alignment: Alignment.centerLeft,
-              child: Text('Requests', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+              child: Text('Requests',
+                  style: GoogleFonts.outfit(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18)),
             ),
           ),
           ListView.builder(
@@ -498,20 +596,27 @@ class _FriendsTabState extends State<FriendsTab> {
                   children: [
                     CircleAvatar(
                       backgroundColor: Colors.orange.withOpacity(0.2),
-                      child: Text((requester['display_name'] ?? '?')[0], style: const TextStyle(color: Colors.orange)),
+                      child: Text((requester['display_name'] ?? '?')[0],
+                          style: const TextStyle(color: Colors.orange)),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(requester['display_name'] ?? 'Unknown', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
-                          Text('Wants to be friends', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12)),
+                          Text(requester['display_name'] ?? 'Unknown',
+                              style: GoogleFonts.outfit(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold)),
+                          Text('Wants to be friends',
+                              style: GoogleFonts.inter(
+                                  color: Colors.white70, fontSize: 12)),
                         ],
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.check, color: AppTheme.primaryGreen),
+                      icon:
+                          const Icon(Icons.check, color: AppTheme.primaryGreen),
                       onPressed: () => _handleRequest(req['id'], true),
                     ),
                     IconButton(
@@ -530,52 +635,70 @@ class _FriendsTabState extends State<FriendsTab> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Align(
             alignment: Alignment.centerLeft,
-            child: Text('My Friends (${_friends.length})', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+            child: Text('My Friends (${_friends.length})',
+                style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18)),
           ),
         ),
-        
+
         Expanded(
           child: _friends.isEmpty
-            ? const Center(child: Text('No friends yet.', style: TextStyle(color: Colors.white70)))
-            : ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: _friends.length,
-                itemBuilder: (context, index) {
-                   final fri = _friends[index];
-                   final profile = fri['friend'] ?? {};
-                   
-                   return GlassContainer(
-                     margin: const EdgeInsets.only(bottom: 12),
-                     padding: const EdgeInsets.all(12),
-                     child: Row(
-                       children: [
-                         CircleAvatar(
-                           backgroundColor: Colors.white.withOpacity(0.2),
-                           backgroundImage: profile['avatar_url'] != null ? NetworkImage(profile['avatar_url']) : null,
-                           child: profile['avatar_url'] == null 
-                             ? Text((profile['display_name'] ?? 'F')[0], style: const TextStyle(color: Colors.white))
-                             : null,
-                         ),
-                         const SizedBox(width: 12),
-                         Expanded(
-                           child: Column(
-                             crossAxisAlignment: CrossAxisAlignment.start,
-                             children: [
-                               Text(profile['display_name'] ?? 'Friend', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                               Text(profile['email'] ?? '', style: GoogleFonts.inter(color: Colors.white54, fontSize: 12)),
-                             ],
-                           ),
-                         ),
-                         Container(
-                           padding: const EdgeInsets.all(4),
-                           decoration: BoxDecoration(shape: BoxShape.circle, color: AppTheme.primaryGreen.withOpacity(0.2)),
-                           child: const Icon(Icons.chat_bubble_outline, color: AppTheme.primaryGreen, size: 16),
-                         )
-                       ],
-                     ),
-                   );
-                },
-              ),
+              ? const Center(
+                  child: Text('No friends yet.',
+                      style: TextStyle(color: Colors.white70)))
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: _friends.length,
+                  itemBuilder: (context, index) {
+                    final fri = _friends[index];
+                    final profile = fri['friend'] ?? {};
+
+                    return GlassContainer(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            backgroundColor: Colors.white.withOpacity(0.2),
+                            backgroundImage: profile['avatar_url'] != null
+                                ? NetworkImage(profile['avatar_url'])
+                                : null,
+                            child: profile['avatar_url'] == null
+                                ? Text((profile['display_name'] ?? 'F')[0],
+                                    style: const TextStyle(color: Colors.white))
+                                : null,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(profile['display_name'] ?? 'Friend',
+                                    style: GoogleFonts.outfit(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16)),
+                                Text(profile['email'] ?? '',
+                                    style: GoogleFonts.inter(
+                                        color: Colors.white54, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppTheme.primaryGreen.withOpacity(0.2)),
+                            child: const Icon(Icons.chat_bubble_outline,
+                                color: AppTheme.primaryGreen, size: 16),
+                          )
+                        ],
+                      ),
+                    );
+                  },
+                ),
         ),
       ],
     );
