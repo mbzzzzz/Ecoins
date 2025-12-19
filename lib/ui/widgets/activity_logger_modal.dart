@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:ecoins/core/game_points.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart'; // For kIsWeb
 import 'package:flutter/material.dart';
@@ -313,8 +314,10 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
     });
 
     try {
-      double carbonSaved = _sliderValue * 0.5;
-      int points = (_sliderValue * 10).toInt();
+      // Use game rules to calculate
+      final calc = GamePoints.calculate(_selectedCategory!, _sliderValue);
+      double carbonSaved = calc['co2_saved'];
+      int points = calc['points'];
 
       final user = Supabase.instance.client.auth.currentUser;
 
@@ -327,7 +330,14 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
         return;
       }
 
-      // Enforce Verification
+      // Enforce Verification (Rule: Verified activities get verified)
+      if (_verificationResult == null ||
+          _verificationResult!['verified'] != true) {
+        // ... handled below ...
+      }
+      
+      // But actually, we might want to allow unverified at much lower points?
+      // For now, keeping the user's logic: "Verification required"
       if (_verificationResult == null ||
           _verificationResult!['verified'] != true) {
         if (mounted) {
@@ -346,7 +356,7 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
       }
 
       String description = _descriptionController.text.isEmpty
-          ? 'Logged $_selectedCategory'
+          ? 'Logged $_selectedCategory (${calc['label']})'
           : _descriptionController.text;
 
       String? evidenceImageUrl;
@@ -382,13 +392,16 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
       // Handle Verification Bonus & Data
       if (_verificationResult != null &&
           _verificationResult!['verified'] == true) {
-        points += 50; // Bonus
-        if (_verificationResult!['carbon_saved_estimate'] != null) {
-          carbonSaved =
-              (_verificationResult!['carbon_saved_estimate'] as num).toDouble();
-        }
+        points += GamePoints.verifiedBonus; // Bonus
+        
+        // If AI returned a specific estimate (e.g. from analysis), prioritize that?
+        // Actually, let's trust our GamePoints math but keep the AI confidence in description
+        // if (_verificationResult!['carbon_saved_estimate'] != null) {
+        //   carbonSaved = (_verificationResult!['carbon_saved_estimate'] as num).toDouble();
+        // }
+        
         description +=
-            '\n\n[Verified by AI: Carbon=${carbonSaved}kg, Confidence=${_verificationResult!['confidence']}]';
+            '\n\n[Verified by AI: Confidence=${_verificationResult!['confidence']}]';
         if (_verificationResult!['reasoning'] != null) {
           description += '\nReason: ${_verificationResult!['reasoning']}';
         }
@@ -649,50 +662,71 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
               // Impact Section: Show Slider OR Verified details
               if (_verificationResult != null &&
                   _verificationResult!['verified']) ...[
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF10B981).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                        color: const Color(0xFF10B981).withOpacity(0.3)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      Column(
-                        children: [
-                          const Text('Verified Impact',
-                              style:
-                                  TextStyle(fontSize: 12, color: Colors.grey)),
-                          const SizedBox(height: 4),
-                          Text(
-                              '${(_sliderValue * 0.5).toStringAsFixed(1)} kg CO₂',
-                              style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF10B981))),
-                        ],
-                      ),
-                      Column(
-                        children: [
-                          const Text('Points Earned',
-                              style:
-                                  TextStyle(fontSize: 12, color: Colors.grey)),
-                          const SizedBox(height: 4),
-                          Text('${(_sliderValue * 10).toInt() + 50}',
-                              style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.amber)),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+                // Get pre-calculated values
+                Builder(builder: (context) {
+                  final calc = GamePoints.calculate(
+                      _selectedCategory!, _sliderValue);
+                  final co2 = calc['co2_saved'];
+                  // Add bonus for verification
+                  final points = (calc['points'] as int) + GamePoints.verifiedBonus;
+
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                          color: const Color(0xFF10B981).withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        Column(
+                          children: [
+                            const Text('Verified Impact',
+                                style:
+                                    TextStyle(fontSize: 12, color: Colors.grey)),
+                            const SizedBox(height: 4),
+                            Text(
+                                '$co2 kg CO₂',
+                                style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF10B981))),
+                          ],
+                        ),
+                        Column(
+                          children: [
+                            const Text('Points Earned',
+                                style:
+                                    TextStyle(fontSize: 12, color: Colors.grey)),
+                            const SizedBox(height: 4),
+                            Text('$points',
+                                style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.amber)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                }),
               ] else ...[
-                Text('Impact Estimate',
-                    style: Theme.of(context).textTheme.titleSmall),
+                // Dynamic Slider Label
+                Builder(builder: (context) {
+                  final calc = GamePoints.calculate(
+                      _selectedCategory!, _sliderValue);
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                       Text('Impact Estimate',
+                          style: Theme.of(context).textTheme.titleSmall),
+                       Text(calc['label'], 
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF10B981))),
+                    ],
+                  );
+                }),
                 Slider(
                   value: _sliderValue,
                   min: 1,
@@ -702,6 +736,20 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
                   activeColor: const Color(0xFF10B981),
                   onChanged: (val) => setState(() => _sliderValue = val),
                 ),
+                // Show projected points/CO2 below slider
+                Builder(builder: (context) {
+                   final calc = GamePoints.calculate(_selectedCategory!, _sliderValue);
+                   return Padding(
+                     padding: const EdgeInsets.symmetric(horizontal: 16),
+                     child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('${calc['points']} pts', style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
+                          Text('${calc['co2_saved']} kg CO₂', style: const TextStyle(color: Colors.grey)),
+                        ],
+                     ),
+                   );
+                }),
               ],
 
               const SizedBox(height: 16),

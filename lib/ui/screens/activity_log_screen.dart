@@ -1,4 +1,5 @@
 import 'package:ecoins/core/theme.dart';
+import 'package:ecoins/core/game_points.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -162,17 +163,28 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
               mainAxisSpacing: 16,
               crossAxisSpacing: 16,
               children: [
-                _buildActivityOption(Icons.directions_bike, 'Cycle', 20, 4.2,
+                _buildActivityOption(Icons.directions_bike, 'Cycle (5km)', 
+                    (5 * GamePoints.transportPointsPerUnit), // 5km * 10pts/km = 50pts
+                    (5 * GamePoints.transportCo2PerUnit), // 5km * 0.2kg/km = 1.0kg
                     const Color(0xFF3B82F6), isDark),
-                _buildActivityOption(Icons.restaurant, 'Veg Meal', 30, 2.5,
+                _buildActivityOption(Icons.restaurant, 'Veg Meal', 
+                    GamePoints.foodPointsPerUnit * 2, // Meal size 2
+                    GamePoints.foodCo2PerUnit * 2, 
                     const Color(0xFFF59E0B), isDark),
-                _buildActivityOption(Icons.recycling, 'Recycle', 15, 1.0,
+                _buildActivityOption(Icons.recycling, 'Recycle (5)', 
+                    GamePoints.recyclePointsPerUnit * 5, 
+                    GamePoints.recycleCo2PerUnit * 5, 
                     const Color(0xFF10B981), isDark),
-                _buildActivityOption(Icons.bolt, 'Energy', 45, 5.0,
+                _buildActivityOption(Icons.bolt, 'Energy Save', 
+                    GamePoints.energyPointsPerUnit * 1, 
+                    GamePoints.energyCo2PerUnit * 1, 
                     const Color(0xFFEAB308), isDark),
-                _buildActivityOption(Icons.shopping_bag, 'Reusable', 10, 0.5,
+                _buildActivityOption(Icons.shopping_bag, 'Reusable', 
+                    GamePoints.shoppingPointsPerUnit, 
+                    GamePoints.shoppingCo2PerUnit, 
                     const Color(0xFF8B5CF6), isDark),
-                _buildActivityOption(Icons.water_drop, 'Save Water', 25, 3.0,
+                _buildActivityOption(Icons.water_drop, 'Save Water', 
+                    20, 0.5, // Not in GamePoints yet, assuming similar to Energy
                     const Color(0xFF06B6D4), isDark),
               ],
             )

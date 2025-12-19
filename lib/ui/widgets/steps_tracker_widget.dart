@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ecoins/core/theme.dart';
+import 'package:ecoins/core/game_points.dart';
 import 'package:ecoins/ui/widgets/glass_container.dart';
 
 // Conditional import for health package (mobile only)
@@ -18,7 +19,7 @@ class StepsTrackerWidget extends StatefulWidget {
 
 class _StepsTrackerWidgetState extends State<StepsTrackerWidget> {
   int _currentSteps = 0;
-  int _dailyGoal = 10000;
+  int _dailyGoal = GamePoints.stepsGoal;
   bool _isLoading = true;
   bool _isTracking = false;
 
@@ -143,9 +144,9 @@ class _StepsTrackerWidgetState extends State<StepsTrackerWidget> {
 
       if (existing != null) return; // Already awarded
 
-      // Award 25 points for reaching 10000 steps
-      const points = 25;
-      const carbonSaved = 0.5; // Approximate carbon saved from walking
+      // Award points for reaching 10000 steps
+      const points = GamePoints.stepsDailyPoints;
+      const carbonSaved = GamePoints.stepsDailyCo2;
 
       // Create activity
       await Supabase.instance.client.from('activities').insert({
