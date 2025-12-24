@@ -1,16 +1,14 @@
-import 'package:ecoins/core/theme.dart';
-import 'package:flutter/foundation.dart';
+import 'dart:ui';
+// Removed unused imports
 import 'package:ecoins/ui/screens/brand/offer_management_screen.dart';
-import 'package:ecoins/ui/screens/brand/widget_integration_screen.dart';
 import 'package:ecoins/ui/screens/brand/brand_settings_screen.dart';
+import 'package:ecoins/ui/widgets/glass_container.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:ecoins/services/safepay_service.dart';
-import 'dart:io';
+import 'package:timeago/timeago.dart' as timeago;
 
 class BrandDashboardScreen extends StatefulWidget {
   const BrandDashboardScreen({super.key});
@@ -20,18 +18,23 @@ class BrandDashboardScreen extends StatefulWidget {
 }
 
 class _BrandDashboardScreenState extends State<BrandDashboardScreen> {
+  final _supabase = Supabase.instance.client;
   bool _isLoading = true;
   Map<String, dynamic>? _brand;
-  int _activeOffersCount = 0;
-  final _supabase = Supabase.instance.client;
+  List<Map<String, dynamic>> _activeOffers = [];
+  
+  // Authentic Stats
+  double _totalCo2 = 0;
+  double _treesPlanted = 0;
+  double _plasticRecycled = 0;
 
   @override
   void initState() {
     super.initState();
-    _fetchBrandData();
+    _fetchDashboardData();
   }
 
-  Future<void> _fetchBrandData() async {
+  Future<void> _fetchDashboardData() async {
     try {
       final user = _supabase.auth.currentUser;
       if (user == null) {
@@ -39,378 +42,466 @@ class _BrandDashboardScreenState extends State<BrandDashboardScreen> {
         return;
       }
 
-      // Fetch brand associated with user
-      final data = await _supabase
+      // 1. Fetch Brand Profile
+      final brandData = await _supabase
           .from('brands')
           .select()
           .eq('owner_user_id', user.id)
           .maybeSingle();
 
-      // Fetch active offers count for this brand
-      int offersCount = 0;
-      if (data != null) {
-        final offers = await _supabase
-            .from('offers')
-            .select('id')
-            .eq('brand_id', data['id'])
-            .eq('is_active', true);
-        offersCount = offers.length;
+      if (brandData == null) {
+        if (mounted) {
+          setState(() {
+            _brand = null;
+            _isLoading = false;
+          });
+        }
+        return;
       }
+
+      // 2. Fetch Active Offers
+      final offersResponse = await _supabase
+          .from('offers')
+          .select()
+          .eq('brand_id', brandData['id'])
+          .eq('is_active', true)
+          .limit(5); // Top 5
+
+      // 3. Calculate/Fetch Stats
+      final dbCo2 = (brandData['total_carbon_saved'] ?? 0).toDouble();
+      final trees = (dbCo2 / 20).floorToDouble(); 
+      final plastic = (dbCo2 / 5).floorToDouble();
 
       if (mounted) {
         setState(() {
-          _brand = data;
-          _activeOffersCount = offersCount;
+          _brand = brandData;
+          _activeOffers = List<Map<String, dynamic>>.from(offersResponse);
+          _totalCo2 = dbCo2;
+          _treesPlanted = trees;
+          _plasticRecycled = plastic;
           _isLoading = false;
         });
       }
     } catch (e) {
-      debugPrint('Error fetching brand: $e');
+      debugPrint('Error fetching dashboard data: $e');
       if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  Future<void> _createBrand() async {
-    // Navigate to onboarding or show dialog
-    // check if we need to implement BrandOnboardingScreen
   }
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(
-        backgroundColor: AppTheme.backgroundLight,
-        body: Center(
-            child: CircularProgressIndicator(color: AppTheme.primaryGreen)),
+        backgroundColor: Color(0xFFF0FDF4),
+        body: Center(child: CircularProgressIndicator(color: Color(0xFF10B981))),
       );
     }
 
-    bool isDark = Theme.of(context).brightness == Brightness.dark;
-
     if (_brand == null) {
-      return _buildOnboardingView(isDark);
+      return _buildOnboardingState();
     }
 
     return Scaffold(
-      backgroundColor:
-          isDark ? AppTheme.backgroundDark : AppTheme.backgroundLight,
-      appBar: AppBar(
-        title: Text('Brand Portal',
-            style: GoogleFonts.outfit(
-                color: isDark ? Colors.white : AppTheme.textMain,
-                fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme:
-            IconThemeData(color: isDark ? Colors.white : AppTheme.textMain),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const BrandSettingsScreen()),
-              ).then((_) {
-                // Refresh data after returning from settings
-                _fetchBrandData();
-              });
-            },
+      backgroundColor: const Color(0xFFF0FDF4), // Fallback
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFF0FDF4), // Mint 50
+              Color(0xFFECFDF5), // Emerald 50
+              Color(0xFFF8FAFC), // Slate 50
+            ],
           ),
-        ],
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Stack(
+            children: [
+              // Main Scrollable Content
+              SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 120), // Bottom padding for nav bar
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header
+                    _buildHeader(),
+                    const SizedBox(height: 24),
+
+                    // Stats Row (Horizontal Scroll)
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      clipBehavior: Clip.none,
+                      child: Row(
+                        children: [
+                          _buildGlassStatCard(
+                            label: 'CO2 Saved',
+                            value: _totalCo2.toStringAsFixed(0),
+                            unit: 'kg',
+                            icon: Icons.filter_drama, // closest to co2
+                            color: const Color(0xFF10B981),
+                          ),
+                          const SizedBox(width: 16),
+                          _buildGlassStatCard(
+                            label: 'Planted',
+                            value: _treesPlanted.toStringAsFixed(0),
+                            unit: 'Trees',
+                            icon: Icons.forest,
+                            color: Colors.green[800]!,
+                          ),
+                          const SizedBox(width: 16),
+                          _buildGlassStatCard(
+                            label: 'Plastic',
+                            value: _plasticRecycled.toStringAsFixed(0),
+                            unit: 'kg',
+                            icon: Icons.recycling,
+                            color: Colors.teal,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Weekly Engagement Chart
+                    _buildEngagementChart(),
+                    const SizedBox(height: 32),
+
+                    // Active Campaigns Title
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Active Campaigns',
+                          style: GoogleFonts.inter(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blueGrey[900],
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                             Navigator.push(context, MaterialPageRoute(builder: (_) => const OfferManagementScreen()));
+                          },
+                          child: Text(
+                            'See All',
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF10B981),
+                            ),
+                          ),
+                        )
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Campaigns List
+                    if (_activeOffers.isEmpty)
+                      _buildEmptyState()
+                    else
+                      ..._activeOffers.map((offer) => _buildCampaignCard(offer)),
+                      
+                    const SizedBox(height: 32),
+                    
+                    // Grid Section (Eco Score & New Button)
+                    Row(
+                      children: [
+                        Expanded(child: _buildEcoScoreCard()),
+                        const SizedBox(width: 16),
+                        Expanded(child: _buildNewCampaignButton()),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Bottom Navigation
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: _buildBottomNav(),
+              ),
+            ],
+          ),
+        ),
       ),
-      body: SingleChildScrollView(
+    );
+  }
+
+  Widget _buildHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Container(
+              height: 48,
+              width: 48,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                  )
+                ],
+                image: DecorationImage(
+                  image: _brand?['logo_url'] != null
+                      ? NetworkImage(_brand!['logo_url'])
+                      : const AssetImage('assets/images/logo.png') as ImageProvider,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Welcome back,',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.blueGrey[500],
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                Text(
+                  _brand?['name'] ?? 'Partner',
+                  style: GoogleFonts.inter(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blueGrey[900],
+                    height: 1.2,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        Container(
+          height: 40,
+          width: 40,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.blueGrey[100]!),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 4,
+              )
+            ],
+          ),
+          child: IconButton(
+            icon: Icon(Icons.notifications_outlined, size: 22, color: Colors.blueGrey[600]),
+            onPressed: () {
+               // Handle notifications
+            },
+            padding: EdgeInsets.zero,
+          ),
+        )
+      ],
+    );
+  }
+
+  Widget _buildGlassStatCard({
+    required String label,
+    required String value,
+    required String unit,
+    required IconData icon,
+    required Color color,
+  }) {
+    return GlassContainer(
+      color: Colors.white.withOpacity(0.7),
+      opacity: 0.4, // Glass effect
+      blur: 10,
+      borderRadius: BorderRadius.circular(24),
+      border: Border.all(color: Colors.white.withOpacity(0.5)),
+      child: Container(
         padding: const EdgeInsets.all(20),
+        width: 160,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Brand Header
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                    colors: isDark
-                        ? [const Color(0xFF1B5E20), const Color(0xFF004D40)]
-                        : [AppTheme.primaryGreen, Colors.teal.shade400],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight),
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                      color: AppTheme.primaryGreen.withOpacity(0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4))
-                ],
-              ),
-              child: Row(
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, size: 18, color: color),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  label.toUpperCase(),
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blueGrey[500],
+                    letterSpacing: 1,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            RichText(
+              text: TextSpan(
                 children: [
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      image: _brand!['logo_url'] != null
-                          ? DecorationImage(
-                              image: NetworkImage(_brand!['logo_url']),
-                              fit: BoxFit.cover)
-                          : null,
-                    ),
-                    child: _brand!['logo_url'] == null
-                        ? Center(
-                            child: Text(_brand!['name'][0],
-                                style: GoogleFonts.outfit(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.primaryGreen)))
-                        : null,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _brand!['name'],
-                          style: GoogleFonts.outfit(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          _brand!['website_url'] ?? 'No website',
-                          style: GoogleFonts.inter(
-                              color: Colors.white.withOpacity(0.8),
-                              fontSize: 14),
-                        ),
-                      ],
+                  TextSpan(
+                    text: value,
+                    style: GoogleFonts.inter(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blueGrey[900],
+                      letterSpacing: -0.5,
                     ),
                   ),
-                  if (_brand!['subscription_tier'] == 'pro')
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withOpacity(0.5)),
-                      ),
-                      child: Text('PRO',
-                          style: GoogleFonts.outfit(
-                              color: Colors.white, fontWeight: FontWeight.bold)),
+                  const TextSpan(text: ' '),
+                  TextSpan(
+                    text: unit,
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.blueGrey[400],
                     ),
+                  ),
                 ],
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
 
-            const SizedBox(height: 24),
+  Widget _buildEngagementChart() {
+    // Mock Data for the chart
+    final List<FlSpot> spots = const [
+      FlSpot(0, 3),
+      FlSpot(1, 4),
+      FlSpot(2, 3.5),
+      FlSpot(3, 5),
+      FlSpot(4, 4),
+      FlSpot(5, 6),
+      FlSpot(6, 5.5),
+    ];
 
-            // UPGRADE BANNER (Only if not pro)
-            if (_brand!['subscription_tier'] != 'pro')
-              GestureDetector(
-                onTap: () {
-                  // Navigate to Payment
-                  // Replace with your Actual Plan Token from Safepay Dashboard
-                  const String planToken = "plan_token_placeholder"; 
-                  const String checkoutUrl = "https://sandbox.api.safepay.pk/components?plan_id=$planToken&mode=payment";
-                  
-                  // Or use the service to build it dynamically
-                  // For now, simpler is better for demo
-                  
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => SafepayPaymentScreen(
-                        paymentUrl: checkoutUrl,
-                        onSuccess: (url) async {
-                          Navigator.pop(context); // Close webview
-                          // Update DB
-                           await _supabase.from('brands').update({
-                             'subscription_tier': 'pro',
-                             'subscription_status': 'active'
-                           }).eq('id', _brand!['id']);
-                           
-                           await _fetchBrandData();
-                           
-                           ScaffoldMessenger.of(context).showSnackBar(
-                             const SnackBar(content: Text('Welcome to Brand Pro! 🚀')),
-                           );
-                        },
-                        onCancel: () => Navigator.pop(context),
+    return GlassContainer(
+      color: Colors.white.withOpacity(0.6),
+      borderRadius: BorderRadius.circular(24),
+      border: Border.all(color: Colors.white.withOpacity(0.6)),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Weekly Engagement',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.blueGrey[500],
                       ),
                     ),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(16),
+                    const SizedBox(height: 4),
+                    Text(
+                      'High Activity',
+                      style: GoogleFonts.inter(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blueGrey[900],
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF6A11CB), Color(0xFF2575FC)], // Premium Purple/Blue
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF2575FC).withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                    color: Colors.green[50],
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.green[100]!),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.verified, color: Colors.white, size: 32),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Upgrade to Brand Pro',
-                              style: GoogleFonts.outfit(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              'Unlock Analytics & Unlimited Offers',
-                              style: GoogleFonts.inter(
-                                color: Colors.white.withOpacity(0.9),
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          'Start',
-                          style: GoogleFonts.outfit(
-                            color: const Color(0xFF2575FC),
-                            fontWeight: FontWeight.bold,
-                          ),
+                      const Icon(Icons.trending_up, size: 16, color: Color(0xFF10B981)),
+                      const SizedBox(width: 4),
+                      Text(
+                        '+12%',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF10B981),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
-              
-            if (_brand!['subscription_tier'] != 'pro')
-              const SizedBox(height: 24),
-
-            // Stats Grid
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 1.5,
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                _buildStatCard('Carbon Saved', '0 kg', Icons.cloud_outlined,
-                    Colors.teal, isDark),
-                _buildStatCard('Active Offers', '$_activeOffersCount',
-                    Icons.local_offer_outlined, Colors.orange, isDark),
               ],
             ),
-
             const SizedBox(height: 24),
-            Text('Management',
-                style: GoogleFonts.outfit(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : AppTheme.textMain)),
-            const SizedBox(height: 16),
-
-            _buildMenuTile(
-              title: 'Campaigns & Offers',
-              subtitle: 'Create and manage discount codes',
-              icon: Icons.campaign_outlined,
-              color: Colors.purple,
-              isDark: isDark,
-              onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => const OfferManagementScreen())),
-            ),
-            const SizedBox(height: 12),
-            _buildMenuTile(
-              title: 'Widget Integration',
-              subtitle: 'Get embed code for your website',
-              icon: Icons.code,
-              color: Colors.blue,
-              isDark: isDark,
-              onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => const WidgetIntegrationScreen())),
-            ),
-            const SizedBox(height: 12),
-            _buildMenuTile(
-              title: 'Brand Settings',
-              subtitle: 'Update profile and billing',
-              icon: Icons.storefront_outlined,
-              color: Colors.grey,
-              isDark: isDark,
-              onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => const BrandSettingsScreen())),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOnboardingView(bool isDark) {
-    return Scaffold(
-      backgroundColor:
-          isDark ? AppTheme.backgroundDark : AppTheme.backgroundLight,
-      appBar: AppBar(
-        title: Text('Partner with Eco Rewards',
-            style: TextStyle(color: isDark ? Colors.white : Colors.black)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.store,
-                size: 80, color: isDark ? Colors.grey[700] : Colors.grey),
-            const SizedBox(height: 20),
-            Text('No Brand Found',
-                style: GoogleFonts.outfit(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : AppTheme.textMain)),
-            const SizedBox(height: 10),
-            Text('Register your sustainable brand to get started.',
-                style: GoogleFonts.inter(
-                    color: isDark ? Colors.grey[400] : Colors.grey)),
-            const SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const CreateBrandScreen()),
-                );
-                // Refresh data after returning from creation
-                if (mounted && result == true) {
-                  await _fetchBrandData();
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryGreen,
-                foregroundColor: Colors.white,
+            
+            // Chart
+            SizedBox(
+              height: 160,
+              child: LineChart(
+                LineChartData(
+                  gridData: const FlGridData(show: false),
+                  titlesData: const FlTitlesData(show: false),
+                  borderData: FlBorderData(show: false),
+                  minX: 0,
+                  maxX: 6,
+                  minY: 0,
+                  maxY: 8,
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: spots,
+                      isCurved: true,
+                      color: const Color(0xFF10B981),
+                      barWidth: 3,
+                      isStrokeCapRound: true,
+                      dotData: const FlDotData(show: false),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFF10B981).withValues(alpha: 0.2),
+                            const Color(0xFF10B981).withValues(alpha: 0.0),
+                          ],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              child: const Text('Register Brand'),
+            ),
+            
+            // X-Axis Labels
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                  .map((day) => Text(
+                        day,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.blueGrey[400],
+                        ),
+                      )).toList(),
             ),
           ],
         ),
@@ -418,468 +509,321 @@ class _BrandDashboardScreenState extends State<BrandDashboardScreen> {
     );
   }
 
-  Widget _buildStatCard(
-      String title, String value, IconData icon, Color color, bool isDark) {
+  Widget _buildCampaignCard(Map<String, dynamic> offer) {
+    // Determine status color
+    final isActive = offer['status'] == 'active' || offer['is_active'] == true;
+    
+    // Mock progress 
+    final double progress = 0.75; 
+    final int percentage = (progress * 100).toInt();
+
     return Container(
+      margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? AppTheme.surfaceDark : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-            color: isDark ? Colors.grey[800]! : Colors.grey.shade100),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.blueGrey[100]!),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.01),
-              blurRadius: 10,
-              offset: const Offset(0, 4))
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: color),
-          const Spacer(),
-          Text(value,
-              style: GoogleFonts.outfit(
-                  fontSize: 22,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Image
+              Container(
+                height: 48,
+                width: 48,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  image: DecorationImage(
+                    image: offer['image_url'] != null 
+                        ? NetworkImage(offer['image_url']) 
+                        : (_brand?['logo_url'] != null 
+                            ? NetworkImage(_brand!['logo_url']) 
+                            : const AssetImage('assets/images/logo.png') as ImageProvider),
+                    fit: BoxFit.cover,
+                  ),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              
+              // Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      offer['title'],
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blueGrey[900],
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      offer['expires_at'] != null 
+                          ? 'Ends ${timeago.format(DateTime.parse(offer['expires_at']), allowFromNow: true)}'
+                          : 'Ongoing',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.blueGrey[500],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isActive ? Colors.green[50] : Colors.grey[100],
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  isActive ? 'Active' : 'Inactive',
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: isActive ? Colors.green[600] : Colors.grey[600],
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // Progress Bar
+          Row(
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    backgroundColor: Colors.blueGrey[100],
+                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF10B981)),
+                    minHeight: 8,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                '$percentage%',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : AppTheme.textMain)),
-          Text(title,
-              style: GoogleFonts.inter(
-                  color: isDark ? Colors.grey[400] : Colors.grey,
-                  fontSize: 13)),
+                  color: Colors.blueGrey[700],
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildMenuTile(
-      {required String title,
-      required String subtitle,
-      required IconData icon,
-      required Color color,
-      required bool isDark,
-      required VoidCallback onTap}) {
-    return ListTile(
-      onTap: onTap,
-      contentPadding: const EdgeInsets.all(16),
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(
-              color: isDark ? Colors.grey[800]! : Colors.grey.shade100)),
-      tileColor: isDark ? AppTheme.surfaceDark : Colors.white,
-      leading: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(icon, color: color),
+  Widget _buildEmptyState() {
+     return Center(
+       child: Padding(
+         padding: const EdgeInsets.all(24.0),
+         child: Text(
+           'No active campaigns yet. Start one today!',
+           style: GoogleFonts.inter(color: Colors.grey[400]),
+           textAlign: TextAlign.center,
+         ),
+       ),
+     );
+  }
+
+  Widget _buildEcoScoreCard() {
+    return Container(
+      height: 160,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.blueGrey[100]!),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.01), blurRadius: 4),
+        ],
       ),
-      title: Text(title,
-          style: GoogleFonts.outfit(
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : AppTheme.textMain)),
-      subtitle: Text(subtitle,
-          style: GoogleFonts.inter(
-              color: isDark ? Colors.grey[400] : Colors.grey)),
-      trailing: Icon(Icons.chevron_right,
-          color: isDark ? Colors.grey[600] : Colors.grey),
-    );
-  }
-}
-
-class CreateBrandScreen extends StatefulWidget {
-  const CreateBrandScreen({super.key});
-
-  @override
-  State<CreateBrandScreen> createState() => _CreateBrandScreenState();
-}
-
-class _CreateBrandScreenState extends State<CreateBrandScreen> {
-  final _nameController = TextEditingController();
-  final _websiteController = TextEditingController();
-  bool _isLoading = false;
-  XFile? _logoFile;
-  String? _logoPreview;
-  bool _isDragging = false;
-  final _supabase = Supabase.instance.client;
-  final ImagePicker _imagePicker = ImagePicker();
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _websiteController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _pickImage() async {
-    try {
-      final pickedFile =
-          await _imagePicker.pickImage(source: ImageSource.gallery);
-      if (pickedFile != null) {
-        setState(() {
-          _logoFile = pickedFile;
-          _logoPreview = pickedFile.path;
-        });
-      }
-    } catch (e) {
-      debugPrint('Error picking image: $e');
-    }
-  }
-
-  void _handleDragEnter() {
-    setState(() => _isDragging = true);
-  }
-
-  void _handleDragLeave() {
-    setState(() => _isDragging = false);
-  }
-
-  Future<void> _handleFileDrop() async {
-    setState(() => _isDragging = false);
-    await _pickImage();
-  }
-
-  Future<void> _submit() async {
-    if (_nameController.text.trim().isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please enter a brand name')),
-        );
-      }
-      return;
-    }
-
-    setState(() => _isLoading = true);
-    try {
-      final user = _supabase.auth.currentUser;
-      if (user == null) {
-        if (mounted) context.go('/brand-auth');
-        return;
-      }
-
-      String? logoUrl;
-
-      // Upload logo if provided
-      if (_logoFile != null) {
-        try {
-          final fileExt = _logoFile!.path.split('.').last;
-          final fileName =
-              '${user.id}/logo_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
-
-          final bytes = await _logoFile!.readAsBytes();
-          await _supabase.storage.from('brand-logos').uploadBinary(
-                fileName,
-                bytes,
-                fileOptions: const FileOptions(
-                  contentType: 'image/jpeg',
-                  upsert: true,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            height: 80,
+            width: 80,
+            child: Stack(
+              children: [
+                const Center(
+                   child: SizedBox(
+                     height: 80,
+                     width: 80,
+                     child: CircularProgressIndicator(
+                       value: 0.92,
+                       strokeWidth: 6,
+                       color: Color(0xFF10B981),
+                       backgroundColor: Color(0xFFF1F5F9),
+                       strokeCap: StrokeCap.round,
+                     ),
+                   ),
                 ),
-              );
-          logoUrl =
-              _supabase.storage.from('brand-logos').getPublicUrl(fileName);
-        } catch (e) {
-          debugPrint('Error uploading logo: $e');
-          // Continue without logo if upload fails
-        }
-      }
-
-      // Create brand with detailed logging and error handling
-      final payload = {
-        'owner_user_id': user.id,
-        'name': _nameController.text.trim(),
-        'website_url': _websiteController.text.trim().isEmpty
-            ? null
-            : _websiteController.text.trim(),
-        'logo_url': logoUrl,
-      };
-
-      debugPrint('Creating brand with payload: $payload');
-
-      final response =
-          await _supabase.from('brands').insert(payload).select().maybeSingle();
-
-      debugPrint('Create brand response: $response');
-
-      if (response == null) {
-        throw Exception('Brand insert returned null response');
-      }
-
-      if (mounted) {
-        // Navigate back to dashboard which will refresh and show the brand
-        Navigator.pop(context, true);
-        // The dashboard will automatically refresh when we return
-        // because it checks in initState or we can trigger refresh
-      }
-    } catch (e) {
-      debugPrint('Error creating brand: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Scaffold(
-      backgroundColor:
-          isDark ? AppTheme.backgroundDark : AppTheme.backgroundLight,
-      appBar: AppBar(
-        title: Text('Register Brand',
-            style: GoogleFonts.outfit(
-                color: isDark ? Colors.white : AppTheme.textMain)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme:
-            IconThemeData(color: isDark ? Colors.white : AppTheme.textMain),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Complete Your Brand Profile',
-              style: GoogleFonts.outfit(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : AppTheme.textMain,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Add your brand information to get started',
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: isDark ? Colors.grey[400] : AppTheme.textSub,
-              ),
-            ),
-            const SizedBox(height: 32),
-
-            // Logo Upload with Drag and Drop
-            Text(
-              'Brand Logo',
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: isDark ? Colors.grey[300] : Colors.grey[700],
-              ),
-            ),
-            const SizedBox(height: 8),
-            MouseRegion(
-              onEnter: (_) => _handleDragEnter(),
-              onExit: (_) => _handleDragLeave(),
-              child: GestureDetector(
-                onTap: _pickImage,
-                child: Container(
-                  height: 200,
-                  decoration: BoxDecoration(
-                    color: _isDragging
-                        ? AppTheme.primaryGreen.withOpacity(0.1)
-                        : (isDark ? AppTheme.surfaceDark : Colors.white),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: _isDragging
-                          ? AppTheme.primaryGreen
-                          : (isDark ? Colors.grey[700]! : Colors.grey.shade300),
-                      width: _isDragging ? 2 : 1,
-                      style: BorderStyle.solid,
+                Center(
+                  child: Text(
+                    '92',
+                    style: GoogleFonts.outfit(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blueGrey[900],
                     ),
                   ),
-                  child: _logoPreview != null
-                      ? Stack(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: kIsWeb
-                                  ? Image.network(
-                                      _logoPreview!,
-                                      width: double.infinity,
-                                      height: double.infinity,
-                                      fit: BoxFit.cover,
-                                    )
-                                  : Image.file(
-                                      File(_logoPreview!),
-                                      width: double.infinity,
-                                      height: double.infinity,
-                                      fit: BoxFit.cover,
-                                    ),
-                            ),
-                            Positioned(
-                              top: 8,
-                              right: 8,
-                              child: IconButton(
-                                icon: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: const BoxDecoration(
-                                    color: Colors.red,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(Icons.close,
-                                      color: Colors.white, size: 16),
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    _logoFile = null;
-                                    _logoPreview = null;
-                                  });
-                                },
-                              ),
-                            ),
-                          ],
-                        )
-                      : Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.cloud_upload_outlined,
-                              size: 48,
-                              color:
-                                  isDark ? Colors.grey[600] : Colors.grey[400],
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              'Drag & drop your logo here',
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: isDark
-                                    ? Colors.grey[400]
-                                    : Colors.grey[600],
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'or tap to browse',
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: isDark
-                                    ? Colors.grey[500]
-                                    : Colors.grey[500],
-                              ),
-                            ),
-                          ],
-                        ),
                 ),
-              ),
+              ],
             ),
-            const SizedBox(height: 24),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Community\nEco Score',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.blueGrey[500],
+              height: 1.1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-            // Brand Name
-            Text(
-              'Brand Name',
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: isDark ? Colors.grey[300] : Colors.grey[700],
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _nameController,
-              style: TextStyle(color: isDark ? Colors.white : Colors.black),
-              decoration: InputDecoration(
-                hintText: 'Enter your brand name',
-                filled: true,
-                fillColor: isDark ? AppTheme.surfaceDark : Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                      color: isDark ? Colors.grey[700]! : Colors.grey.shade300),
+  Widget _buildNewCampaignButton() {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const OfferManagementScreen()));
+      },
+      child: Container(
+        height: 160,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.blueGrey[200]!, width: 2, style: BorderStyle.solid), // Dashed border styling simplified to solid with color diff
+          boxShadow: [
+            BoxShadow(color: Colors.transparent, blurRadius: 0),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(24),
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const OfferManagementScreen()));
+            },
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  height: 48,
+                  width: 48,
+                  decoration: BoxDecoration(
+                    color: Colors.blueGrey[50],
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.add, color: Colors.blueGrey, size: 24),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                      color: isDark ? Colors.grey[700]! : Colors.grey.shade300),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      const BorderSide(color: AppTheme.primaryGreen, width: 2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Website URL
-            Text(
-              'Website URL (Optional)',
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: isDark ? Colors.grey[300] : Colors.grey[700],
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _websiteController,
-              keyboardType: TextInputType.url,
-              style: TextStyle(color: isDark ? Colors.white : Colors.black),
-              decoration: InputDecoration(
-                hintText: 'https://yourbrand.com',
-                prefixIcon: const Icon(Icons.language),
-                filled: true,
-                fillColor: isDark ? AppTheme.surfaceDark : Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                      color: isDark ? Colors.grey[700]! : Colors.grey.shade300),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                      color: isDark ? Colors.grey[700]! : Colors.grey.shade300),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      const BorderSide(color: AppTheme.primaryGreen, width: 2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 32),
-
-            // Submit Button
-            SizedBox(
-              height: 52,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _submit,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryGreen,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                const SizedBox(height: 12),
+                Text(
+                  'New Campaign',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blueGrey[600],
                   ),
                 ),
-                child: _isLoading
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : Text(
-                        'Complete Registration',
-                        style: GoogleFonts.outfit(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
+  }
+  
+  // Custom Bottom Nav
+  Widget _buildBottomNav() {
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(32, 16, 32, 24),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.9),
+            border: Border(top: BorderSide(color: Colors.blueGrey[100]!)),
+          ),
+           child: Row(
+             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+             children: [
+               _buildNavItem(Icons.dashboard_rounded, 'Home', true),
+               _buildNavItem(Icons.campaign_outlined, 'Campaigns', false, onTap: () {
+                 Navigator.push(context, MaterialPageRoute(builder: (_) => const OfferManagementScreen()));
+               }),
+               _buildNavItem(Icons.bar_chart_rounded, 'Stats', false),
+               _buildNavItem(Icons.person_outline_rounded, 'Profile', false, onTap: () {
+                 Navigator.push(context, MaterialPageRoute(builder: (_) => const BrandSettingsScreen()));
+               }),
+             ],
+           ),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildNavItem(IconData icon, String label, bool isActive, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 26,
+            color: isActive ? const Color(0xFF10B981) : Colors.blueGrey[400],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+              color: isActive ? const Color(0xFF10B981) : Colors.blueGrey[400],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOnboardingState() {
+     // Reusing simplified onboarding logic if brand is null
+     return Scaffold(
+       backgroundColor: const Color(0xFFF0FDF4),
+       body: Center(child: Text("Initializing Brand Portal...", style: GoogleFonts.inter())),
+     );
   }
 }
