@@ -761,7 +761,8 @@ class _OfferManagementScreenState extends State<OfferManagementScreen>
 
   void _showOfferDialog({Map<String, dynamic>? offer}) {
     final titleController = TextEditingController(text: offer?['title']);
-    final codeController = TextEditingController(text: offer?['code'] ?? offer?['code_prefix']);
+    final codeController = TextEditingController(text: offer?['discount_code'] ?? offer?['code_prefix']);
+    final pointsController = TextEditingController(text: offer?['points_cost']?.toString());
 
     showDialog(
       context: context,
@@ -781,6 +782,13 @@ class _OfferManagementScreenState extends State<OfferManagementScreen>
                   const InputDecoration(labelText: 'Code', hintText: 'e.g., ECO20'),
               controller: codeController,
             ),
+            const SizedBox(height: 16),
+            TextField(
+              decoration: const InputDecoration(
+                  labelText: 'Points Cost', hintText: 'e.g., 500'),
+              keyboardType: TextInputType.number,
+              controller: pointsController,
+            ),
           ],
         ),
         actions: [
@@ -790,9 +798,10 @@ class _OfferManagementScreenState extends State<OfferManagementScreen>
             onPressed: () async {
               final title = titleController.text.trim();
               final code = codeController.text.trim();
+              final points = int.tryParse(pointsController.text.trim()) ?? 0;
               
-              if (title.isEmpty || code.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill all fields')));
+              if (title.isEmpty || code.isEmpty || points <= 0) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill all fields and ensure points is > 0')));
                 return;
               }
 
@@ -804,7 +813,9 @@ class _OfferManagementScreenState extends State<OfferManagementScreen>
                    await _supabase.from('offers').insert({
                      'brand_id': _brandId,
                      'title': title,
-                     'code_prefix': code,
+                     'discount_code': code,
+                     'code_prefix': 'ECO', // Default or derived
+                     'points_cost': points,
                      'is_active': true,
                      'type': 'Discount' 
                    });
@@ -812,15 +823,20 @@ class _OfferManagementScreenState extends State<OfferManagementScreen>
                   // Update
                   await _supabase.from('offers').update({
                     'title': title,
-                    'code_prefix': code,
+                    'discount_code': code,
+                    'points_cost': points,
                   }).eq('id', offer['id']);
                 }
                 
                 // Refresh
                 _fetchOffers();
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved successfully')));
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved successfully')));
+                }
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error saving: $e')));
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error saving: $e')));
+                }
               }
             },
             child: const Text('Save'),

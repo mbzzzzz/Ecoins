@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ecoins/ui/screens/edit_profile_screen.dart';
+import 'package:ecoins/ui/screens/scan/qr_scan_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -363,35 +364,74 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   const SizedBox(height: 12),
 
-                  // Log Activity Button (Inline)
-                  Center(
-                    child: GestureDetector(
-                      onTap: _showLoggerModal,
-                      child: GlassContainer(
-                        borderRadius: BorderRadius.circular(30),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 12),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: AppTheme.primaryGreen),
-                              padding: const EdgeInsets.all(8),
-                              child: const Icon(Icons.add,
-                                  color: Colors.white, size: 20),
-                            ),
-                            const SizedBox(width: 12),
-                            Text('Log Activity',
-                                style: GoogleFonts.outfit(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 16)),
-                          ],
+                  // Action Buttons Row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Log Activity
+                      GestureDetector(
+                        onTap: _showLoggerModal,
+                        child: GlassContainer(
+                          borderRadius: BorderRadius.circular(30),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 12),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: AppTheme.primaryGreen),
+                                padding: const EdgeInsets.all(8),
+                                child: const Icon(Icons.add,
+                                    color: Colors.white, size: 20),
+                              ),
+                              const SizedBox(width: 12),
+                              Text('Log Activity',
+                                  style: GoogleFonts.outfit(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16)),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
+                      const SizedBox(width: 12),
+                      // Scan Code
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const QRScanScreen()),
+                          );
+                        },
+                        child: GlassContainer(
+                          borderRadius: BorderRadius.circular(30),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 12),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white),
+                                padding: const EdgeInsets.all(8),
+                                child: const Icon(Icons.qr_code_scanner,
+                                    color: AppTheme.primaryGreen, size: 20),
+                              ),
+                              const SizedBox(width: 12),
+                              Text('Scan',
+                                  style: GoogleFonts.outfit(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

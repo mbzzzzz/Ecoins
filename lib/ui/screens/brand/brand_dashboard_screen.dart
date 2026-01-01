@@ -2,6 +2,8 @@ import 'dart:ui';
 // Removed unused imports
 import 'package:ecoins/ui/screens/brand/offer_management_screen.dart';
 import 'package:ecoins/ui/screens/brand/brand_settings_screen.dart';
+import 'package:ecoins/ui/screens/brand/widget_integration_screen.dart';
+import 'package:ecoins/ui/screens/scan/qr_scan_screen.dart';
 import 'package:ecoins/ui/widgets/glass_container.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -211,6 +213,22 @@ class _BrandDashboardScreenState extends State<BrandDashboardScreen> {
                         Expanded(child: _buildNewCampaignButton()),
                       ],
                     ),
+                    
+                    const SizedBox(height: 32),
+
+                    // Tools Section
+                    Text(
+                      'Integration Tools',
+                      style: GoogleFonts.inter(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blueGrey[900],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildWidgetButton(),
+                    const SizedBox(height: 16),
+                    _buildScanButton(),
                   ],
                 ),
               ),
@@ -760,6 +778,126 @@ class _BrandDashboardScreenState extends State<BrandDashboardScreen> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWidgetButton() {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const WidgetIntegrationScreen()));
+      },
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.blueGrey[100]!),
+          boxShadow: [
+             BoxShadow(
+              color: const Color(0xFF10B981).withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.code, color: Color(0xFF10B981)),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                   Text(
+                    'Website Widget',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.blueGrey[900],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Embed your eco impact on your site',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: Colors.blueGrey[500],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.blueGrey[300]),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScanButton() {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const QRScanScreen(isBrandMode: true)));
+      },
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.blueGrey[100]!),
+          boxShadow: [
+             BoxShadow(
+              color: const Color(0xFF10B981).withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.purple.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.qr_code_scanner, color: Colors.purple),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                   Text(
+                    'Scan Customer Code',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.blueGrey[900],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Validate and redeem customer coupons',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: Colors.blueGrey[500],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.blueGrey[300]),
+          ],
         ),
       ),
     );

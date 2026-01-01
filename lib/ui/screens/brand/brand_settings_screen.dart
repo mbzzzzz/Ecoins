@@ -17,6 +17,7 @@ class BrandSettingsScreen extends StatefulWidget {
 class _BrandSettingsScreenState extends State<BrandSettingsScreen> {
   final _nameController = TextEditingController();
   final _websiteController = TextEditingController();
+  final _goalController = TextEditingController();
   bool _isLoading = true;
   String? _logoUrl;
   XFile? _logoFile;
@@ -45,6 +46,7 @@ class _BrandSettingsScreenState extends State<BrandSettingsScreen> {
           _brandId = data['id'];
           _nameController.text = data['name'];
           _websiteController.text = data['website_url'] ?? '';
+          _goalController.text = (data['sustainability_goal'] ?? 2000).toString();
           _logoUrl = data['logo_url'];
           _isLoading = false;
         });
@@ -92,10 +94,13 @@ class _BrandSettingsScreenState extends State<BrandSettingsScreen> {
         logoUrl = _supabase.storage.from('brand-logos').getPublicUrl(fileName);
       }
 
+      final goal = double.tryParse(_goalController.text) ?? 2000.0;
+
       await _supabase.from('brands').update({
         'name': _nameController.text,
         'website_url': _websiteController.text,
         'logo_url': logoUrl,
+        'sustainability_goal': goal,
       }).eq('id', _brandId!);
 
       if (mounted) {
@@ -200,6 +205,9 @@ class _BrandSettingsScreenState extends State<BrandSettingsScreen> {
             _buildTextField('Brand Name', _nameController, isDark),
             const SizedBox(height: 16),
             _buildTextField('Website URL', _websiteController, isDark),
+            const SizedBox(height: 16),
+            _buildTextField('Sustainability Goal (kg CO₂)', _goalController, isDark,
+                keyboardType: TextInputType.number),
             const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
@@ -243,7 +251,8 @@ class _BrandSettingsScreenState extends State<BrandSettingsScreen> {
   }
 
   Widget _buildTextField(
-      String label, TextEditingController controller, bool isDark) {
+      String label, TextEditingController controller, bool isDark,
+      {TextInputType? keyboardType}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -254,6 +263,7 @@ class _BrandSettingsScreenState extends State<BrandSettingsScreen> {
         const SizedBox(height: 8),
         TextField(
           controller: controller,
+          keyboardType: keyboardType,
           style: TextStyle(color: isDark ? Colors.white : Colors.black),
           decoration: InputDecoration(
             filled: true,

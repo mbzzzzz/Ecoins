@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
         if (req.method === 'GET' && apiKeyParam) {
             const { data: brand, error: brandError } = await supabase
                 .from('brands')
-                .select('id, name, logo_url')
+                .select('id, name, logo_url, sustainability_goal')
                 .eq('api_key', apiKeyParam)
                 .single();
 
@@ -44,16 +44,16 @@ Deno.serve(async (req) => {
                 .eq('brand_id', brand.id);
 
             let totalCarbon = 0;
-            
+
             if (offers && offers.length > 0) {
                 const offerIds = offers.map(o => o.id);
-                
+
                 // Get redemptions and sum carbon_value_snapshot
                 const { data: redemptions } = await supabase
                     .from('redemptions')
                     .select('carbon_value_snapshot')
                     .in('offer_id', offerIds);
-                
+
                 if (redemptions && redemptions.length > 0) {
                     totalCarbon = redemptions.reduce((sum, r) => {
                         const carbon = r.carbon_value_snapshot || 0;
@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
                     }, 0);
                 }
             }
-            
+
             // Method 2: If no redemptions with carbon, calculate from user activities
             // that earned points used for this brand's offers
             if (totalCarbon === 0) {
@@ -72,17 +72,17 @@ Deno.serve(async (req) => {
                         .from('redemptions')
                         .select('user_id')
                         .in('offer_id', offerIds);
-                    
+
                     if (userRedemptions && userRedemptions.length > 0) {
                         const userIds = [...new Set(userRedemptions.map(r => r.user_id))];
-                        
+
                         // Sum carbon from activities of users who redeemed
                         const { data: activities } = await supabase
                             .from('activities')
                             .select('carbon_saved')
                             .in('user_id', userIds)
                             .gte('logged_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()); // Last 90 days
-                        
+
                         if (activities) {
                             totalCarbon = activities.reduce((sum, a) => {
                                 return sum + (a.carbon_saved || 0);
@@ -91,16 +91,17 @@ Deno.serve(async (req) => {
                     }
                 }
             }
-            
-            // Fallback to brand's total_carbon_saved column if available
-            if (totalCarbon === 0 && brand.total_carbon_saved) {
-                totalCarbon = brand.total_carbon_saved;
+
+            // Add baseline from brand profile (manual offset/migration data)
+            if (brand.total_carbon_saved) {
+                totalCarbon += brand.total_carbon_saved;
             }
 
             return new Response(JSON.stringify({
                 name: brand.name,
                 logo_url: brand.logo_url,
                 total_carbon_saved: totalCarbon,
+                sustainability_goal: brand.sustainability_goal || 2000,
                 updated_at: new Date().toISOString()
             }), {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },

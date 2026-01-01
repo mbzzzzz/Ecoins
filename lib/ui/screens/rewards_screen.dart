@@ -3,6 +3,7 @@ import 'package:ecoins/ui/widgets/glass_container.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:ecoins/ui/screens/wallet_screen.dart';
 
 class RewardsScreen extends StatefulWidget {
   const RewardsScreen({super.key});
@@ -57,13 +58,14 @@ class _RewardsScreenState extends State<RewardsScreen> {
           _rewards = offersData
               .map((offer) {
                 // Map DB fields to UI expected fields if they differ
-                return {
+                  return {
                   'id': offer['id'],
                   'title': offer['title'],
                   'description': offer['description'],
                   'cost_points': offer[
                       'points_cost'], // Mapping points_cost -> cost_points
                   'code_prefix': offer['code_prefix'],
+                  'discount_code': offer['discount_code'],
                   'brands': offer['brands'],
                 };
               })
@@ -122,23 +124,25 @@ class _RewardsScreenState extends State<RewardsScreen> {
       if (user == null) return;
 
       final userId = user.id;
-      // Generate a unique code (in a real app, this might come from the server or a pre-generated pool)
+      // Generate a unique code for the SYSTEM (Scanning)
       final codePrefix = reward['code_prefix'] ?? 'ECO';
       final uniqueSuffix =
           DateTime.now().millisecondsSinceEpoch.toString().substring(8);
-      final code = '$codePrefix-$uniqueSuffix';
+      final uniquePromoCode = '$codePrefix-$uniqueSuffix';
+      
+      // Get the BRAND'S display code
+      final brandDisplayCode = reward['discount_code'] ?? uniquePromoCode;
 
       // 1. Create Redemption Record
-      // Note: we use 'reward_id' column which now points to 'offers' table via FK
       await _supabase.from('redemptions').insert({
         'user_id': userId,
-        'reward_id': reward['id'],
-        'promo_code': code,
+        'offer_id': reward['id'], // Now using correct column name
+        'reward_id': reward['id'], // Keeping legacy just in case
+        'promo_code': uniquePromoCode, // Unique for scanner
         'status': 'active'
       });
 
       // 2. Deduct Points
-      // In a real app, use an RPC function to ensure atomicity
       await _supabase
           .from('profiles')
           .update({'points_balance': _userPoints - cost}).eq('id', userId);
@@ -147,7 +151,7 @@ class _RewardsScreenState extends State<RewardsScreen> {
       await _fetchData();
 
       if (mounted) {
-        _showSuccessDialog(code);
+        _showSuccessDialog(brandDisplayCode);
       }
     } catch (e) {
       debugPrint('Redemption Error: $e');
@@ -200,6 +204,11 @@ class _RewardsScreenState extends State<RewardsScreen> {
         backgroundColor: Colors.transparent,
         automaticallyImplyLeading: false, // Or handling back button if needed
         actions: [
+          IconButton(
+            icon: const Icon(Icons.wallet, color: Colors.white),
+            tooltip: 'My Wallet',
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WalletScreen())),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: GlassContainer(
