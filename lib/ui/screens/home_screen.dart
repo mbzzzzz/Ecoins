@@ -1,3 +1,4 @@
+import 'package:ecoins/core/level_system.dart';
 import 'package:ecoins/core/theme.dart';
 import 'package:ecoins/ui/widgets/activity_logger_modal.dart';
 import 'package:ecoins/ui/widgets/my_tree_widget.dart';
@@ -9,6 +10,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ecoins/ui/screens/edit_profile_screen.dart';
 import 'package:ecoins/ui/screens/scan/qr_scan_screen.dart';
+import 'package:ecoins/ui/screens/impact_dashboard_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -135,7 +137,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 100.0),
+              padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 30.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -235,21 +237,54 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           const SizedBox(height: 16),
                           // Stats
+                          // Stats & Level
                           Column(
                             children: [
                               Text(
-                                '${_carbonSaved.toStringAsFixed(1)} kg',
+                                LevelSystem.getLevel(_points).name,
                                 style: GoogleFonts.outfit(
-                                  fontSize: 32,
+                                  fontSize: 24,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                                  color: AppTheme.accentYellow,
+                                  letterSpacing: 1.2,
                                 ),
                               ),
+                              const SizedBox(height: 8),
+                              
+                              // Visual Progress Bar
+                              SizedBox(
+                                width: 200,
+                                child: Column(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: LinearProgressIndicator(
+                                        value: LevelSystem.getProgress(_points),
+                                        minHeight: 8,
+                                        backgroundColor: Colors.white.withOpacity(0.2),
+                                        color: AppTheme.primaryGreen,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${_points} pts / ${LevelSystem.getNextLevel(_points).minPoints} pts',
+                                      style: GoogleFonts.inter(
+                                        color: Colors.white70,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              const SizedBox(height: 12),
+                              
                               Text(
-                                'CO₂ Saved (Tree Growth: ${_points}pts)',
-                                style: GoogleFonts.inter(
-                                  fontSize: 14,
-                                  color: Colors.white.withOpacity(0.8),
+                                '${_carbonSaved.toStringAsFixed(1)} kg CO₂ Saved',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
                                 ),
                               ),
                             ],
@@ -259,7 +294,43 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 12),
+                  
+                  // Impact Insights Button
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const ImpactDashboardScreen()),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white.withOpacity(0.2)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.bar_chart, color: AppTheme.accentYellow, size: 16),
+                          const SizedBox(width: 8),
+                          Text(
+                            'View Impact Insights',
+                            style: GoogleFonts.outfit(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
 
                   // Steps Tracker Widget
                   const StepsTrackerWidget(),
@@ -396,7 +467,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 8),
                       // Scan Code
                       GestureDetector(
                         onTap: () {

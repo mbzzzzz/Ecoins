@@ -1,5 +1,6 @@
-// Mobile implementation using pedometer and shared_preferences
+// Mobile implementation using health package (HealthKit/Google Fit) with pedometer fallback
 import 'dart:async';
+import 'package:health/health.dart';
 import 'package:pedometer/pedometer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
@@ -7,32 +8,91 @@ import 'package:permission_handler/permission_handler.dart';
 
 class StepsTrackerMobile {
   static int _todaySteps = 0;
+  
+  // Health Package
+  static final Health _health = Health();
+  static bool _useHealthPackage = false;
+  static Timer? _pollTimer;
+
+  // Pedometer Fallback
   static StreamSubscription<StepCount>? _stepCountSubscription;
-  static StreamSubscription<PedestrianStatus>? _pedestrianStatusSubscription;
   static Function(int)? _onStepsUpdate;
   static bool _isInitialized = false;
 
   static Future<void> initialize() async {
     if (_isInitialized) return;
 
-    // Check and request Activity Recognition permission (Android 10+)
-    await _checkPermission();
-    
-    // Initialize SharedPreferences and load saved steps
-    await _loadSavedSteps();
-    
-    // Start listening to Pedometer stream
-    _initPedometer();
+    // 1. Try Initialize Health (HealthKit / Google Fit)
+    try {
+      await _initHealth();
+    } catch (e) {
+      debugPrint('Health init failed: $e');
+      _useHealthPackage = false;
+    }
+
+    // 2. If Health failed or not authorized, fallback to Pedometer
+    if (!_useHealthPackage) {
+      debugPrint('Falling back to Pedometer...');
+      await _checkPermission();
+      await _loadSavedSteps();
+      _initPedometer();
+    } else {
+      // If Health is working, start polling
+      _startHealthPolling();
+    }
     
     _isInitialized = true;
   }
 
+  // --- HEALTH PACKAGE LOGIC ---
+
+  static Future<void> _initHealth() async {
+    // Define the types to get
+    var types = [HealthDataType.STEPS];
+
+    // Request access
+    // permissions for each type
+    var permissions = types.map((e) => HealthDataAccess.READ_WRITE).toList();
+
+    bool requested = await _health.requestAuthorization(types, permissions: permissions);
+    
+    if (requested) {
+      _useHealthPackage = true;
+      // Fetch immediate
+      await _fetchHealthSteps();
+    } else {
+      _useHealthPackage = false;
+    }
+  }
+
+  static Future<void> _fetchHealthSteps() async {
+    try {
+      final now = DateTime.now();
+      final midnight = DateTime(now.year, now.month, now.day);
+      
+      int? steps = await _health.getTotalStepsInInterval(midnight, now);
+      _todaySteps = steps ?? 0;
+      _onStepsUpdate?.call(_todaySteps);
+      debugPrint('Health Steps Fetched: $_todaySteps');
+    } catch (e) {
+      debugPrint('Error fetching health steps: $e');
+    }
+  }
+
+  static void _startHealthPolling() {
+    // Poll every 10 seconds to keep UI updated
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      _fetchHealthSteps();
+    });
+  }
+
+  // --- PEDOMETER FALLBACK LOGIC ---
+
   static Future<void> _checkPermission() async {
     final status = await Permission.activityRecognition.request();
-    if (status.isDenied || status.isPermanentlyDenied) {
+    if (status.isDenied) {
       debugPrint('Activity Recognition permission denied');
-      // On some older Android versions it might not be needed, but for safe measure:
-      // return; // Don't return, try anyway as some sensors might work or it might be iOS where this perm is different
     }
   }
 
@@ -45,11 +105,10 @@ class StepsTrackerMobile {
       if (savedDate == todayKey) {
         _todaySteps = prefs.getInt('steps_today') ?? 0;
       } else {
-        // Reset for new day
         _todaySteps = 0;
         await prefs.setString('steps_date', todayKey);
         await prefs.setInt('steps_today', 0);
-        await prefs.remove('steps_offset'); // Reset offset for new day
+        await prefs.remove('steps_offset');
       }
     } catch (e) {
       debugPrint('Error loading key steps: $e');
@@ -62,11 +121,6 @@ class StepsTrackerMobile {
         _onStepCount,
         onError: _onStepCountError,
       );
-      
-      _pedestrianStatusSubscription = Pedometer.pedestrianStatusStream.listen(
-        (status) => debugPrint('Pedestrian Status: ${status.status}'),
-        onError: (error) => debugPrint('Pedestrian Status Error: $error'),
-      );
     } catch (e) {
       debugPrint('Pedometer initialization error: $e');
     }
@@ -78,24 +132,19 @@ class StepsTrackerMobile {
       final todayKey = DateTime.now().toIso8601String().split('T')[0];
       final savedDate = prefs.getString('steps_date');
       
-      // Handle day change (midnight crossover)
       if (savedDate != todayKey) {
         await prefs.setString('steps_date', todayKey);
         await prefs.setInt('steps_today', 0);
-         // Reset offset to current sensor value
         await prefs.setInt('steps_offset', event.steps);
         _todaySteps = 0;
       }
       
       int offset = prefs.getInt('steps_offset') ?? event.steps;
-      
-      // Detect Reboot (current steps < offset)
       if (event.steps < offset) {
         offset = 0;
         await prefs.setInt('steps_offset', 0);
       }
       
-      // If this is the very first time we see steps today and no offset, set offset
       if (!prefs.containsKey('steps_offset')) {
          await prefs.setInt('steps_offset', event.steps);
          offset = event.steps;
@@ -106,8 +155,6 @@ class StepsTrackerMobile {
       
       _todaySteps = newSteps;
       await prefs.setInt('steps_today', _todaySteps);
-      
-      debugPrint('Steps Update: $_todaySteps (Sensor: ${event.steps}, Offset: $offset)');
       _onStepsUpdate?.call(_todaySteps);
       
     } catch (e) {
@@ -117,16 +164,24 @@ class StepsTrackerMobile {
 
   static void _onStepCountError(error) {
     debugPrint('Step Count Error: $error');
-    // Fallback?
   }
 
+  // --- PUBLIC API ---
+
   static Future<int> getTodaySteps() async {
+    if (_useHealthPackage) {
+      await _fetchHealthSteps();
+    }
     return _todaySteps;
   }
 
   static void startTracking(Function(int) onUpdate) {
     _onStepsUpdate = onUpdate;
-    // Pushes immediately current value
-    onUpdate(_todaySteps);
+    if (_useHealthPackage) {
+       _fetchHealthSteps(); // Initial fetch
+       _startHealthPolling(); // Ensure polling is active
+    } else {
+      onUpdate(_todaySteps);
+    }
   }
 }

@@ -28,7 +28,9 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
 
   final List<Map<String, dynamic>> _variants = [
     {'id': 'banner', 'name': 'Banner', 'icon': Icons.view_agenda_outlined},
+    {'id': 'card', 'name': 'Impact Card', 'icon': Icons.badge_outlined},
     {'id': 'ring', 'name': 'Ring', 'icon': Icons.circle_outlined},
+    {'id': 'minimal', 'name': 'Minimal', 'icon': Icons.remove_circle_outline},
     {'id': 'illustrative-tree', 'name': 'Tree', 'icon': Icons.forest_outlined},
   ];
 
@@ -645,6 +647,97 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
      final percentage = (progress * 100).round();
 
      switch (_selectedVariant) {
+       case 'minimal':
+         return Center(
+           child: Container(
+             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+             decoration: BoxDecoration(
+               color: isDark ? Colors.black54 : Colors.white,
+               borderRadius: BorderRadius.circular(50), 
+               border: Border.all(color: Colors.grey.withOpacity(0.2)),
+             ),
+             child: Row(
+               mainAxisSize: MainAxisSize.min,
+               children: [
+                 Container(
+                   width: 24, height: 24,
+                   decoration: BoxDecoration(color: _accentColor.withOpacity(0.2), shape: BoxShape.circle),
+                   child: Icon(Icons.eco, size: 14, color: _accentColor),
+                 ),
+                 const SizedBox(width: 8),
+                 Column(
+                   crossAxisAlignment: CrossAxisAlignment.start,
+                   mainAxisSize: MainAxisSize.min,
+                   children: [
+                     Text('OFFSET', style: GoogleFonts.getFont(_selectedFont, fontSize: 8, fontWeight: FontWeight.w700, color: Colors.grey)),
+                     Text('${displayVal.toInt()} kg CO₂', style: GoogleFonts.getFont(_selectedFont, fontSize: 13, fontWeight: FontWeight.w800, color: textMain, height: 1.0)),
+                   ],
+                 )
+               ],
+             ),
+           ),
+         );
+
+       case 'card':
+         return Column(
+           children: [
+             Container(
+               padding: const EdgeInsets.all(20),
+               decoration: BoxDecoration(
+                 color: _accentColor.withOpacity(0.1),
+                 borderRadius: const BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
+               ),
+               child: Row(
+                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                 children: [
+                   Column(
+                     crossAxisAlignment: CrossAxisAlignment.start,
+                     children: [
+                       Text('CERTIFIED IMPACT', style: GoogleFonts.getFont(_selectedFont, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: _accentColor)),
+                       const SizedBox(height: 4),
+                       Row(
+                         crossAxisAlignment: CrossAxisAlignment.baseline,
+                         textBaseline: TextBaseline.alphabetic,
+                         children: [
+                           Text(displayVal.toInt().toString(), style: GoogleFonts.getFont(_selectedFont, fontSize: 28, fontWeight: FontWeight.w800, color: textMain)),
+                           const SizedBox(width: 4),
+                           Text('kg', style: GoogleFonts.getFont(_selectedFont, fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey)),
+                         ],
+                       )
+                     ],
+                   ),
+                   Container(
+                     padding: const EdgeInsets.all(8),
+                     decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)]),
+                     child: Icon(Icons.verified, color: _accentColor, size: 20),
+                   )
+                 ],
+               ),
+             ),
+             Container(
+               padding: const EdgeInsets.all(16),
+               child: Column(
+                 children: [
+                   Row(
+                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                     children: [
+                       Text('Goal Progress', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: textMain)),
+                       Text('$percentage%', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: _accentColor)),
+                     ],
+                   ),
+                   const SizedBox(height: 6),
+                   ClipRRect(
+                     borderRadius: BorderRadius.circular(4),
+                     child: LinearProgressIndicator(value: progress, minHeight: 6, backgroundColor: Colors.grey[200], valueColor: AlwaysStoppedAnimation(_accentColor)),
+                   ),
+                   const SizedBox(height: 16),
+                   Text('Verified by Eco Rewards', style: GoogleFonts.inter(fontSize: 10, color: Colors.grey)),
+                 ],
+               ),
+             )
+           ],
+         );
+
        case 'ring':
          return Center(
            child: Column(
@@ -693,6 +786,8 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
                    ],
                  ),
                ),
+               const SizedBox(height: 12),
+               Text('Sustainability Goal', style: GoogleFonts.getFont(_selectedFont, fontSize: 11, fontWeight: FontWeight.w600, color: textMain)),
              ],
            ),
          );

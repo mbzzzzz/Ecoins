@@ -23,10 +23,20 @@ Deno.serve(async (req) => {
         return;
     }
 
-    const container = document.getElementById('eco-rewards-widget');
-    if (!container) {
-        console.error('Eco Rewards Widget: Container #eco-rewards-widget not found');
-        return;
+    const targetId = scriptTag.getAttribute('data-target');
+    let container;
+
+    if (targetId) {
+        container = document.getElementById(targetId);
+        if (!container) {
+            console.error('Eco Rewards Widget: Container #' + targetId + ' not found');
+            return;
+        }
+    } else {
+        // Auto-Generate Container
+        container = document.createElement('div');
+        // Insert after the script tag
+        scriptTag.parentNode.insertBefore(container, scriptTag.nextSibling);
     }
 
     // Load Font
@@ -71,18 +81,59 @@ Deno.serve(async (req) => {
 
             switch(variant) {
                 case 'ring':
-                    html = '<div style="position: relative; width: 140px; height: 140px; display: flex; align-items: center; justify-content: center; font-family: ' + font + ', sans-serif;">' +
-                        '<svg width="140" height="140" viewBox="0 0 140 140" style="transform: rotate(-90deg);">' +
-                        '<circle cx="70" cy="70" r="58" stroke="' + accent + '20" stroke-width="12" fill="none" />' +
-                        '<circle cx="70" cy="70" r="58" stroke="' + accent + '" stroke-width="12" fill="none" stroke-dasharray="364" stroke-dashoffset="' + (364 - (364 * progress / 100)) + '" stroke-linecap="round" />' +
+                    html = '<div style="' + boxStyle + ' padding: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; max-width: 200px;">' +
+                        '<div style="position: relative; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center;">' +
+                        '<svg width="120" height="120" viewBox="0 0 120 120" style="transform: rotate(-90deg);">' +
+                        '<circle cx="60" cy="60" r="52" stroke="' + accent + '20" stroke-width="10" fill="none" />' +
+                        '<circle cx="60" cy="60" r="52" stroke="' + accent + '" stroke-width="10" fill="none" stroke-dasharray="327" stroke-dashoffset="' + (327 - (327 * progress / 100)) + '" stroke-linecap="round" />' +
                         '</svg>' +
                         '<div style="position: absolute; text-align: center;">' +
-                        '<div style="font-size: 24px; font-weight: 800; color: #111827;">' + carbonSavedFormatted + '</div>' +
-                        '<div style="font-size: 10px; font-weight: 600; color: #6b7280; letter-spacing: 1px; margin-top: 2px;">kg CO₂</div>' +
+                        '<div style="font-size: 20px; font-weight: 800; color: #111827;">' + carbonSavedFormatted + '</div>' +
+                        '<div style="font-size: 9px; font-weight: 700; color: #9CA3AF; margin-top: 0px;">kg CO₂</div>' +
+                        '</div>' +
+                        '</div>' +
+                        '<div style="margin-top: 12px; font-size: 11px; font-weight: 600; color: #374151;">Sustainability Goal</div>' +
+                        '</div>';
+                    break;
+
+                case 'minimal':
+                    html = '<div style="' + boxStyle + ' padding: 8px 12px; display: inline-flex; align-items: center; border-radius: 50px; max-width: fit-content;">' +
+                        '<div style="width: 24px; height: 24px; background: ' + accent + '20; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 8px;">' +
+                         '<svg width="14" height="14" viewBox="0 0 24 24" fill="' + accent + '"><path d="M12 2L2 22H22L12 2ZM12 6L18 18H6L12 6Z"/></svg>' +
+                        '</div>' +
+                        '<div style="display: flex; flex-direction: column; line-height: 1.1;">' +
+                            '<span style="font-size: 9px; font-weight: 700; color: #9CA3AF; letter-spacing: 0.5px;">OFFSET</span>' +
+                            '<span style="font-size: 13px; font-weight: 800; color: #111827;">' + carbonSavedFormatted + ' kg CO₂</span>' +
                         '</div>' +
                         '</div>';
                     break;
 
+                case 'card':
+                     html = '<div style="' + boxStyle + ' padding: 0; max-width: 300px; overflow: hidden;">' +
+                        '<div style="background: ' + accent + '10; padding: 20px; display: flex; align-items: center; justify-content: space-between;">' +
+                             '<div>' +
+                                 '<div style="font-size: 11px; font-weight: 700; color: ' + accent + '; letter-spacing: 1px; margin-bottom: 4px;">CERTIFIED IMPACT</div>' +
+                                 '<div style="font-size: 28px; font-weight: 800; color: #111827; line-height: 1;">' + carbonSavedFormatted + '<span style="font-size: 14px; font-weight: 600; color: #6B7280; margin-left: 2px;">kg</span></div>' +
+                             '</div>' +
+                             '<div style="width: 40px; height: 40px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">' +
+                                 '<svg width="20" height="20" viewBox="0 0 24 24" fill="' + accent + '"><path d="M16.5 3C19.538 3 22 5.5 22 9C22 16 14.5 20 12 21.5C9.5 20 2 16 2 9C2 5.5 4.5 3 7.5 3C9.24 3 10.91 3.81 12 5.08C13.09 3.81 14.76 3 16.5 3Z"/></svg>' +
+                             '</div>' +
+                        '</div>' +
+                        '<div style="padding: 16px;">' +
+                            '<div style="display: flex; justify-content: space-between; margin-bottom: 6px;">' +
+                                '<span style="font-size: 11px; font-weight: 600; color: #4B5563;">Goal Progress</span>' +
+                                '<span style="font-size: 11px; font-weight: 700; color: ' + accent + ';">' + progress + '%</span>' +
+                            '</div>' +
+                            '<div style="height: 6px; width: 100%; background: #F3F4F6; border-radius: 3px; overflow: hidden;">' +
+                                '<div style="width: ' + progress + '%; height: 100%; background: ' + accent + '; border-radius: 3px;"></div>' +
+                            '</div>' +
+                            '<div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid #F3F4F6; font-size: 10px; color: #9CA3AF; text-align: center;">' +
+                                'Verified by Eco Rewards' +
+                            '</div>' +
+                        '</div>' +
+                        '</div>';
+                    break;
+                
                 case 'illustrative-tree':
                      html = '<div style="' + boxStyle + ' padding: 20px; max-width: 320px;">' +
                         '<div style="display: flex; justify-content: space-between; align-items: flex-start;">' +
@@ -111,7 +162,6 @@ Deno.serve(async (req) => {
                     
                 case 'banner':
                 default:
-                    // Matches "Live Preview" in new UI: "Eco Impact", Icon+Value, Gradient bar
                      html = '<div style="' + boxStyle + ' padding: 16px; max-width: 320px;">' +
                         '<div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 12px;">' +
                             '<span style="font-weight: 700; font-size: 14px; color: #1f2937;">Eco Impact</span>' +

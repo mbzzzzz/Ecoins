@@ -1,3 +1,4 @@
+import 'package:ecoins/core/level_system.dart';
 import 'package:flutter/material.dart';
 
 class MyTreeWidget extends StatefulWidget {
@@ -38,18 +39,7 @@ class _MyTreeWidgetState extends State<MyTreeWidget>
   }
 
   String _getAssetForStage() {
-    if (widget.points < 500) return 'assets/images/tree_stage_1.png';
-    if (widget.points < 1500) return 'assets/images/tree_stage_2.png';
-    if (widget.points < 3500) return 'assets/images/tree_stage_3.png';
-    if (widget.points < 7500) return 'assets/images/tree_stage_4.png';
-    if (widget.points < 15000) return 'assets/images/tree_stage_5.png';
-    if (widget.points < 30000) return 'assets/images/tree_stage_6.png';
-    if (widget.points < 60000) return 'assets/images/tree_stage_7.png';
-    if (widget.points < 120000) return 'assets/images/tree_stage_8.png';
-    if (widget.points < 250000) return 'assets/images/tree_stage_9.png';
-    if (widget.points < 500000) return 'assets/images/tree_stage_10.png';
-    if (widget.points < 1000000) return 'assets/images/tree_stage_11.png';
-    return 'assets/images/tree_stage_12.png';
+    return LevelSystem.getLevel(widget.points).assetPath;
   }
 
   @override

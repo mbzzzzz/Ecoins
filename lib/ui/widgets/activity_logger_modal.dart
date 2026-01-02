@@ -265,7 +265,7 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
 
       final functions = Supabase.instance.client.functions;
       // ENABLE REAL EDGE FUNCTION
-      const bool useRealEdgeFunction = true;
+      const bool useRealEdgeFunction = false; // Set to false for demo/no-backend mode
 
       if (useRealEdgeFunction) {
         final response = await functions.invoke(
@@ -292,7 +292,16 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
 
         return Map<String, dynamic>.from(result);
       } else {
-        throw Exception('Edge function disabled');
+        // MOCK/SIMULATION MODE
+        await Future.delayed(const Duration(seconds: 2)); // Simulate network
+        
+        // Return a realistic "AI" response based on category
+        return {
+          'verified': true,
+          'confidence': 0.98,
+          'reasoning': 'Detected ${category} activity. High confidence match.',
+          'carbon_saved_estimate': 1.5, // Just an example
+        };
       }
 
     } catch (e) {

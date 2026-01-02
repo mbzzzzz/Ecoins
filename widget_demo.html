@@ -11,9 +11,12 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             background-color: #f0fdf4;
             margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            flex-direction: column;
         }
 
         .container {
@@ -29,34 +32,165 @@
             margin-top: 0;
             color: #166534;
         }
+
+        #debug-log {
+            margin-top: 20px;
+            padding: 10px;
+            background: #eee;
+            border: 1px solid #ccc;
+            width: 100%;
+            max-width: 800px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            display: block;
+        }
     </style>
+    <script>
+        (function () {
+            // Initialize debug logger early
+            window.addEventListener('DOMContentLoaded', () => {
+                const logger = document.getElementById('debug-log');
+                const originalLog = console.log;
+                const originalError = console.error;
+
+                // Create logger if it doesn't exist yet (since body isn't parsed)
+                // Actually, we can't append to #debug-log yet if we run in HEAD.
+                // Queue messages? Or just overwrite console and append later.
+            });
+
+            const logQueue = [];
+            const originalLog = console.log;
+            const originalError = console.error;
+
+            function flushQueue() {
+                const logger = document.getElementById('debug-log');
+                if (!logger) return;
+                while (logQueue.length > 0) {
+                    const { msg, isError } = logQueue.shift();
+                    const line = document.createElement('div');
+                    line.style.color = isError ? 'red' : 'black';
+                    line.textContent = '>' + msg;
+                    logger.appendChild(line);
+                }
+            }
+
+            function pushLog(msg, isError) {
+                if (document.getElementById('debug-log')) {
+                    const logger = document.getElementById('debug-log');
+                    const line = document.createElement('div');
+                    line.style.color = isError ? 'red' : 'black';
+                    line.textContent = '>' + msg;
+                    logger.appendChild(line);
+                } else {
+                    logQueue.push({ msg, isError });
+                }
+            }
+
+            console.log = function (...args) {
+                originalLog.apply(console, args);
+                pushLog(args.join(' '), false);
+            };
+
+            console.error = function (...args) {
+                originalError.apply(console, args);
+                pushLog(args.join(' '), true);
+            };
+
+            window.addEventListener('DOMContentLoaded', flushQueue);
+            window.addEventListener('load', flushQueue);
+        })();
+    </script>
 </head>
 
 <body>
 
     <div class="container">
         <h2>My Sustainability Impact</h2>
-        <p>This box below demonstrates the embedded widget:</p>
+        <p>This box below demonstrates the embedded widget variants:</p>
 
-        <!-- Widget Code (Local Test Mode) -->
-        <div id="eco-rewards-widget"></div>
+        <!-- Banner Variant -->
+        <h3 style="font-size: 14px; color: #666; margin-bottom: 8px;">Banner Variant</h3>
+        <script src="https://gwmcmlpuqummaumjloci.supabase.co/functions/v1/serve-widget?t=1"
+            data-key="e4dc073d-5cc7-4825-a20e-c755cfea6d56" data-variant="banner" data-accent="#10B981"
+            data-font="Inter">
+            </script>
 
-        <!-- 
-            NOTE: In production, you would use this script tag:
-            <script src="https://gwmcmlpuqummaumjloci.supabase.co/functions/v1/serve-widget" ... ></script>
-            
-            For this local demo, we are embedding the script logic directly below to show it working without deployment.
-        -->
-        <!-- 
-            Production Widget Script
-            Fetches logic from: https://gwmcmlpuqummaumjloci.supabase.co/functions/v1/serve-widget
-        -->
-        <script src="https://gwmcmlpuqummaumjloci.supabase.co/functions/v1/serve-widget"
-            data-key="e4dc073d-5cc7-4825-a20e-c755cfea6d56" data-variant="ring" data-accent="#10B981"
-            data-font="Inter (Default)" data-theme="auto">
+        <!-- Ring Variant -->
+        <h3 style="font-size: 14px; color: #666; margin-bottom: 8px; margin-top: 24px;">Ring Variant</h3>
+        <script src="https://gwmcmlpuqummaumjloci.supabase.co/functions/v1/serve-widget?t=2"
+            data-key="e4dc073d-5cc7-4825-a20e-c755cfea6d56" data-variant="ring" data-accent="#3B82F6"
+            data-font="Outfit">
+            </script>
+
+        <!-- Card Variant -->
+        <h3 style="font-size: 14px; color: #666; margin-bottom: 8px; margin-top: 24px;">Card Variant</h3>
+        <script src="https://gwmcmlpuqummaumjloci.supabase.co/functions/v1/serve-widget?t=3"
+            data-key="e4dc073d-5cc7-4825-a20e-c755cfea6d56" data-variant="card" data-accent="#8B5CF6"
+            data-font="Roboto Mono">
+            </script>
+
+        <!-- Minimal Variant -->
+        <h3 style="font-size: 14px; color: #666; margin-bottom: 8px; margin-top: 24px;">Minimal Variant</h3>
+        <script src="https://gwmcmlpuqummaumjloci.supabase.co/functions/v1/serve-widget?t=4"
+            data-key="e4dc073d-5cc7-4825-a20e-c755cfea6d56" data-variant="minimal" data-accent="#F59E0B"
+            data-font="Open Sans">
+            </script>
+
+        <!-- Tree Variant -->
+        <h3 style="font-size: 14px; color: #666; margin-bottom: 8px; margin-top: 24px;">Tree Variant</h3>
+        <script src="https://gwmcmlpuqummaumjloci.supabase.co/functions/v1/serve-widget?t=5"
+            data-key="e4dc073d-5cc7-4825-a20e-c755cfea6d56" data-variant="illustrative-tree" data-accent="#11BB82"
+            data-font="Inter">
             </script>
 
     </div>
+
+    <div id="debug-log">
+        <strong>Debug Protocol Started...</strong><br>
+    </div>
+
+    <script>
+        (function () {
+            const logger = document.getElementById('debug-log');
+            const originalLog = console.log;
+            const originalError = console.error;
+
+            function logToScreen(msg, isError) {
+                const line = document.createElement('div');
+                line.style.color = isError ? 'red' : 'black';
+                line.textContent = '>' + msg;
+                logger.appendChild(line);
+            }
+
+            console.log = function (...args) {
+                originalLog.apply(console, args);
+                logToScreen(args.join(' '), false);
+            };
+
+            console.error = function (...args) {
+                originalError.apply(console, args);
+                logToScreen(args.join(' '), true);
+            };
+
+            window.onerror = function (msg, url, lineNo, columnNo, error) {
+                logToScreen('Global Error: ' + msg + ' at ' + url + ':' + lineNo, true);
+                return false;
+            };
+
+            // Test fetch to API to verify connectivity
+            console.log("Testing connection to brand-api...");
+            fetch('https://gwmcmlpuqummaumjloci.supabase.co/functions/v1/brand-api?key=e4dc073d-5cc7-4825-a20e-c755cfea6d56')
+                .then(res => {
+                    console.log("Health check status: " + res.status);
+                    return res.text();
+                })
+                .then(txt => console.log("Response start: " + txt.substring(0, 50) + "..."))
+                .catch(err => console.error("Health check failed: " + err));
+
+        })();
+    </script>
 
 </body>
 
