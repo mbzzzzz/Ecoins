@@ -13,8 +13,9 @@ import 'dart:io' show Platform;
 
 class ActivityLoggerModal extends StatefulWidget {
   final VoidCallback onLogged;
+  final String? initialCategory;
 
-  const ActivityLoggerModal({super.key, required this.onLogged});
+  const ActivityLoggerModal({super.key, required this.onLogged, this.initialCategory});
 
   @override
   State<ActivityLoggerModal> createState() => _ActivityLoggerModalState();
@@ -25,6 +26,14 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
   final _descriptionController = TextEditingController();
   double _sliderValue = 1.0;
   bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialCategory != null) {
+      _selectedCategory = widget.initialCategory;
+    }
+  }
 
   // Verification State
   XFile? _evidenceImage;
@@ -265,7 +274,7 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
 
       final functions = Supabase.instance.client.functions;
       // ENABLE REAL EDGE FUNCTION
-      const bool useRealEdgeFunction = false; // Set to false for demo/no-backend mode
+      const bool useRealEdgeFunction = true; // Enabled for production/real usage
 
       if (useRealEdgeFunction) {
         final response = await functions.invoke(
@@ -339,22 +348,15 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
         return;
       }
 
-      // Enforce Verification (Rule: Verified activities get verified)
-      if (_verificationResult == null ||
-          _verificationResult!['verified'] != true) {
-        // ... handled below ...
-      }
-      
-      // But actually, we might want to allow unverified at much lower points?
-      // For now, keeping the user's logic: "Verification required"
+      // Enforce Verification (MANDATORY)
       if (_verificationResult == null ||
           _verificationResult!['verified'] != true) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content:
-                  Text('Verification required. Please verify with AI first.'),
-              backgroundColor: Colors.orange,
+                  Text('Verification required. You must verify using the AI Camera.'),
+              backgroundColor: Colors.redAccent,
             ),
           );
         }

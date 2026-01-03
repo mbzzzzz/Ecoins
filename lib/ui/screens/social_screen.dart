@@ -34,6 +34,100 @@ class _SocialScreenState extends State<SocialScreen> {
     );
   }
 
+  void _showNotifications(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        builder: (_, scrollController) => GlassContainer(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          padding: const EdgeInsets.all(0),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Notifications', 
+                      style: GoogleFonts.outfit(
+                        color: Colors.white, 
+                        fontSize: 20, 
+                        fontWeight: FontWeight.bold
+                      )
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    )
+                  ],
+                ),
+              ),
+              Expanded(
+                child: FutureBuilder<List<Map<String, dynamic>>>(
+                  future: Supabase.instance.client
+                      .from('notifications')
+                      .select()
+                      .eq('user_id', Supabase.instance.client.auth.currentUser?.id ?? '')
+                      .order('created_at', ascending: false)
+                      .limit(20),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return Center(child: Text("No notifications yet", style: GoogleFonts.inter(color: Colors.white60)));
+                    }
+                    final notifs = snapshot.data!;
+                    return ListView.separated(
+                      controller: scrollController,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      itemCount: notifs.length,
+                      separatorBuilder: (_, __) => const Divider(color: Colors.white24),
+                      itemBuilder: (context, index) {
+                        final n = notifs[index];
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryGreen.withOpacity(0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              n['type'] == 'message' ? Icons.chat : Icons.notifications, 
+                              color: AppTheme.primaryGreen
+                            ),
+                          ),
+                          title: Text(n['title'], style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(n['body'], style: GoogleFonts.inter(color: Colors.white70)),
+                              const SizedBox(height: 4),
+                              Text(
+                                timeago.format(DateTime.parse(n['created_at'])),
+                                style: GoogleFonts.inter(color: Colors.white38, fontSize: 10)
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+                    );
+                  }
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -65,11 +159,14 @@ class _SocialScreenState extends State<SocialScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      GlassContainer(
-                        borderRadius: BorderRadius.circular(12),
-                        padding: const EdgeInsets.all(8),
-                        child: const Icon(Icons.notifications_none_rounded,
-                            color: Colors.white),
+                      GestureDetector(
+                        onTap: () => _showNotifications(context),
+                        child: GlassContainer(
+                          borderRadius: BorderRadius.circular(12),
+                          padding: const EdgeInsets.all(8),
+                          child: const Icon(Icons.notifications_none_rounded,
+                              color: Colors.white),
+                        ),
                       )
                     ],
                   ),
@@ -507,15 +604,44 @@ class _FriendsTabState extends State<FriendsTab> {
           .select('id, display_name, email, avatar_url')
           .or('email.ilike.%$query%,display_name.ilike.%$query%')
           .neq('id', user.id) // Don't show self
-          .limit(10);
+          .limit(20);
+
+      // Filter out existing friends
+      final existingFriendIds = _friends.map((f) => f['friend']['id']).toSet(); // assuming normalized structure, or f['friend_id']
+      // Note: _friends is List<Map> with 'friend' key containing the profile. 
+      // We need to double check how _friends is populated.
+      // Based on _fetchFriendsAndRequests: 'friend': ... object with id? No, fetch selects display_name etc.
+      // We need friend IDs.
+      
+      // Since fetching friend IDs might be expensive if not already loaded, let's rely on checking the loaded _friends list. 
+      // However, `_friends` only has display_name, email, avatar_url in the nested object. The ID is missing in the select!!
+      // Let's fix the select in _fetchFriendsAndRequests first or here assume we can't filter perfectly without ID.
+      // Wait, let's look at _fetchFriendsAndRequests Select again.
+      // .select('*, requester:requester_id(...), addressee:addressee_id(...)')
+      // The FKs requester_id and addressee_id ARE available at top level of friendship row.
+      
+      final friendIds = <String>{};
+      for(var f in _friends) {
+         // _friends item is the friendship row + normalized 'friend' object
+         // The friendship row has requester_id and addressee_id
+         friendIds.add(f['requester_id']);
+         friendIds.add(f['addressee_id']);
+      }
+
+      final filtered = List<Map<String, dynamic>>.from(response).where((u) {
+          return !friendIds.contains(u['id']);
+      }).toList();
 
       if (mounted) {
         setState(() {
-          _searchResults = List<Map<String, dynamic>>.from(response);
+          _searchResults = filtered;
+          _isLoading = false; // logic fix: searching ends loading state? No, separate loading state.
+          _isSearching = false; // Actually _isSearching was true.
         });
       }
     } catch (e) {
       debugPrint('Search error: $e');
+      if(mounted) setState(() => _isSearching = false);
     }
   }
 
@@ -776,7 +902,21 @@ class _FriendsTabState extends State<FriendsTab> {
              Text('Select Achievement', style: GoogleFonts.outfit(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
              const SizedBox(height: 20),
              InkWell(
-               onTap: () {
+               onTap: () async {
+                 // Insert Notification for the friend
+                 try {
+                   await _supabase.from('notifications').insert({
+                     'user_id': friend['id'],
+                     'title': 'Achievement Unlocked! 🏆',
+                     'body': '${user.userMetadata?['display_name'] ?? 'A friend'} shared an achievement: ${level.name}',
+                     'type': 'achievement',
+                     'created_at': DateTime.now().toIso8601String()
+                   });
+                 } catch (e) {
+                   debugPrint('Failed to send notification: $e');
+                 }
+
+                 if (!mounted) return;
                  Navigator.pop(ctx);
                  Navigator.push(context, MaterialPageRoute(
                    builder: (_) => ChatScreen(
@@ -860,7 +1000,20 @@ class _FriendsTabState extends State<FriendsTab> {
                          final code = offer['discount_code'] ?? coupon['promo_code'];
                  
                          return InkWell(
-                           onTap: () {
+                           onTap: () async {
+                             try {
+                               await _supabase.from('notifications').insert({
+                                 'user_id': friend['id'],
+                                 'title': 'You received a Gift! 🎁',
+                                 'body': '${user.userMetadata?['display_name'] ?? 'A friend'} sent you a ${offer['title']} coupon.',
+                                 'type': 'coupon',
+                                 'created_at': DateTime.now().toIso8601String()
+                               });
+                             } catch (e) {
+                               debugPrint('Failed to send notification: $e');
+                             }
+                             
+                             if (!context.mounted) return;
                              Navigator.pop(ctx);
                              Navigator.push(context, MaterialPageRoute(
                                builder: (_) => ChatScreen(

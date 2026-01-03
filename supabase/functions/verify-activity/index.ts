@@ -50,14 +50,15 @@ Deno.serve(async (req) => {
               content: [
                 {
                   type: 'text',
-                  text: `Act as a strict Eco-Verification AI. Your goal is to prevent fraud while regarding genuine effort.
+                  text: `Act as a strict Eco-Verification AI. Your goal is to prevent fraud while rewarding genuine effort.
                   
                   Analyze if this image is CREDIBLE PROOF for the activity: "${category}".
 
                   CRITERIA:
                   1. Visual Evidence: Does the image show the action (e.g. riding a bike, recycling) or proof (ticket, receipt)?
-                  2. Authenticity: Reject photos of screens, blurry blobs, or obvious stock photos.
-                  3. Cross-Verification (Crucial): 
+                  2. OCR / Text Extraction: If the image is a ticket, receipt, or screen, READ THE TEXT. Verify dates, times, and relevant keywords (e.g. "Bus Ticket", "Vegan", "Recycle").
+                  3. Authenticity: Reject photos of secondary screens (taking a photo of another screen), blurry blobs, or obvious stock photos.
+                  4. Cross-Verification (Crucial): 
                      - Does the lighting (Day/Night) match the timestamp?
                      - Does the scenery (City/Rural/Indoor) match the location coordinates?
 
@@ -71,7 +72,7 @@ Deno.serve(async (req) => {
                     "verified": boolean, // true ONLY if you are >85% confident
                     "confidence": number, // 0.0 to 1.0
                     "carbon_saved_estimate": number, // conservative estimate in kg
-                    "reasoning": string, // Explain any inconsistencies found (e.g. "Photo is daylight but timestamp is 11PM")
+                    "reasoning": string, // Explain decision. If rejected, explain why. If text was read, mention it.
                     "fraud_score": number // 0-1
                   }`
                 },

@@ -93,7 +93,6 @@ class _QRScanScreenState extends State<QRScanScreen>
 
         await _supabase.from('redemptions').insert({
           'user_id': user.id,
-          'offer_id': offer['id'],
           'reward_id': offer['id'], 
           'code': code, // The scanned public code (e.g. SUMMER20)
           'promo_code': uniquePromoCode, // The unique private code (e.g. ECO-12345)

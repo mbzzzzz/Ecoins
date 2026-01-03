@@ -454,7 +454,7 @@ class _RewardsScreenState extends State<RewardsScreen>
 
           await _supabase.from('redemptions').insert({
               'user_id': user.id,
-              'offer_id': reward['id'],
+              'reward_id': reward['id'],
               'promo_code': uniquePromoCode,
               'status': 'active'
           });
@@ -466,7 +466,16 @@ class _RewardsScreenState extends State<RewardsScreen>
               showDialog(context: context, builder: (_) => AlertDialog(
                   backgroundColor: Colors.white,
                   title: const Text('Success!'),
-                  content: Text('Code: $brandDisplayCode'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.check_circle_outline, color: Colors.green, size: 48),
+                      const SizedBox(height: 16),
+                      Text('Code: $uniquePromoCode', style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      const Text('Saved to your Wallet.', style: TextStyle(color: Colors.grey)),
+                    ],
+                  ),
                   actions: [TextButton(onPressed: ()=>Navigator.pop(context), child: const Text('OK'))]
               ));
           }

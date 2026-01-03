@@ -11,6 +11,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:ecoins/ui/screens/edit_profile_screen.dart';
 import 'package:ecoins/ui/screens/scan/qr_scan_screen.dart';
 import 'package:ecoins/ui/screens/impact_dashboard_screen.dart';
+import 'package:flutter/services.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -26,6 +27,10 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _recentActivities = [];
 
+  int _streak = 0;
+  bool _dailyGoalCompleted = false;
+  String? _avatarUrl;
+
   @override
   void initState() {
     super.initState();
@@ -37,43 +42,33 @@ class _HomeScreenState extends State<HomeScreen> {
       final user = _supabase.auth.currentUser;
 
       if (user == null) {
-        // MOCK DATA (For UI Review during Outage)
         if (mounted) {
-          setState(() {
-            _points = 1250;
-            _carbonSaved = 42.5;
-            _recentActivities = [
-              {
-                'category': 'transport',
-                'description': 'Bus Ride (Mock)',
-                'points_earned': 50,
-                'logged_at': DateTime.now().toIso8601String(),
-              },
-              {
-                'category': 'food',
-                'description': 'Vegan Lunch (Mock)',
-                'points_earned': 30,
-                'logged_at': DateTime.now()
-                    .subtract(const Duration(hours: 2))
-                    .toIso8601String(),
-              },
-            ];
-            _isLoading = false;
-          });
+           setState(() {
+             _points = 0;
+             _carbonSaved = 0.0;
+             _isLoading = false;
+           });
         }
         return;
       }
 
       final userId = user.id;
+      _avatarUrl = user.userMetadata?['avatar_url'];
 
       // Fetch Profile
-      final profile = await _supabase
-          .from('profiles')
-          .select('points_balance, carbon_saved_kg')
-          .eq('id', userId)
-          .single();
+      try {
+        final profile = await _supabase
+            .from('profiles')
+            .select('points_balance, carbon_saved_kg')
+            .eq('id', userId)
+            .single();
+        _points = profile['points_balance'] ?? 0;
+        _carbonSaved = (profile['carbon_saved_kg'] ?? 0.0).toDouble();
+      } catch (e) {
+        debugPrint('Profile fetch error: $e');
+      }
 
-      // Fetch Recent Activities
+      // Fetch Recent Activities (Last 5 for display)
       final activities = await _supabase
           .from('activities')
           .select('*')
@@ -81,11 +76,19 @@ class _HomeScreenState extends State<HomeScreen> {
           .order('logged_at', ascending: false)
           .limit(5);
 
+      // Fetch Activity History for Streak & Daily Goal (Last 30 records is enough for standard streak check)
+      final history = await _supabase
+          .from('activities')
+          .select('logged_at')
+          .eq('user_id', userId)
+          .order('logged_at', ascending: false)
+          .limit(30);
+
       if (mounted) {
         setState(() {
-          _points = profile['points_balance'] ?? 0;
-          _carbonSaved = (profile['carbon_saved_kg'] ?? 0.0).toDouble();
           _recentActivities = List<Map<String, dynamic>>.from(activities);
+          _streak = _calculateRealStreak(history);
+          _dailyGoalCompleted = _checkDailyGoal(history);
           _isLoading = false;
         });
       }
@@ -99,12 +102,102 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _showLoggerModal() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => ActivityLoggerModal(onLogged: _fetchUserData),
+  // Real Streak Calculation
+  int _calculateRealStreak(List<dynamic> activities) {
+    if (activities.isEmpty) return 0;
+    
+    // Parse dates and normalize to midnight (local time)
+    final uniqueDates = activities.map((a) {
+      final dt = DateTime.parse(a['logged_at']).toLocal();
+      return DateTime(dt.year, dt.month, dt.day);
+    }).toSet().toList();
+
+    uniqueDates.sort((a, b) => b.compareTo(a)); // Descending
+
+    if (uniqueDates.isEmpty) return 0;
+
+    final today = DateTime.now();
+    final todayMidnight = DateTime(today.year, today.month, today.day);
+    final yesterdayMidnight = todayMidnight.subtract(const Duration(days: 1));
+
+    int streak = 0;
+    DateTime currentCheck;
+
+    // Determine start of streak (Today or Yesterday)
+    if (uniqueDates.contains(todayMidnight)) {
+      currentCheck = todayMidnight;
+    } else if (uniqueDates.contains(yesterdayMidnight)) {
+      currentCheck = yesterdayMidnight;
+    } else {
+      return 0; // Streak broken if neither today nor yesterday has activity
+    }
+
+    // Count backwards
+    while (uniqueDates.contains(currentCheck)) {
+      streak++;
+      currentCheck = currentCheck.subtract(const Duration(days: 1));
+    }
+    
+    return streak;
+  }
+
+  bool _checkDailyGoal(List<dynamic> activities) {
+    if (activities.isEmpty) return false;
+    final today = DateTime.now();
+    final todayMidnight = DateTime(today.year, today.month, today.day);
+    
+    return activities.any((a) {
+      final dt = DateTime.parse(a['logged_at']).toLocal();
+      return DateTime(dt.year, dt.month, dt.day) == todayMidnight;
+    });
+  }
+
+  void _logQuickAction(String category) {
+    // Instead of auto-logging, we now require verification for everything.
+    // Quick actions just pre-select the category in the modal.
+    _showLoggerModal(initialCategory: category);
+  }
+
+  Widget _buildQuickAction(String label, IconData icon, Color color, String category, int points) {
+    return GestureDetector(
+      onTap: () => _logQuickAction(category),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2), // Glassy tint
+              shape: BoxShape.circle,
+              border: Border.all(color: color.withOpacity(0.5), width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.2),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4)
+                )
+              ]
+            ),
+            child: Icon(icon, color: Colors.white, size: 28),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Verify & Earn',
+            style: GoogleFonts.outfit(
+              color: Colors.white60,
+              fontSize: 10,
+            ),
+          )
+        ],
+      ),
     );
   }
 
@@ -122,22 +215,29 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
     }
+    
+    // final streak = _calculateStreak(); // Removed in favor of _streak class variable
 
     return Scaffold(
       extendBodyBehindAppBar: true,
       body: Stack(
         children: [
-          // Background
+          // Background - Premium Dark Nature
           Positioned.fill(
-            child: Image.asset(
-              'assets/images/background.png',
-              fit: BoxFit.cover,
+            child: Container(
+              color: const Color(0xFF111827), // Fallback
+              child: Image.asset(
+                'assets/images/background.png',
+                fit: BoxFit.cover,
+                color: Colors.black.withOpacity(0.3), // Darken for text visibility
+                colorBlendMode: BlendMode.darken,
+              ),
             ),
           ),
 
           SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 30.0),
+              padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 10.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -151,7 +251,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           Text(
                             'Good Morning,',
                             style: GoogleFonts.inter(
-                              color: Colors.white.withOpacity(0.8),
+                              color: Colors.white70,
                               fontSize: 16,
                             ),
                           ),
@@ -162,6 +262,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               color: Colors.white,
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
+                              shadows: [
+                                Shadow(blurRadius: 10, color: Colors.black.withOpacity(0.5))
+                              ]
                             ),
                           ),
                         ],
@@ -176,15 +279,18 @@ class _HomeScreenState extends State<HomeScreen> {
                         },
                         child: Container(
                           decoration: BoxDecoration(
-                            shape: BoxShape.circle, // Ensure circular shape
+                            shape: BoxShape.circle,
                             border: Border.all(
-                                color: Colors.white.withOpacity(0.3),
-                                width: 2), // Outer border
+                                color: AppTheme.primaryGreen.withOpacity(0.5),
+                                width: 2),
+                            boxShadow: [
+                               BoxShadow(color: AppTheme.primaryGreen.withOpacity(0.2), blurRadius: 10)
+                            ]
                           ),
                           child: CircleAvatar(
                             radius: 24,
-                            backgroundColor: Colors.white.withOpacity(
-                                0.2), // Semi-transparent Glassy background
+                            backgroundColor: Colors.white.withOpacity(0.1),
+    backgroundImage: _avatarUrl != null ? NetworkImage(_avatarUrl!) : null,
                             child: Text(
                               _supabase.auth.currentUser?.email?[0]
                                       .toUpperCase() ??
@@ -200,92 +306,77 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 32),
 
-                  // Hero Section (Tree)
+                  // Hero Section (Tree) with "Living" Glow
                   Center(
                     child: GestureDetector(
                       onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const LeaderboardScreen()),
-                        );
+                         Navigator.push(context, MaterialPageRoute(builder: (_) => const LeaderboardScreen()));
                       },
-                      child: Column(
+                      child: Stack(
+                        alignment: Alignment.center,
                         children: [
-                          Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              // Glow
-                              Container(
-                                width: 250,
-                                height: 250,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFF10B981)
-                                          .withOpacity(0.3),
-                                      blurRadius: 60,
-                                      spreadRadius: 20,
-                                    ),
-                                  ],
-                                ),
+                          // Ambient Glow
+                          Container(
+                            width: 280,
+                            height: 280,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  AppTheme.primaryGreen.withOpacity(0.2),
+                                  Colors.transparent
+                                ],
+                                stops: const [0.5, 1.0]
                               ),
-                              // Tree Widget
-                              MyTreeWidget(points: _points, size: 220),
-                            ],
+                            ),
                           ),
-                          const SizedBox(height: 16),
-                          // Stats
-                          // Stats & Level
                           Column(
                             children: [
-                              Text(
-                                LevelSystem.getLevel(_points).name,
-                                style: GoogleFonts.outfit(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.accentYellow,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              
-                              // Visual Progress Bar
-                              SizedBox(
-                                width: 200,
-                                child: Column(
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(10),
-                                      child: LinearProgressIndicator(
-                                        value: LevelSystem.getProgress(_points),
-                                        minHeight: 8,
-                                        backgroundColor: Colors.white.withOpacity(0.2),
-                                        color: AppTheme.primaryGreen,
+                              MyTreeWidget(points: _points, size: 240),
+                              const SizedBox(height: 10),
+                              Column(
+                                children: [
+                                  Text(
+                                    LevelSystem.getLevel(_points).name,
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 26,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppTheme.accentYellow,
+                                      shadows: [
+                                        Shadow(blurRadius: 8, color: Colors.black.withOpacity(0.5))
+                                      ]
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  // XP Bar
+                                  Container(
+                                    width: 180,
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(4)
+                                    ),
+                                    child: FractionallySizedBox(
+                                      alignment: Alignment.centerLeft,
+                                      widthFactor: LevelSystem.getProgress(_points),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.primaryGreen,
+                                          borderRadius: BorderRadius.circular(4),
+                                          boxShadow: [BoxShadow(color: AppTheme.primaryGreen, blurRadius: 6)]
+                                        ),
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      '${_points} pts / ${LevelSystem.getNextLevel(_points).minPoints} pts',
-                                      style: GoogleFonts.inter(
-                                        color: Colors.white70,
-                                        fontSize: 10,
-                                      ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    '${_points} / ${LevelSystem.getNextLevel(_points).minPoints} XP',
+                                    style: GoogleFonts.inter(
+                                      color: Colors.white60,
+                                      fontSize: 11,
                                     ),
-                                  ],
-                                ),
-                              ),
-
-                              const SizedBox(height: 12),
-                              
-                              Text(
-                                '${_carbonSaved.toStringAsFixed(1)} kg CO₂ Saved',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -294,35 +385,25 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 12),
-                  
-                  // Impact Insights Button
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const ImpactDashboardScreen()),
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withOpacity(0.2)),
-                      ),
+                  // Impact Stats Row
+                  // Removed slight overlap to add space as requested
+                  Center(
+                    child: GlassContainer(
+                      borderRadius: BorderRadius.circular(30),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      color: Colors.black, // Darker glass
+                      opacity: 0.4,
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.bar_chart, color: AppTheme.accentYellow, size: 16),
-                          const SizedBox(width: 8),
+                          const Icon(Icons.eco, color: AppTheme.primaryGreen, size: 20),
+                          const SizedBox(width: 10),
                           Text(
-                            'View Impact Insights',
+                            '${_carbonSaved.toStringAsFixed(1)} kg CO₂ Saved',
                             style: GoogleFonts.outfit(
                               color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16
                             ),
                           ),
                         ],
@@ -330,187 +411,195 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
 
+                  const SizedBox(height: 24),
+                  
+                  // Streak & Daily Challenge Row
+                  Row(
+                    children: [
+                       Expanded(
+                         child: GlassContainer(
+                           padding: const EdgeInsets.all(16),
+                           borderRadius: BorderRadius.circular(20),
+                           child: Row(
+                             children: [
+                               Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange.withOpacity(0.2),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.local_fire_department, color: Colors.orange, size: 24),
+                               ),
+                               const SizedBox(width: 12),
+                               Expanded(
+                                 child: Column(
+                                   crossAxisAlignment: CrossAxisAlignment.start,
+                                   children: [
+                                     Text('Streak', style: GoogleFonts.inter(color: Colors.white60, fontSize: 12)),
+                                     Text('$_streak Days', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18))
+                                   ],
+                                 ),
+                               )
+                             ],
+                           ),
+                         )
+                       ),
+                       const SizedBox(width: 12),
+                       Expanded(
+                         child: GlassContainer(
+                           padding: const EdgeInsets.all(16),
+                           borderRadius: BorderRadius.circular(20),
+                           child: Row(
+                             children: [
+                               Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: _dailyGoalCompleted ? Colors.green.withOpacity(0.2) : Colors.blue.withOpacity(0.2),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    _dailyGoalCompleted ? Icons.check : Icons.track_changes,
+                                    color: _dailyGoalCompleted ? Colors.green : Colors.blue,
+                                    size: 24
+                                  ),
+                               ),
+                               const SizedBox(width: 12),
+                               Expanded(
+                                 child: Column(
+                                   crossAxisAlignment: CrossAxisAlignment.start,
+                                   children: [
+                                     Text('Daily Goal', style: GoogleFonts.inter(color: Colors.white60, fontSize: 12)),
+                                     Text(
+                                       _dailyGoalCompleted ? 'Completed!' : 'Log Activity',
+                                       style: GoogleFonts.outfit(
+                                         color: Colors.white,
+                                         fontWeight: FontWeight.bold,
+                                         fontSize: 16 // Slightly smaller for fit
+                                       )
+                                     )
+                                   ],
+                                 ),
+                               )
+                             ],
+                           ),
+                         )
+                       ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 32),
+                  
+                  // Quick Actions (Frictionless)
+                  Text(
+                    'Quick Log',
+                    style: GoogleFonts.outfit(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                       _buildQuickAction('Reuse Bottle', Icons.water, Colors.cyan, 'recycle', 10),
+                       _buildQuickAction('Bus Ride', Icons.directions_bus, Colors.purple, 'transport', 20),
+                       _buildQuickAction('Vegan Meal', Icons.restaurant_menu, Colors.green, 'food', 15),
+                       _buildQuickAction('Recycle', Icons.recycling, Colors.teal, 'recycle', 15),
+                    ],
+                  ),
+                  
                   const SizedBox(height: 32),
 
-                  // Steps Tracker Widget
+                  // Steps Tracker Section
                   const StepsTrackerWidget(),
 
-                  const SizedBox(height: 16),
-
-                  // Daily Progress & Quick Action Grid
-                  Row(
-                    children: [
-                      // Daily Challenge Card
-                      Expanded(
-                        child: GlassContainer(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Icon(Icons.directions_bike,
-                                    color: Colors.white, size: 24),
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                'Daily Challenge',
-                                style: GoogleFonts.inter(
-                                    color: Colors.white70, fontSize: 12),
-                              ),
-                              Text(
-                                'Bike to Work',
-                                style: GoogleFonts.outfit(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16),
-                              ),
-                              const SizedBox(height: 8),
-                              LinearProgressIndicator(
-                                value: 0.8,
-                                backgroundColor: Colors.white.withOpacity(0.2),
-                                color: AppTheme.accentYellow,
-                                minHeight: 4,
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '80% • 4/5 km ridden',
-                                style: GoogleFonts.inter(
-                                    color: Colors.white70, fontSize: 10),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      // Streak Card (Passive)
-                      Expanded(
-                        child: GlassContainer(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Icon(Icons.local_fire_department,
-                                    color: Colors.orangeAccent, size: 24),
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                'Current Streak',
-                                style: GoogleFonts.inter(
-                                    color: Colors.white70, fontSize: 12),
-                              ),
-                              Text(
-                                '5 Days',
-                                style: GoogleFonts.outfit(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Keep it up!',
-                                style: GoogleFonts.inter(
-                                    color: Colors.white70, fontSize: 10),
-                              ),
-                              const SizedBox(height: 4),
-                              // Visual spacer to match height of neighbor roughly if needed, or just let it adjust
-                              const SizedBox(height: 18),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Action Buttons Row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Log Activity
-                      GestureDetector(
-                        onTap: _showLoggerModal,
-                        child: GlassContainer(
-                          borderRadius: BorderRadius.circular(30),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 12),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                decoration: const BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: AppTheme.primaryGreen),
-                                padding: const EdgeInsets.all(8),
-                                child: const Icon(Icons.add,
-                                    color: Colors.white, size: 20),
-                              ),
-                              const SizedBox(width: 12),
-                              Text('Log Activity',
-                                  style: GoogleFonts.outfit(
+                  // Manual Log / Scan (Secondary)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => _showLoggerModal(),
+                            child: GlassContainer(
+                              borderRadius: BorderRadius.circular(20),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              color: AppTheme.primaryGreen,
+                              opacity: 0.8,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.add_a_photo, color: Colors.white, size: 24),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Log Activity',
+                                    style: GoogleFonts.outfit(
                                       color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 16)),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      // Scan Code
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => const QRScanScreen()),
-                          );
-                        },
-                        child: GlassContainer(
-                          borderRadius: BorderRadius.circular(30),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 12),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                decoration: const BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Colors.white),
-                                padding: const EdgeInsets.all(8),
-                                child: const Icon(Icons.qr_code_scanner,
-                                    color: AppTheme.primaryGreen, size: 20),
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 12),
-                              Text('Scan',
-                                  style: GoogleFonts.outfit(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 16)),
-                            ],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                               Navigator.push(context, MaterialPageRoute(builder: (_) => const QRScanScreen()));
+                            },
+                            child: GlassContainer(
+                              borderRadius: BorderRadius.circular(20),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              color: Colors.white,
+                              opacity: 0.1,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.qr_code_scanner, color: Colors.white, size: 24),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Scan Code',
+                                    style: GoogleFonts.outfit(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(height: 10), // Minimal padding
                 ],
               ),
             ),
           ),
+          
+          // Removed Floating Action Button
         ],
       ),
     );
+  }
+
+  void _showLoggerModal({String? initialCategory}) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => ActivityLoggerModal(
+        onLogged: () => _fetchUserData(), 
+        initialCategory: initialCategory
+      ),
+    ).then((_) => _fetchUserData());
   }
 
   IconData _getIconForCategory(String? category) {

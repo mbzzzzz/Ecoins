@@ -3,6 +3,7 @@ import 'package:ecoins/ui/widgets/glass_container.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ChatScreen extends StatefulWidget {
   final Map<String, dynamic> friend;
@@ -17,69 +18,72 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  
-  // Static memory storage for demo purposes (persists during app session)
-  static final Map<String, List<Map<String, dynamic>>> _chatHistory = {};
-
-  late String _conversationId;
-  List<Map<String, dynamic>> _messages = [];
+  late final Stream<List<Map<String, dynamic>>> _messagesStream;
+  late final String _conversationId;
 
   @override
   void initState() {
     super.initState();
-    final friendId = widget.friend['id'] ?? widget.friend['friend']?['id'] ?? 'unknown';
+    final friendId = widget.friend['id'] ?? widget.friend['friend']?['id'];
+    if (friendId == null) {
+      // Handle the error gracefully, perhaps by popping the screen after a frame
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error: Invalid Friend ID')));
+         Navigator.pop(context);
+      });
+      _conversationId = ''; // Dummy assignment
+      _messagesStream = const Stream.empty(); // Satisfy late initialization
+      return; 
+    }
     _conversationId = friendId;
     
-    // Initialize history if empty
-    if (!_chatHistory.containsKey(_conversationId)) {
-      _chatHistory[_conversationId] = [];
-    }
-    
-    _messages = _chatHistory[_conversationId]!;
+    final myId = Supabase.instance.client.auth.currentUser!.id;
 
-    // Send initial message if provided (e.g. from share actions)
+    // Stream messages
+    _messagesStream = Supabase.instance.client
+        .from('messages')
+        .stream(primaryKey: ['id'])
+        .order('created_at', ascending: true)
+        .map((data) => data.where((msg) {
+           final sender = msg['sender_id'];
+           final receiver = msg['receiver_id'];
+           return (sender == myId && receiver == _conversationId) || 
+                  (sender == _conversationId && receiver == myId);
+        }).toList());
+
     if (widget.initialMessage != null) {
-      // Add slightly delayed to allow UI to build
-      Future.delayed(const Duration(milliseconds: 300), () {
-        _sendMessage(widget.initialMessage!, isSystem: false);
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _sendMessage(widget.initialMessage!);
       });
     }
   }
 
-  void _sendMessage(String text, {bool isSystem = false}) {
+  Future<void> _sendMessage(String text) async {
     if (text.trim().isEmpty) return;
+    
+    final myId = Supabase.instance.client.auth.currentUser!.id;
 
-    setState(() {
-      final newMessage = {
-        'text': text,
-        'isMe': true, 
-        'timestamp': DateTime.now(),
-        'isSystem': isSystem,
-      };
-      
-      _messages.add(newMessage);
-      _chatHistory[_conversationId] = _messages;
-    });
-
-    _controller.clear();
-    _scrollToBottom();
-
-    // Auto-reply simulation for "real feel"
-    if (!isSystem) {
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) {
-          setState(() {
-             _messages.add({
-              'text': "That's awesome! thanks for sharing! 🌿",
-              'isMe': false,
-              'timestamp': DateTime.now(),
-              'isSystem': false,
-            });
-             _scrollToBottom();
-          });
-        }
+    try {
+      await Supabase.instance.client.from('messages').insert({
+        'sender_id': myId,
+        'receiver_id': _conversationId,
+        'content': text,
+        'created_at': DateTime.now().toIso8601String(),
       });
+      _controller.clear();
+      // Scroll to bottom handled by StreamBuilder usually, or we can trigger it
+      Future.delayed(const Duration(milliseconds: 300), _scrollToBottom);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to send: $e')));
     }
+  }
+
+  Future<void> _clearChat() async {
+     final myId = Supabase.instance.client.auth.currentUser!.id;
+     // Delete messages for this conversation
+     await Supabase.instance.client.from('messages').delete().or(
+       'and(sender_id.eq.$myId,receiver_id.eq.$_conversationId),and(sender_id.eq.$_conversationId,receiver_id.eq.$myId)'
+     );
   }
 
   void _scrollToBottom() {
@@ -96,11 +100,15 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final friendName = widget.friend['display_name'] ?? 
+    // Safety check for display name
+    final friendNameRaw = widget.friend['display_name'] ?? 
                        widget.friend['friend']?['display_name'] ?? 
                        'Friend';
+    final friendName = friendNameRaw.isEmpty ? 'Friend' : friendNameRaw;
+
     final avatarUrl = widget.friend['avatar_url'] ?? 
                       widget.friend['friend']?['avatar_url'];
+    final myId = Supabase.instance.client.auth.currentUser?.id;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -118,7 +126,7 @@ class _ChatScreenState extends State<ChatScreen> {
               backgroundColor: Colors.white.withOpacity(0.2),
               backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
               child: avatarUrl == null 
-                  ? Text(friendName[0], style: const TextStyle(color: Colors.white)) 
+                  ? Text(friendName.isNotEmpty ? friendName[0].toUpperCase() : '?', style: const TextStyle(color: Colors.white)) 
                   : null,
             ),
             const SizedBox(width: 12),
@@ -139,6 +147,27 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ],
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_outline, color: Colors.white70),
+            onPressed: () {
+               showDialog(
+                 context: context, 
+                 builder: (ctx) => AlertDialog(
+                   title: const Text('Clear Chat?'),
+                   content: const Text('This will delete the conversation history permanently.'),
+                   actions: [
+                     TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+                     TextButton(onPressed: () {
+                       _clearChat();
+                       Navigator.pop(ctx);
+                     }, child: const Text('Clear', style: TextStyle(color: Colors.red))),
+                   ],
+                 )
+               );
+            },
+          )
+        ],
         flexibleSpace: Container(
           decoration: BoxDecoration(
             color: AppTheme.backgroundDark.withOpacity(0.8),
@@ -160,84 +189,84 @@ class _ChatScreenState extends State<ChatScreen> {
           Column(
             children: [
               Expanded(
-                child: ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.fromLTRB(20, 110, 20, 20),
-                  itemCount: _messages.length,
-                  itemBuilder: (context, index) {
-                    final msg = _messages[index];
-                    final isMe = msg['isMe'] as bool;
-                    final isSystem = msg['isSystem'] as bool;
-
-                    if (isSystem) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Center(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              msg['text'],
-                              style: GoogleFonts.inter(
-                                color: Colors.white,
-                                fontSize: 13,
-                                fontStyle: FontStyle.italic
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
-                      );
+                child: StreamBuilder<List<Map<String, dynamic>>>(
+                  stream: _messagesStream,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.white)));
+                    }
+                    if (!snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    
+                    final messages = snapshot.data!;
+                    
+                    if (messages.isEmpty) {
+                      return Center(child: Text('Start the conversation!', style: GoogleFonts.inter(color: Colors.white60)));
                     }
 
-                    return Align(
-                      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-                        decoration: BoxDecoration(
-                          color: isMe ? AppTheme.primaryGreen : Colors.white,
-                          borderRadius: BorderRadius.only(
-                            topLeft: const Radius.circular(20),
-                            topRight: const Radius.circular(20),
-                            bottomLeft: isMe ? const Radius.circular(20) : Radius.zero,
-                            bottomRight: isMe ? Radius.zero : const Radius.circular(20),
+                    // Auto-scroll on new data
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                       if (_scrollController.hasClients && _scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+                          _scrollToBottom();
+                       }
+                    });
+
+                    return ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.fromLTRB(20, 110, 20, 20),
+                      itemCount: messages.length,
+                      itemBuilder: (context, index) {
+                        final msg = messages[index];
+                        final isMe = msg['sender_id'] == myId;
+                        
+                        return Align(
+                          alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+                            decoration: BoxDecoration(
+                              color: isMe ? AppTheme.primaryGreen : Colors.white,
+                              borderRadius: BorderRadius.only(
+                                topLeft: const Radius.circular(20),
+                                topRight: const Radius.circular(20),
+                                bottomLeft: isMe ? const Radius.circular(20) : Radius.zero,
+                                bottomRight: isMe ? Radius.zero : const Radius.circular(20),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                )
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  msg['content'],
+                                  style: GoogleFonts.inter(
+                                    color: isMe ? Colors.white : AppTheme.textDark,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  timeago.format(DateTime.parse(msg['created_at']), locale: 'en_short'),
+                                  style: GoogleFonts.inter(
+                                    color: isMe ? Colors.white70 : Colors.black45,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            )
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              msg['text'],
-                              style: GoogleFonts.inter(
-                                color: isMe ? Colors.white : AppTheme.textDark,
-                                fontSize: 15,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              timeago.format(msg['timestamp'], locale: 'en_short'),
-                              style: GoogleFonts.inter(
-                                color: isMe ? Colors.white70 : Colors.black45,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                        );
+                      },
                     );
-                  },
+                  }
                 ),
               ),
               

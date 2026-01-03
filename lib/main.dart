@@ -9,6 +9,7 @@ import 'package:ecoins/ui/screens/brand/brand_auth_screen.dart';
 import 'package:ecoins/ui/screens/role_select_screen.dart';
 import 'package:ecoins/ui/screens/social_screen.dart';
 import 'package:ecoins/ui/screens/splash_screen.dart';
+import 'package:ecoins/core/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
@@ -54,6 +55,9 @@ Future<void> main() async {
   // Initialize Firebase (Requires google-services.json)
   // await Firebase.initializeApp();
   // _setupFCM();
+
+  // Initialize Local Notifications
+  await NotificationService().initialize();
 
   runApp(
     ChangeNotifierProvider(
@@ -119,6 +123,15 @@ class MainScaffold extends StatefulWidget {
 
 class _MainScaffoldState extends State<MainScaffold> {
   int _selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId != null) {
+      NotificationService().listenToUserNotifications(userId);
+    }
+  }
 
   static const List<Widget> _pages = <Widget>[
     HomeScreen(),

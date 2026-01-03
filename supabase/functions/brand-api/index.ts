@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
                 const { data: redemptions } = await supabase
                     .from('redemptions')
                     .select('carbon_value_snapshot')
-                    .in('offer_id', offerIds);
+                    .in('reward_id', offerIds);
 
                 if (redemptions && redemptions.length > 0) {
                     totalCarbon = redemptions.reduce((sum, r) => {
@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
                     const { data: userRedemptions } = await supabase
                         .from('redemptions')
                         .select('user_id')
-                        .in('offer_id', offerIds);
+                        .in('reward_id', offerIds);
 
                     if (userRedemptions && userRedemptions.length > 0) {
                         const userIds = [...new Set(userRedemptions.map(r => r.user_id))];
@@ -144,8 +144,8 @@ Deno.serve(async (req) => {
             // Join with rewards to filter by brand
             const { data, error } = await supabase
                 .from('redemptions')
-                .select('*, rewards!inner(*)')
-                .eq('rewards.brand_id', brand_id)
+                .select('*, offers!inner(*)')
+                .eq('offers.brand_id', brand_id)
                 .order('redeemed_at', { ascending: false });
 
             if (error) throw error;

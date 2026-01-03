@@ -117,10 +117,12 @@ class _WalletScreenState extends State<WalletScreen> {
     final brand = offer?['brands'] as Map<String, dynamic>?;
     
     // Key Logic Change:
-    // QR Code = Unique System Code (promo_code)
-    // Display Text = Brand's Code (discount_code) or fallback to unique code
+    // User wants to see the unique redeemed code (promo_code) primarily.
     final uniqueQrCode = redemption['promo_code'] ?? 'UNKNOWN';
-    final displayCode = offer?['discount_code'] ?? uniqueQrCode;
+    final brandCode = offer?['discount_code'] ?? 'N/A';
+    
+    // If we have a unique code, show it. Otherwise fall back to brand code.
+    final displayCode = (uniqueQrCode != 'UNKNOWN') ? uniqueQrCode : brandCode;
     
     final expiry = offer?['expires_at'];
 
