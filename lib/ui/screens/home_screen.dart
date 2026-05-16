@@ -17,6 +17,7 @@ import 'package:ecoins/ui/widgets/shimmer_loading.dart';
 import 'package:ecoins/ui/widgets/walkthrough_overlay.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:ecoins/ui/widgets/level_up_celebration.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -38,20 +39,64 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, dynamic>? _userStats;
   bool _showWalkthrough = false;
   LevelData? _newLevelData;
-  int _previousPoints = -1; // To track level changes
+  int _previousPoints = -1;
+  RealtimeChannel? _profileChannel;
 
   @override
   void initState() {
     super.initState();
     _fetchUserData();
-    // Simulate check for "First Time Login"
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-       // In production, check SharedPreferences or DB flag 'has_seen_walkthrough'
-       // For demo/request, we set it to true to show the option.
-       setState(() {
-         _showWalkthrough = true;
-       });
-    });
+    _checkWalkthrough();
+    _subscribeToProfile();
+  }
+
+  Future<void> _checkWalkthrough() async {
+    final prefs = await SharedPreferences.getInstance();
+    final seen = prefs.getBool('has_seen_walkthrough') ?? false;
+    if (mounted && !seen) {
+      setState(() => _showWalkthrough = true);
+    }
+  }
+
+  void _subscribeToProfile() {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) return;
+    _profileChannel = _supabase
+        .channel('profile:$userId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'profiles',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'id',
+            value: userId,
+          ),
+          callback: (payload) {
+            if (!mounted) return;
+            final updated = payload.newRecord;
+            final newPoints = updated['points_balance'] as int? ?? _points;
+            final prevLevel = LevelSystem.getLevel(_points);
+            final currentLevel = LevelSystem.getLevel(newPoints);
+            setState(() {
+              _points = newPoints;
+              _carbonSaved = (updated['carbon_saved_kg'] ?? _carbonSaved).toDouble();
+              _avatarUrl = updated['avatar_url'] ?? _avatarUrl;
+              if (currentLevel.minPoints > prevLevel.minPoints) {
+                _newLevelData = currentLevel;
+              }
+            });
+          },
+        )
+        .subscribe();
+  }
+
+  @override
+  void dispose() {
+    if (_profileChannel != null) {
+      _supabase.removeChannel(_profileChannel!);
+    }
+    super.dispose();
   }
 
   Future<void> _fetchUserData() async {
@@ -70,17 +115,17 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       final userId = user.id;
-      _avatarUrl = user.userMetadata?['avatar_url'];
 
-      // Fetch Profile
+      // Fetch Profile (including avatar_url from profiles table)
       try {
         final profile = await _supabase
             .from('profiles')
-            .select('points_balance, carbon_saved_kg')
+            .select('points_balance, carbon_saved_kg, avatar_url')
             .eq('id', userId)
             .single();
         _points = profile['points_balance'] ?? 0;
         _carbonSaved = (profile['carbon_saved_kg'] ?? 0.0).toDouble();
+        _avatarUrl = profile['avatar_url'];
       } catch (e) {
         debugPrint('Profile fetch error: $e');
       }
@@ -665,6 +710,26 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           // Removed Floating Action Button
         ),
+        // Walkthrough overlay
+        if (_showWalkthrough)
+          WalkthroughOverlay(
+            onFinish: () async {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setBool('has_seen_walkthrough', true);
+              if (mounted) setState(() => _showWalkthrough = false);
+            },
+            onSkip: () async {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setBool('has_seen_walkthrough', true);
+              if (mounted) setState(() => _showWalkthrough = false);
+            },
+          ),
+        // Level-up celebration overlay
+        if (_newLevelData != null)
+          LevelUpCelebration(
+            newLevel: _newLevelData!,
+            onDismiss: () => setState(() => _newLevelData = null),
+          ),
       ],
     );
   }

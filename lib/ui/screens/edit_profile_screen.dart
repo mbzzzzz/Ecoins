@@ -77,24 +77,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     try {
       final userId = _supabase.auth.currentUser!.id;
-      final fileExt = _imageFile!.path.split('.').last;
-      final fileName =
-          '$userId-${DateTime.now().millisecondsSinceEpoch}.${kIsWeb ? "png" : fileExt}';
-      final filePath = fileName;
+      final fileExt = kIsWeb ? 'png' : _imageFile!.path.split('.').last.toLowerCase();
+      // Fixed path per user — upsert replaces the previous file cleanly
+      final filePath = '$userId/avatar.$fileExt';
 
       final bytes = await _imageFile!.readAsBytes();
 
       await _supabase.storage.from('avatars').uploadBinary(
             filePath,
             bytes,
-            fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
+            fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
           );
 
-      final imageUrl = _supabase.storage.from('avatars').getPublicUrl(filePath);
-      return imageUrl;
+      // Cache-busting timestamp ensures the app reloads the new image
+      final baseUrl = _supabase.storage.from('avatars').getPublicUrl(filePath);
+      return '$baseUrl?t=${DateTime.now().millisecondsSinceEpoch}';
     } catch (e) {
       debugPrint('Error uploading image: $e');
-      // If storage bucket doesn't exist or fails, return null or handle gracefully
       return null;
     }
   }

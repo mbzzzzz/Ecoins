@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AppTheme {
   // Brand Colors - Glassmorphism Nature Palette
@@ -154,11 +155,25 @@ class ThemeNotifier extends ChangeNotifier {
   Color _primaryColor = AppTheme.primaryGreen;
 
   Color get primaryColor => _primaryColor;
-
   ThemeData get currentTheme => AppTheme.getTheme(_primaryColor);
 
-  void setPrimaryColor(Color color) {
+  ThemeNotifier() {
+    _loadSavedColor();
+  }
+
+  Future<void> _loadSavedColor() async {
+    final prefs = await SharedPreferences.getInstance();
+    final value = prefs.getInt('accent_color');
+    if (value != null) {
+      _primaryColor = Color(value);
+      notifyListeners();
+    }
+  }
+
+  Future<void> setPrimaryColor(Color color) async {
     _primaryColor = color;
     notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('accent_color', color.value);
   }
 }
