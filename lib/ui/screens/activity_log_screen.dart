@@ -1,5 +1,6 @@
 import 'package:ecoins/core/theme.dart';
 import 'package:ecoins/core/game_points.dart';
+import 'package:ecoins/ui/widgets/activity_logger_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -28,52 +29,19 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
     try {
       final user = _supabase.auth.currentUser;
       if (user == null) {
-        // Mock data for preview if no user
-        if (mounted) {
-          await Future.delayed(const Duration(milliseconds: 500));
-          setState(() {
-            _profile = {'points': 1250, 'carbon_saved': 42.5};
-            _activities = [
-              {
-                'description': 'Cycle',
-                'points_earned': 20,
-                'carbon_saved': 4.2,
-                'logged_at': DateTime.now()
-                    .subtract(const Duration(minutes: 15))
-                    .toIso8601String()
-              },
-              {
-                'description': 'Veg Meal',
-                'points_earned': 30,
-                'carbon_saved': 2.5,
-                'logged_at': DateTime.now()
-                    .subtract(const Duration(hours: 2))
-                    .toIso8601String()
-              },
-              {
-                'description': 'Recycle',
-                'points_earned': 15,
-                'carbon_saved': 1.0,
-                'logged_at': DateTime.now()
-                    .subtract(const Duration(days: 1))
-                    .toIso8601String()
-              },
-            ];
-            _isLoading = false;
-          });
-        }
+        if (mounted) setState(() => _isLoading = false);
         return;
       }
 
-      final profileFuture =
-          _supabase.from('profiles').select().eq('id', user.id).maybeSingle();
-      final activitiesFuture = _supabase
-          .from('activities')
-          .select()
-          .eq('user_id', user.id)
-          .order('logged_at', ascending: false);
-
-      final results = await Future.wait([profileFuture, activitiesFuture]);
+      final results = await Future.wait([
+        _supabase.from('profiles').select().eq('id', user.id).maybeSingle(),
+        _supabase
+            .from('activities')
+            .select()
+            .eq('user_id', user.id)
+            .order('logged_at', ascending: false)
+            .limit(50),
+      ]);
 
       if (mounted) {
         setState(() {
@@ -88,57 +56,60 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
     }
   }
 
-  Future<void> _addActivity(
-      String type, int points, double carbon, IconData icon) async {
+  Future<void> _addQuickActivity(
+      String label, String category, int points, double carbon) async {
     final user = _supabase.auth.currentUser;
     if (user == null) return;
 
     try {
-      // 1. Insert Activity
-      await _supabase.from('activities').insert({
+      final newActivity = {
         'user_id': user.id,
-        'description': type,
+        'category': category,
+        'description': label,
         'points_earned': points,
         'carbon_saved': carbon,
+        'is_verified': false,
         'logged_at': DateTime.now().toIso8601String(),
-      });
+      };
 
-      // 2. Update Profile Stats
-      if (_profile != null) {
-        final newPoints = (_profile!['points'] ?? 0) + points;
-        final newCarbon = (_profile!['carbon_saved'] ?? 0) + carbon;
+      await _supabase.from('activities').insert(newActivity);
 
-        await _supabase.from('profiles').update({
-          'points': newPoints,
-          'carbon_saved': newCarbon,
-        }).eq('id', user.id);
+      final currentPoints =
+          (_profile?['points_balance'] as num? ?? 0).toInt();
+      final currentCarbon =
+          (_profile?['carbon_saved_kg'] as num? ?? 0.0).toDouble();
 
-        // Optimistic Update
+      await _supabase.from('profiles').update({
+        'points_balance': currentPoints + points,
+        'carbon_saved_kg': currentCarbon + carbon,
+      }).eq('id', user.id);
+
+      if (mounted) {
         setState(() {
-          _profile!['points'] = newPoints;
-          _profile!['carbon_saved'] = newCarbon;
-          _activities.insert(0, {
-            'user_id': user.id,
-            'description': type,
-            'points_earned': points,
-            'carbon_saved': carbon,
-            'logged_at': DateTime.now().toIso8601String(),
-          });
+          _profile = {
+            ...?_profile,
+            'points_balance': currentPoints + points,
+            'carbon_saved_kg': currentCarbon + carbon,
+          };
+          _activities.insert(0, newActivity);
         });
-      } else {
-        // Fallback refresh
-        _fetchData();
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('+$points pts logged!'),
+            backgroundColor: AppTheme.primaryGreen,
+          ),
+        );
       }
-
-      if (mounted) Navigator.pop(context);
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     }
   }
 
-  void _showAddActivitySheet() {
+  void _showQuickLogSheet() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
@@ -146,73 +117,136 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (context) => Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Log New Activity',
-                style: GoogleFonts.outfit(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : AppTheme.textMain)),
-            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Quick Log',
+                  style: GoogleFonts.outfit(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : AppTheme.textMain),
+                ),
+                TextButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _showAiVerifyModal();
+                  },
+                  icon: const Icon(Icons.verified,
+                      size: 16, color: AppTheme.primaryGreen),
+                  label: Text('AI Verify',
+                      style: GoogleFonts.inter(
+                          color: AppTheme.primaryGreen,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13)),
+                ),
+              ],
+            ),
+            Text(
+              'No photo required — just tap and go.',
+              style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: isDark ? Colors.grey[500] : AppTheme.textSub),
+            ),
+            const SizedBox(height: 20),
             GridView.count(
               shrinkWrap: true,
               crossAxisCount: 3,
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 16,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 0.88,
               children: [
-                _buildActivityOption(Icons.directions_bike, 'Cycle (5km)', 
-                    (5 * GamePoints.transportPointsPerUnit), // 5km * 10pts/km = 50pts
-                    (5 * GamePoints.transportCo2PerUnit), // 5km * 0.2kg/km = 1.0kg
-                    const Color(0xFF3B82F6), isDark),
-                _buildActivityOption(Icons.restaurant, 'Veg Meal', 
-                    GamePoints.foodPointsPerUnit * 2, // Meal size 2
-                    GamePoints.foodCo2PerUnit * 2, 
-                    const Color(0xFFF59E0B), isDark),
-                _buildActivityOption(Icons.recycling, 'Recycle (5)', 
-                    GamePoints.recyclePointsPerUnit * 5, 
-                    GamePoints.recycleCo2PerUnit * 5, 
-                    const Color(0xFF10B981), isDark),
-                _buildActivityOption(Icons.bolt, 'Energy Save', 
-                    GamePoints.energyPointsPerUnit * 1, 
-                    GamePoints.energyCo2PerUnit * 1, 
-                    const Color(0xFFEAB308), isDark),
-                _buildActivityOption(Icons.shopping_bag, 'Reusable', 
-                    GamePoints.shoppingPointsPerUnit, 
-                    GamePoints.shoppingCo2PerUnit, 
-                    const Color(0xFF8B5CF6), isDark),
-                _buildActivityOption(Icons.water_drop, 'Save Water', 
-                    20, 0.5, // Not in GamePoints yet, assuming similar to Energy
-                    const Color(0xFF06B6D4), isDark),
+                _buildQuickOption(
+                    Icons.directions_bike,
+                    'Cycle',
+                    'transport',
+                    5 * GamePoints.transportPointsPerUnit,
+                    5 * GamePoints.transportCo2PerUnit,
+                    const Color(0xFF3B82F6),
+                    isDark),
+                _buildQuickOption(
+                    Icons.restaurant,
+                    'Veg Meal',
+                    'food',
+                    GamePoints.foodPointsPerUnit * 2,
+                    GamePoints.foodCo2PerUnit * 2,
+                    const Color(0xFFF59E0B),
+                    isDark),
+                _buildQuickOption(
+                    Icons.recycling,
+                    'Recycle',
+                    'recycle',
+                    GamePoints.recyclePointsPerUnit * 5,
+                    GamePoints.recycleCo2PerUnit * 5,
+                    const Color(0xFF10B981),
+                    isDark),
+                _buildQuickOption(
+                    Icons.bolt,
+                    'Energy',
+                    'energy',
+                    GamePoints.energyPointsPerUnit,
+                    GamePoints.energyCo2PerUnit,
+                    const Color(0xFFEAB308),
+                    isDark),
+                _buildQuickOption(
+                    Icons.shopping_bag,
+                    'Reusable',
+                    'shopping',
+                    GamePoints.shoppingPointsPerUnit,
+                    GamePoints.shoppingCo2PerUnit,
+                    const Color(0xFF8B5CF6),
+                    isDark),
+                _buildQuickOption(Icons.water_drop, 'Save Water', 'energy',
+                    20, 0.5, const Color(0xFF06B6D4), isDark),
               ],
-            )
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildActivityOption(IconData icon, String label, int points,
-      double carbon, Color color, bool isDark) {
+  void _showAiVerifyModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (_, __) => ActivityLoggerModal(
+          onLogged: _fetchData,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickOption(IconData icon, String label, String category,
+      int points, double carbon, Color color, bool isDark) {
     return InkWell(
-      onTap: () => _addActivity(label, points, carbon, icon),
+      onTap: () => _addQuickActivity(label, category, points, carbon),
       borderRadius: BorderRadius.circular(16),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: color, size: 28),
+            padding: const EdgeInsets.all(14),
+            decoration:
+                BoxDecoration(color: color.withOpacity(0.12), shape: BoxShape.circle),
+            child: Icon(icon, color: color, size: 26),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Text(label,
+              textAlign: TextAlign.center,
               style: GoogleFonts.inter(
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: isDark ? Colors.white : AppTheme.textMain)),
           Text('+$points pts',
@@ -224,20 +258,23 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
     );
   }
 
+  int get _thisWeekCount {
+    final weekAgo = DateTime.now().subtract(const Duration(days: 7));
+    return _activities.where((a) {
+      final logged = DateTime.tryParse(a['logged_at'] ?? '') ?? DateTime(2000);
+      return logged.isAfter(weekAgo);
+    }).length;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    // Gradient Background
-    final bgColors = isDark
-        ? [AppTheme.backgroundDark, const Color(0xFF1A1A2E)]
-        : [AppTheme.backgroundLight, const Color(0xFFE6F0F5)];
 
     if (_isLoading) {
       return Scaffold(
         backgroundColor:
             isDark ? AppTheme.backgroundDark : AppTheme.backgroundLight,
-        body: Center(
+        body: const Center(
             child: CircularProgressIndicator(color: AppTheme.primaryGreen)),
       );
     }
@@ -265,92 +302,146 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
                 fontWeight: FontWeight.bold,
                 color: isDark ? Colors.white : AppTheme.textMain)),
         centerTitle: true,
-        systemOverlayStyle:
-            isDark ? null : null, // Uses system default or theme
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: CircleAvatar(
+              backgroundColor: isDark
+                  ? Colors.white.withOpacity(0.1)
+                  : Colors.black.withOpacity(0.05),
+              child: IconButton(
+                icon: Icon(Icons.camera_alt_outlined,
+                    color: isDark ? Colors.white : AppTheme.textMain),
+                tooltip: 'AI Verify Activity',
+                onPressed: _showAiVerifyModal,
+              ),
+            ),
+          ),
+        ],
       ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: bgColors,
+            colors: isDark
+                ? [AppTheme.backgroundDark, const Color(0xFF1A1A2E)]
+                : [AppTheme.backgroundLight, const Color(0xFFE6F0F5)],
           ),
         ),
         child: Stack(
           children: [
-            CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                const SliverToBoxAdapter(child: SizedBox(height: 100)),
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  sliver: SliverToBoxAdapter(
-                    child: Row(
-                      children: [
-                        // Total Ecoins Card
-                        Expanded(
-                            child: _buildSummaryCard(
-                                'Total Ecoins',
-                                '${_profile?['points'] ?? 0}',
-                                Icons.savings,
-                                const Color(0xFF10B981),
-                                isDark)),
-                        const SizedBox(width: 16),
-                        // CO2 Saved Card
-                        Expanded(
-                            child: _buildSummaryCard(
-                                'CO₂ Saved',
-                                '${_profile?['carbon_saved']?.toStringAsFixed(1) ?? 0} kg',
-                                Icons.cloud_outlined,
-                                const Color(0xFF3B82F6),
-                                isDark)),
-                      ],
-                    ),
-                  ),
-                ),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
-                  sliver: SliverToBoxAdapter(
-                    child: Text(
-                      'Recent Activity',
-                      style: GoogleFonts.outfit(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : AppTheme.textMain,
+            RefreshIndicator(
+              onRefresh: _fetchData,
+              color: AppTheme.primaryGreen,
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  const SliverToBoxAdapter(child: SizedBox(height: 100)),
+
+                  // Stats row
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    sliver: SliverToBoxAdapter(
+                      child: Row(
+                        children: [
+                          Expanded(
+                              child: _buildStatCard(
+                                  'Ecoins',
+                                  '${_profile?['points_balance'] ?? 0}',
+                                  Icons.savings,
+                                  const Color(0xFF10B981),
+                                  isDark)),
+                          const SizedBox(width: 12),
+                          Expanded(
+                              child: _buildStatCard(
+                                  'CO₂ Saved',
+                                  '${(_profile?['carbon_saved_kg'] as num?)?.toStringAsFixed(1) ?? '0'} kg',
+                                  Icons.cloud_outlined,
+                                  const Color(0xFF3B82F6),
+                                  isDark)),
+                          const SizedBox(width: 12),
+                          Expanded(
+                              child: _buildStatCard(
+                                  'This Week',
+                                  '$_thisWeekCount',
+                                  Icons.calendar_today_outlined,
+                                  const Color(0xFF8B5CF6),
+                                  isDark)),
+                        ],
                       ),
                     ),
                   ),
-                ),
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final activity = _activities[index];
-                        return _buildActivityItem(
-                          icon: _getIconForType(activity['description']),
-                          iconColor: _getColorForType(activity['description']),
-                          title: activity['description'] ?? 'Activity',
-                          subtitle: timeago
-                              .format(DateTime.parse(activity['logged_at'])),
-                          score: '+${activity['points_earned']}',
-                          isDark: isDark,
-                        );
-                      },
-                      childCount: _activities.length,
+
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(24, 28, 24, 14),
+                    sliver: SliverToBoxAdapter(
+                      child: Text(
+                        'Recent Activity',
+                        style: GoogleFonts.outfit(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : AppTheme.textMain,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-                const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
-              ],
+
+                  if (_activities.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(24),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryGreen.withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.eco,
+                                  size: 48, color: AppTheme.primaryGreen),
+                            ),
+                            const SizedBox(height: 16),
+                            Text('No activities yet',
+                                style: GoogleFonts.outfit(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color:
+                                        isDark ? Colors.white : AppTheme.textMain)),
+                            const SizedBox(height: 8),
+                            Text('Tap Log Activity to get started!',
+                                style: GoogleFonts.inter(
+                                    color: isDark
+                                        ? Colors.grey[400]
+                                        : AppTheme.textSub)),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) =>
+                              _buildActivityItem(_activities[index], isDark),
+                          childCount: _activities.length,
+                        ),
+                      ),
+                    ),
+
+                  const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
+                ],
+              ),
             ),
 
-            // FAB
             Positioned(
               bottom: 30,
               right: 20,
               child: FloatingActionButton.extended(
-                onPressed: _showAddActivitySheet,
+                onPressed: _showQuickLogSheet,
                 backgroundColor: AppTheme.primaryGreen,
                 foregroundColor: Colors.white,
                 elevation: 4,
@@ -365,10 +456,10 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
     );
   }
 
-  Widget _buildSummaryCard(
+  Widget _buildStatCard(
       String title, String value, IconData icon, Color color, bool isDark) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: isDark
             ? AppTheme.surfaceDark.withOpacity(0.8)
@@ -378,53 +469,51 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
             color: isDark ? Colors.white.withOpacity(0.05) : Colors.white),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
+              color: color.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 10))
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: color, size: 20),
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, color: color, size: 16),
           ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: GoogleFonts.outfit(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : AppTheme.textMain,
-            ),
-          ),
-          Text(
-            title,
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              color: isDark ? Colors.grey[400] : AppTheme.textSub,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
+          const SizedBox(height: 10),
+          Text(value,
+              style: GoogleFonts.outfit(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : AppTheme.textMain)),
+          Text(title,
+              style: GoogleFonts.inter(
+                  fontSize: 10,
+                  color: isDark ? Colors.grey[400] : AppTheme.textSub,
+                  fontWeight: FontWeight.w500)),
         ],
       ),
     );
   }
 
-  Widget _buildActivityItem({
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    required String subtitle,
-    required String score,
-    required bool isDark,
-  }) {
+  Widget _buildActivityItem(Map<String, dynamic> activity, bool isDark) {
+    final typeKey = activity['description'] ?? activity['category'] ?? '';
+    final icon = _iconFor(typeKey);
+    final color = _colorFor(typeKey);
+    final isVerified = activity['is_verified'] == true;
+    final co2 =
+        (activity['carbon_saved'] as num?)?.toStringAsFixed(2) ?? '0.00';
+    final pts = activity['points_earned'] ?? 0;
+
+    String displayName = activity['description'] ?? 'Activity';
+    // Trim appended AI metadata that older entries may have stored in description
+    final metaIdx = displayName.indexOf('\n\n[Verified by AI');
+    if (metaIdx != -1) displayName = displayName.substring(0, metaIdx);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -433,64 +522,106 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4))
         ],
       ),
       child: Row(
         children: [
           Container(
-            width: 48,
-            height: 48,
+            width: 46,
+            height: 46,
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: iconColor, size: 24),
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12)),
+            child: Icon(icon, color: color, size: 22),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: GoogleFonts.outfit(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : AppTheme.textMain,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        displayName,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.outfit(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : AppTheme.textMain),
+                      ),
+                    ),
+                    if (isVerified) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryGreen.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.verified,
+                                size: 10, color: AppTheme.primaryGreen),
+                            const SizedBox(width: 3),
+                            Text('AI',
+                                style: GoogleFonts.inter(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppTheme.primaryGreen)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-                Text(
-                  subtitle,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: isDark ? Colors.grey[400] : AppTheme.textSub,
-                  ),
+                const SizedBox(height: 3),
+                Row(
+                  children: [
+                    Text(
+                      timeago.format(DateTime.parse(activity['logged_at'])),
+                      style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color:
+                              isDark ? Colors.grey[400] : AppTheme.textSub),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: Text('·',
+                          style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: isDark
+                                  ? Colors.grey[600]
+                                  : Colors.grey[400])),
+                    ),
+                    Text('$co2 kg CO₂',
+                        style: GoogleFonts.inter(
+                            fontSize: 11,
+                            color: const Color(0xFF3B82F6))),
+                  ],
                 ),
               ],
             ),
           ),
+          const SizedBox(width: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               color: AppTheme.primaryGreen.withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  score,
-                  style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryGreen,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
+            child: Text(
+              '+$pts',
+              style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.primaryGreen,
+                  fontSize: 14),
             ),
           ),
         ],
@@ -498,41 +629,29 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
     );
   }
 
-  IconData _getIconForType(String? type) {
-    switch (type?.toLowerCase()) {
-      case 'cycle':
-        return Icons.directions_bike;
-      case 'veg meal':
-        return Icons.restaurant;
-      case 'recycle':
-        return Icons.recycling;
-      case 'energy':
-        return Icons.bolt;
-      case 'reusable':
-        return Icons.shopping_bag;
-      case 'save water':
-        return Icons.water_drop;
-      default:
-        return Icons.eco;
+  IconData _iconFor(String type) {
+    final t = type.toLowerCase();
+    if (t.contains('cycle') || t.contains('bike') || t.contains('transport') || t.contains('walk')) {
+      return Icons.directions_bike;
     }
+    if (t.contains('veg') || t.contains('food') || t.contains('meal')) return Icons.restaurant;
+    if (t.contains('recycle')) return Icons.recycling;
+    if (t.contains('energy') || t.contains('bolt')) return Icons.bolt;
+    if (t.contains('reusable') || t.contains('shopping') || t.contains('bag')) return Icons.shopping_bag;
+    if (t.contains('water')) return Icons.water_drop;
+    return Icons.eco;
   }
 
-  Color _getColorForType(String? type) {
-    switch (type?.toLowerCase()) {
-      case 'cycle':
-        return const Color(0xFF3B82F6);
-      case 'veg meal':
-        return const Color(0xFFF59E0B);
-      case 'recycle':
-        return const Color(0xFF10B981);
-      case 'energy':
-        return const Color(0xFFEAB308);
-      case 'reusable':
-        return const Color(0xFF8B5CF6);
-      case 'save water':
-        return const Color(0xFF06B6D4);
-      default:
-        return const Color(0xFF10B981);
+  Color _colorFor(String type) {
+    final t = type.toLowerCase();
+    if (t.contains('cycle') || t.contains('bike') || t.contains('transport') || t.contains('walk')) {
+      return const Color(0xFF3B82F6);
     }
+    if (t.contains('veg') || t.contains('food') || t.contains('meal')) return const Color(0xFFF59E0B);
+    if (t.contains('recycle')) return const Color(0xFF10B981);
+    if (t.contains('energy') || t.contains('bolt')) return const Color(0xFFEAB308);
+    if (t.contains('reusable') || t.contains('shopping') || t.contains('bag')) return const Color(0xFF8B5CF6);
+    if (t.contains('water')) return const Color(0xFF06B6D4);
+    return const Color(0xFF10B981);
   }
 }

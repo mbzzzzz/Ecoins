@@ -1,12 +1,12 @@
 import 'dart:io';
-import 'package:ecoins/core/game_points.dart';
+import 'package:ecoins/core/theme.dart';
 import 'dart:convert';
-import 'package:flutter/foundation.dart'; // For kIsWeb
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:native_exif/native_exif.dart';
-import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:io' show Platform;
@@ -15,7 +15,8 @@ class ActivityLoggerModal extends StatefulWidget {
   final VoidCallback onLogged;
   final String? initialCategory;
 
-  const ActivityLoggerModal({super.key, required this.onLogged, this.initialCategory});
+  const ActivityLoggerModal(
+      {super.key, required this.onLogged, this.initialCategory});
 
   @override
   State<ActivityLoggerModal> createState() => _ActivityLoggerModalState();
@@ -24,26 +25,12 @@ class ActivityLoggerModal extends StatefulWidget {
 class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
   String? _selectedCategory;
   final _descriptionController = TextEditingController();
-  double _sliderValue = 1.0;
   bool _isSubmitting = false;
 
-  @override
-  void initState() {
-    super.initState();
-    if (widget.initialCategory != null) {
-      _selectedCategory = widget.initialCategory;
-    }
-  }
-
-  // Verification State
   XFile? _evidenceImage;
   bool _isVerifying = false;
   Map<String, dynamic>? _verificationResult;
   String? _verificationError;
-  Map<String, dynamic>? _deviceInfo;
-  Map<String, dynamic>? _imageMetadata;
-  Map<String, dynamic>? _deviceLocation;
-  DateTime? _imageTimestamp;
 
   final Map<String, IconData> _categories = {
     'transport': Icons.directions_bus,
@@ -55,6 +42,26 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
 
   final _picker = ImagePicker();
 
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialCategory != null) {
+      _selectedCategory = widget.initialCategory;
+    }
+  }
+
+  @override
+  void dispose() {
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  bool get _isVerified =>
+      _verificationResult != null && _verificationResult!['verified'] == true;
+
+  bool get _isRejected =>
+      _verificationResult != null && _verificationResult!['verified'] != true;
+
   Future<void> _pickAndVerifyImage() async {
     setState(() {
       _isVerifying = true;
@@ -63,10 +70,9 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
     });
 
     try {
-      // 1. Pick Image (Prefer Camera)
       final XFile? photo = await _picker.pickImage(
         source: ImageSource.camera,
-        imageQuality: 50, // Reduce size for API
+        imageQuality: 50,
         maxWidth: 800,
       );
 
@@ -77,7 +83,7 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
 
       setState(() => _evidenceImage = photo);
 
-      // 2. Get Device Location
+      // Get device location
       Position? devicePosition;
       try {
         LocationPermission permission = await Geolocator.checkPermission();
@@ -92,40 +98,25 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
         debugPrint('Location error: $e');
       }
 
-      // 3. Read Exif (Metadata) - Get device info, timestamp, location
+      // Read EXIF timestamp and GPS
       DateTime? imageDate;
-      Map<String, dynamic>? exifData;
       Map<String, dynamic>? imageLocation;
 
-      if (!kIsWeb && !this.isEmpty(photo.path)) {
+      if (!kIsWeb && photo.path.isNotEmpty) {
         try {
           final exif = await Exif.fromPath(photo.path);
           final dateString = await exif.getOriginalDate();
-          if (dateString != null) {
-            imageDate = dateString;
-          }
+          if (dateString != null) imageDate = dateString;
 
-          // Get GPS location from EXIF if available
           try {
             final latLong = await exif.getLatLong();
             if (latLong != null) {
               imageLocation = {
                 'latitude': latLong.latitude,
-                'longitude': latLong.longitude
+                'longitude': latLong.longitude,
               };
             }
-          } catch (e) {
-            debugPrint('EXIF GPS error: $e');
-          }
-
-          // Get device model from EXIF
-          try {
-            final make = await exif.getAttribute('Make');
-            final model = await exif.getAttribute('Model');
-            exifData = {'make': make, 'model': model};
-          } catch (e) {
-            debugPrint('EXIF device error: $e');
-          }
+          } catch (_) {}
 
           await exif.close();
         } catch (e) {
@@ -133,7 +124,7 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
         }
       }
 
-      // 4. Get Device Info
+      // Get device info
       Map<String, dynamic> deviceInfo = {};
       try {
         final deviceInfoPlugin = DeviceInfoPlugin();
@@ -142,7 +133,6 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
           deviceInfo = {
             'platform': 'Web',
             'browserName': webInfo.browserName.name,
-            'userAgent': webInfo.userAgent,
           };
         } else if (Platform.isAndroid) {
           final androidInfo = await deviceInfoPlugin.androidInfo;
@@ -150,43 +140,33 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
             'platform': 'Android',
             'manufacturer': androidInfo.manufacturer,
             'model': androidInfo.model,
-            'device': androidInfo.device,
-            'brand': androidInfo.brand,
             'version': androidInfo.version.release,
           };
         } else if (Platform.isIOS) {
           final iosInfo = await deviceInfoPlugin.iosInfo;
           deviceInfo = {
             'platform': 'iOS',
-            'name': iosInfo.name,
             'model': iosInfo.model,
-            'systemName': iosInfo.systemName,
             'systemVersion': iosInfo.systemVersion,
-            'identifierForVendor': iosInfo.identifierForVendor,
           };
         }
       } catch (e) {
         debugPrint('Device info error: $e');
       }
 
-      // 5. Verification Logic - Image must be recent (within 1 hour)
-      if (imageDate != null) {
-        final now = DateTime.now();
-        final diff = now.difference(imageDate).inMinutes.abs();
-        if (diff > 60) {
-          setState(() {
-            _verificationError =
-                'Image is too old (${diff.toInt()} minutes). Please take a new photo within the last hour.';
-            _isVerifying = false;
-          });
-          return;
-        }
-      } else {
-        // If no EXIF date, use current time (photo was just taken)
-        imageDate = DateTime.now();
+      // Freshness check — photo must be from the last hour
+      imageDate ??= DateTime.now();
+      final ageMinutes = DateTime.now().difference(imageDate).inMinutes.abs();
+      if (ageMinutes > 60) {
+        setState(() {
+          _verificationError =
+              'This photo is $ageMinutes minutes old. Please take a fresh photo right now.';
+          _isVerifying = false;
+        });
+        return;
       }
 
-      // 6. Cross-verify location if both available
+      // Location cross-check
       if (devicePosition != null && imageLocation != null) {
         final distance = Geolocator.distanceBetween(
           devicePosition.latitude,
@@ -194,27 +174,25 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
           imageLocation['latitude']!,
           imageLocation['longitude']!,
         );
-        // Allow up to 100m difference (GPS accuracy)
         if (distance > 100) {
           setState(() {
             _verificationError =
-                'Location mismatch detected. Please ensure GPS is enabled and take photo at the activity location.';
+                'Location mismatch detected. Make sure GPS is on and take the photo at the activity location.';
             _isVerifying = false;
           });
           return;
         }
       }
 
-      // 7. Call Verification Edge Function
       if (_selectedCategory == null) {
         setState(() {
-          _verificationError = 'Select a category first.';
+          _verificationError = 'Please select a category first.';
           _isVerifying = false;
         });
         return;
       }
 
-      final result = await _verifyWithEdgeFunction(
+      final result = await _callVerifyEdgeFunction(
         photo,
         _selectedCategory!,
         deviceInfo,
@@ -225,43 +203,23 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
                 'accuracy': devicePosition.accuracy,
               }
             : null,
-        imageDate?.toIso8601String(),
+        imageDate.toIso8601String(),
       );
 
       setState(() {
         _verificationResult = result;
-        _deviceInfo = deviceInfo;
-        _imageMetadata = exifData;
-        _deviceLocation = devicePosition != null
-            ? {
-                'latitude': devicePosition.latitude,
-                'longitude': devicePosition.longitude,
-                'accuracy': devicePosition.accuracy,
-              }
-            : null;
-        _imageTimestamp = imageDate;
-        // Auto-update slider if AI confident
-        if (result['carbon_saved_estimate'] != null) {
-          double kg = (result['carbon_saved_estimate'] as num).toDouble();
-          double slider = (kg / 0.5);
-          if (slider < 1) slider = 1;
-          if (slider > 10) slider = 10;
-          _sliderValue = slider;
-        }
         if (result['description'] != null) {
-          _descriptionController.text = result['description'];
+          _descriptionController.text = result['description'] as String;
         }
       });
     } catch (e) {
       setState(() => _verificationError = 'Verification failed: $e');
     } finally {
-      setState(() => _isVerifying = false);
+      if (mounted) setState(() => _isVerifying = false);
     }
   }
 
-  bool isEmpty(String? s) => s == null || s.isEmpty;
-
-  Future<Map<String, dynamic>> _verifyWithEdgeFunction(
+  Future<Map<String, dynamic>> _callVerifyEdgeFunction(
     XFile image,
     String category,
     Map<String, dynamic> deviceInfo,
@@ -272,186 +230,106 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
       final bytes = await image.readAsBytes();
       final base64Image = base64Encode(bytes);
 
-      final functions = Supabase.instance.client.functions;
-      // ENABLE REAL EDGE FUNCTION
-      const bool useRealEdgeFunction = true; // Enabled for production/real usage
+      final response = await Supabase.instance.client.functions.invoke(
+        'verify-activity',
+        body: {
+          'imageBase64': base64Image,
+          'category': category,
+          'deviceInfo': deviceInfo,
+          'location': location,
+          'imageTimestamp': imageTimestamp,
+        },
+      );
 
-      if (useRealEdgeFunction) {
-        final response = await functions.invoke(
-          'verify-activity',
-          body: {
-            'imageBase64': base64Image,
-            'category': category,
-            'deviceInfo': deviceInfo,
-            'location': location,
-            'imageTimestamp': imageTimestamp,
-          },
-        );
+      final result = response.data ?? {};
 
-        final result = response.data ?? {};
-
-        // Handle explicit backend errors (e.g., config missing)
-        if (result['error'] != null && result['verified'] == false) {
-           // If it's a configuration error, make it user-friendly but honest
-           if (result['error'].toString().contains('API key')) {
-             throw Exception('Server Configuration Error: AI Provider Key missing.');
-           }
-           throw Exception(result['error']);
+      if (result['error'] != null && result['verified'] == false) {
+        final errMsg = result['error'].toString();
+        if (errMsg.contains('API key') || errMsg.contains('provider')) {
+          throw Exception('AI service is temporarily unavailable.');
         }
-
-        return Map<String, dynamic>.from(result);
-      } else {
-        // MOCK/SIMULATION MODE
-        await Future.delayed(const Duration(seconds: 2)); // Simulate network
-        
-        // Return a realistic "AI" response based on category
-        return {
-          'verified': true,
-          'confidence': 0.98,
-          'reasoning': 'Detected ${category} activity. High confidence match.',
-          'carbon_saved_estimate': 1.5, // Just an example
-        };
+        throw Exception(errMsg);
       }
 
+      return Map<String, dynamic>.from(result);
     } catch (e) {
-      debugPrint('Verification Failed: $e');
-      // No more mock fallback. Return error state.
-      // This ensures we are not "faking" success.
+      debugPrint('Edge function error: $e');
       return {
-          'verified': false,
-          'error': 'Verification failed: ${e.toString().replaceAll('Exception:', '').trim()}',
+        'verified': false,
+        'rejection_reason':
+            'We couldn\'t connect to our AI verifier. Please check your connection and try again.',
+        'error': e.toString(),
       };
     }
   }
 
-  void _submit() async {
-    if (_selectedCategory == null) return;
-
+  void _retryVerification() {
     setState(() {
-      _isSubmitting = true;
+      _verificationResult = null;
+      _verificationError = null;
+      _evidenceImage = null;
     });
+  }
+
+  Future<void> _submit() async {
+    if (_selectedCategory == null || !_isVerified) return;
+    setState(() => _isSubmitting = true);
 
     try {
-      // Use game rules to calculate
-      final calc = GamePoints.calculate(_selectedCategory!, _sliderValue);
-      double carbonSaved = calc['co2_saved'];
-      int points = calc['points'];
-
       final user = Supabase.instance.client.auth.currentUser;
-
       if (user == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text('Please log in to save activities.')));
-          Navigator.pop(context);
-        }
+        if (mounted) Navigator.pop(context);
         return;
       }
 
-      // Enforce Verification (MANDATORY)
-      if (_verificationResult == null ||
-          _verificationResult!['verified'] != true) {
-        if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content:
-                  Text('Verification required. You must verify using the AI Camera.'),
-              backgroundColor: Colors.redAccent,
-            ),
-          );
-        }
-        setState(() {
-          _isSubmitting = false;
-        });
-        return;
-      }
+      // Points and carbon are server-determined — never trust the client
+      final int points =
+          (_verificationResult!['points_awarded'] as num?)?.toInt() ?? 50;
+      final double carbonSaved =
+          (_verificationResult!['carbon_saved_estimate'] as num?)?.toDouble() ??
+              0.0;
 
-      String description = _descriptionController.text.isEmpty
-          ? 'Logged $_selectedCategory (${calc['label']})'
-          : _descriptionController.text;
+      final description = _descriptionController.text.trim().isNotEmpty
+          ? _descriptionController.text.trim()
+          : 'Verified ${_selectedCategory![0].toUpperCase()}${_selectedCategory!.substring(1)} activity';
 
+      // Upload evidence image
       String? evidenceImageUrl;
-      // Upload Evidence Image if exists
       if (_evidenceImage != null) {
         try {
           final bytes = await _evidenceImage!.readAsBytes();
-          // On web, blob URLs don't have a real file extension; default to jpeg.
-          final fileExt =
-              kIsWeb ? 'jpeg' : _evidenceImage!.path.split('.').last;
-          // Format: activity_evidence/{userId}/{timestamp}.ext
+          final fileExt = kIsWeb ? 'jpeg' : _evidenceImage!.path.split('.').last;
           final fileName =
               '${user.id}/${DateTime.now().microsecondsSinceEpoch}.$fileExt';
-          final storagePath = 'activity_evidence/$fileName';
-
           await Supabase.instance.client.storage
               .from('activity_evidence')
               .uploadBinary(
-                storagePath,
+                'activity_evidence/$fileName',
                 bytes,
                 fileOptions: FileOptions(contentType: 'image/$fileExt'),
               );
-
           evidenceImageUrl = Supabase.instance.client.storage
               .from('activity_evidence')
-              .getPublicUrl(storagePath);
+              .getPublicUrl('activity_evidence/$fileName');
         } catch (e) {
           debugPrint('Image upload failed: $e');
-          description += '\n[Image Upload Failed]';
         }
       }
 
-      // Handle Verification Bonus & Data
-      if (_verificationResult != null &&
-          _verificationResult!['verified'] == true) {
-        points += GamePoints.verifiedBonus; // Bonus
-        
-        // If AI returned a specific estimate (e.g. from analysis), prioritize that?
-        // Actually, let's trust our GamePoints math but keep the AI confidence in description
-        // if (_verificationResult!['carbon_saved_estimate'] != null) {
-        //   carbonSaved = (_verificationResult!['carbon_saved_estimate'] as num).toDouble();
-        // }
-        
-        description +=
-            '\n\n[Verified by AI: Confidence=${_verificationResult!['confidence']}]';
-        if (_verificationResult!['reasoning'] != null) {
-          description += '\nReason: ${_verificationResult!['reasoning']}';
-        }
-      }
-
-      // Ensure profile exists for this user to satisfy foreign key constraints
-      final existingProfile = await Supabase.instance.client
-          .from('profiles')
-          .select()
-          .eq('id', user.id)
-          .maybeSingle();
-
-      if (existingProfile == null) {
-        await Supabase.instance.client.from('profiles').insert({
-          'id': user.id,
-          'email': user.email,
-          'display_name': user.userMetadata?['full_name'] ??
-              (user.email != null ? user.email!.split('@')[0] : 'Eco User'),
-          'points_balance': 0,
-          'carbon_saved_kg': 0.0,
-          'created_at': DateTime.now().toIso8601String(),
-        });
-      }
-
-      // 1. Add Activity to Supabase
+      // Insert activity
       await Supabase.instance.client.from('activities').insert({
         'user_id': user.id,
         'category': _selectedCategory,
         'description': description,
         'carbon_saved': carbonSaved,
         'points_earned': points,
-        'is_verified': _verificationResult != null &&
-            _verificationResult!['verified'] == true,
+        'is_verified': true,
         'verification_data': _verificationResult,
         'evidence_url': evidenceImageUrl,
         'logged_at': DateTime.now().toIso8601String(),
       });
 
-      // 2. Update Profile (Fetch first then update)
+      // Update profile totals
       final profile = await Supabase.instance.client
           .from('profiles')
           .select()
@@ -470,64 +348,77 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
         widget.onLogged();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Activity Logged! +$points Points'),
-            backgroundColor: const Color(0xFF10B981),
+            content: Text('Activity logged! +$points pts earned 🌱'),
+            backgroundColor: AppTheme.primaryGreen,
           ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error saving: $e')));
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
-      }
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.surfaceDark : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: EdgeInsets.only(
-          left: 24,
-          right: 24,
-          top: 24,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 24),
+        left: 24,
+        right: 24,
+        top: 24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+      ),
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   'Log Activity',
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineSmall
-                      ?.copyWith(fontWeight: FontWeight.bold),
+                  style: GoogleFonts.outfit(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : AppTheme.textMain,
+                  ),
                 ),
                 if (_isVerifying)
                   const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Color(0xFF10B981))),
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: AppTheme.primaryGreen),
+                  ),
               ],
             ),
+            const SizedBox(height: 4),
+            Text(
+              'AI verifies your photo and sets the points.',
+              style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: isDark ? Colors.grey[400] : AppTheme.textSub),
+            ),
             const SizedBox(height: 24),
+
+            // Category picker
             Text('Select Category',
-                style: Theme.of(context).textTheme.titleSmall),
+                style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.grey[300] : AppTheme.textMain)),
             const SizedBox(height: 12),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -535,43 +426,50 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
                 children: _categories.entries.map((entry) {
                   final isSelected = _selectedCategory == entry.key;
                   return Padding(
-                    padding: const EdgeInsets.only(right: 12),
+                    padding: const EdgeInsets.only(right: 10),
                     child: InkWell(
-                      onTap: () =>
-                          setState(() => _selectedCategory = entry.key),
+                      onTap: _isVerified
+                          ? null
+                          : () => setState(() {
+                                _selectedCategory = entry.key;
+                                _verificationResult = null;
+                                _verificationError = null;
+                                _evidenceImage = null;
+                              }),
+                      borderRadius: BorderRadius.circular(30),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
+                            horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? const Color(0xFF10B981)
-                              : Colors.grey.shade100,
+                              ? AppTheme.primaryGreen
+                              : (isDark
+                                  ? Colors.white10
+                                  : Colors.grey.shade100),
                           borderRadius: BorderRadius.circular(30),
-                          border: Border.all(
-                            color: isSelected
-                                ? const Color(0xFF10B981)
-                                : Colors.transparent,
-                          ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              entry.value,
-                              size: 18,
-                              color: isSelected
-                                  ? Colors.white
-                                  : Colors.grey.shade700,
-                            ),
-                            const SizedBox(width: 8),
+                            Icon(entry.value,
+                                size: 16,
+                                color: isSelected
+                                    ? Colors.white
+                                    : (isDark
+                                        ? Colors.grey.shade300
+                                        : Colors.grey.shade700)),
+                            const SizedBox(width: 6),
                             Text(
                               entry.key[0].toUpperCase() +
                                   entry.key.substring(1),
-                              style: TextStyle(
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
                                 color: isSelected
                                     ? Colors.white
-                                    : Colors.grey.shade700,
-                                fontWeight: FontWeight.bold,
+                                    : (isDark
+                                        ? Colors.grey.shade300
+                                        : Colors.grey.shade700),
                               ),
                             ),
                           ],
@@ -582,223 +480,111 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
                 }).toList(),
               ),
             ),
+
             if (_selectedCategory != null) ...[
               const SizedBox(height: 24),
 
-              // Image Preview Section
+              // Evidence image preview
               if (_evidenceImage != null)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 24),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: SizedBox(
-                      height: 200,
-                      width: double.infinity,
-                      child: kIsWeb
-                          ? Image.network(_evidenceImage!.path,
-                              fit: BoxFit.cover)
-                          : Image.file(File(_evidenceImage!.path),
-                              fit: BoxFit.cover),
-                    ),
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: SizedBox(
+                          height: 180,
+                          width: double.infinity,
+                          child: kIsWeb
+                              ? Image.network(_evidenceImage!.path,
+                                  fit: BoxFit.cover)
+                              : Image.file(File(_evidenceImage!.path),
+                                  fit: BoxFit.cover),
+                        ),
+                      ),
+                      if (!_isVerified)
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: GestureDetector(
+                            onTap: _retryVerification,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.black54,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(Icons.close,
+                                  color: Colors.white, size: 16),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
 
-              // AI Verification Section
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.blue.withOpacity(0.2)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.verified_user, color: Colors.blue),
-                        const SizedBox(width: 8),
-                        const Text('AI Authentication',
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue)),
-                        const Spacer(),
-                        if (_verificationResult != null &&
-                            _verificationResult!['verified'])
-                          const Icon(Icons.check_circle, color: Colors.green)
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _verificationResult == null
-                          ? 'Take a photo to verify this activity and earn Double Points!'
-                          : (_verificationResult!['reasoning'] ??
-                              (_verificationResult!['verified']
-                                  ? 'Verified!'
-                                  : 'Could not verify.')),
-                      style:
-                          TextStyle(color: Colors.grey.shade700, fontSize: 13),
-                    ),
-                    if (_verificationError != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(_verificationError!,
-                            style: const TextStyle(
-                                color: Colors.red, fontSize: 12)),
-                      ),
-                    const SizedBox(height: 12),
-                    if (_verificationResult == null)
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: _isVerifying ? null : _pickAndVerifyImage,
-                          icon: const Icon(Icons.camera_alt),
-                          label: const Text('Verify with Camera'),
-                        ),
-                      ),
-                    // Show Verification Metadata
-                    if (_verificationResult != null &&
-                        (_deviceInfo != null ||
-                            _imageMetadata != null ||
-                            _deviceLocation != null))
-                      Padding(
-                        padding: const EdgeInsets.only(top: 12),
-                        child: _buildVerificationMetadata(),
-                      ),
-                  ],
-                ),
-              ),
+              // ── Verification result states ──────────────────────────────
 
-              const SizedBox(height: 24),
-              // Impact Section: Show Slider OR Verified details
-              if (_verificationResult != null &&
-                  _verificationResult!['verified']) ...[
-                // Get pre-calculated values
-                Builder(builder: (context) {
-                  final calc = GamePoints.calculate(
-                      _selectedCategory!, _sliderValue);
-                  final co2 = calc['co2_saved'];
-                  // Add bonus for verification
-                  final points = (calc['points'] as int) + GamePoints.verifiedBonus;
+              // 1. Not yet verified — show camera prompt
+              if (!_isVerified && !_isRejected)
+                _buildVerifyPromptCard(isDark),
 
-                  return Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF10B981).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                          color: const Color(0xFF10B981).withOpacity(0.3)),
+              // 2. Rejected — show friendly rejection card
+              if (_isRejected) _buildRejectionCard(isDark),
+
+              // 3. Verified — show reward summary
+              if (_isVerified) _buildRewardCard(isDark),
+
+              // Description field (shown after verification attempt)
+              if (_isVerified) ...[
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _descriptionController,
+                  style: GoogleFonts.inter(
+                      color: isDark ? Colors.white : AppTheme.textMain),
+                  decoration: InputDecoration(
+                    labelText: 'Add a note (optional)',
+                    labelStyle: GoogleFonts.inter(
+                        color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                          color: AppTheme.primaryGreen, width: 2),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        Column(
-                          children: [
-                            const Text('Verified Impact',
-                                style:
-                                    TextStyle(fontSize: 12, color: Colors.grey)),
-                            const SizedBox(height: 4),
-                            Text(
-                                '$co2 kg CO₂',
-                                style: const TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF10B981))),
-                          ],
-                        ),
-                        Column(
-                          children: [
-                            const Text('Points Earned',
-                                style:
-                                    TextStyle(fontSize: 12, color: Colors.grey)),
-                            const SizedBox(height: 4),
-                            Text('$points',
-                                style: const TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.amber)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-              ] else ...[
-                // Dynamic Slider Label
-                Builder(builder: (context) {
-                  final calc = GamePoints.calculate(
-                      _selectedCategory!, _sliderValue);
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                       Text('Impact Estimate',
-                          style: Theme.of(context).textTheme.titleSmall),
-                       Text(calc['label'], 
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF10B981))),
-                    ],
-                  );
-                }),
-                Slider(
-                  value: _sliderValue,
-                  min: 1,
-                  max: 10,
-                  divisions: 9,
-                  label: _sliderValue.round().toString(),
-                  activeColor: const Color(0xFF10B981),
-                  onChanged: (val) => setState(() => _sliderValue = val),
+                    filled: true,
+                    fillColor: isDark ? Colors.white10 : Colors.grey.shade50,
+                  ),
                 ),
-                // Show projected points/CO2 below slider
-                Builder(builder: (context) {
-                   final calc = GamePoints.calculate(_selectedCategory!, _sliderValue);
-                   return Padding(
-                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                     child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('${calc['points']} pts', style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
-                          Text('${calc['co2_saved']} kg CO₂', style: const TextStyle(color: Colors.grey)),
-                        ],
-                     ),
-                   );
-                }),
               ],
 
-              const SizedBox(height: 16),
-              TextField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-
               const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: (_isSubmitting || _isVerifying) ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF10B981),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+
+              // Submit button — only visible when verified
+              if (_isVerified)
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _isSubmitting ? null : _submit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryGreen,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                                color: Colors.white, strokeWidth: 2))
+                        : Text('Claim My Points',
+                            style: GoogleFonts.outfit(
+                                fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
-                  child: _isSubmitting
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                              color: Colors.white, strokeWidth: 2))
-                      : Text(
-                          _verificationResult != null &&
-                                  _verificationResult!['verified']
-                              ? 'Log Verified Activity'
-                              : 'Log Activity',
-                          style: const TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
-              ),
             ],
           ],
         ),
@@ -806,166 +592,278 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
     );
   }
 
-  Widget _buildVerificationMetadata() {
-    return ExpansionTile(
-      tilePadding: EdgeInsets.zero,
-      childrenPadding: const EdgeInsets.only(top: 8),
-      leading: const Icon(Icons.info_outline, size: 18, color: Colors.blue),
-      title: const Text(
-        'Verification Metadata',
-        style: TextStyle(
-            fontSize: 12, fontWeight: FontWeight.w600, color: Colors.blue),
+  // ── UI sub-widgets ────────────────────────────────────────────────────────
+
+  Widget _buildVerifyPromptCard(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.blue.shade900.withAlpha(80) : const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+            color: isDark
+                ? Colors.blue.shade700.withAlpha(80)
+                : const Color(0xFFBFDBFE)),
       ),
-      children: [
-        // Device Information
-        if (_deviceInfo != null && _deviceInfo!.isNotEmpty) ...[
-          _buildMetadataSection(
-            'Device Information',
-            Icons.phone_android,
-            _deviceInfo!,
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.camera_alt_rounded,
+                  color: Color(0xFF3B82F6), size: 22),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Take a photo to verify',
+                  style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF1D4ED8),
+                      fontSize: 15),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
-        ],
-
-        // Image Metadata (EXIF)
-        if (_imageMetadata != null && _imageMetadata!.isNotEmpty) ...[
-          _buildMetadataSection(
-            'Image Metadata (EXIF)',
-            Icons.image,
-            _imageMetadata!,
+          Text(
+            'AI will check your photo and automatically calculate the points and CO₂ saved. No manual input needed.',
+            style: GoogleFonts.inter(
+                fontSize: 13,
+                color: isDark ? Colors.blue.shade200 : const Color(0xFF1E40AF)),
           ),
-          const SizedBox(height: 8),
-        ],
-
-        // Device Location
-        if (_deviceLocation != null) ...[
-          _buildMetadataSection(
-            'Device Location',
-            Icons.location_on,
-            {
-              'Latitude':
-                  _deviceLocation!['latitude']?.toStringAsFixed(6) ?? 'N/A',
-              'Longitude':
-                  _deviceLocation!['longitude']?.toStringAsFixed(6) ?? 'N/A',
-              'Accuracy':
-                  '${(_deviceLocation!['accuracy'] ?? 0).toStringAsFixed(1)}m',
-            },
-          ),
-          const SizedBox(height: 8),
-        ],
-
-        // Image Timestamp
-        if (_imageTimestamp != null) ...[
-          _buildMetadataSection(
-            'Image Timestamp',
-            Icons.access_time,
-            {
-              'Date Taken': _imageTimestamp!.toLocal().toString().split('.')[0],
-              'Time Since': _getTimeSince(_imageTimestamp!),
-            },
-          ),
-          const SizedBox(height: 8),
-        ],
-
-        // Verification Result Metadata
-        if (_verificationResult != null) ...[
-          _buildMetadataSection(
-            'Verification Result',
-            Icons.verified,
-            {
-              'Verified':
-                  _verificationResult!['verified'] == true ? 'Yes' : 'No',
-              'Confidence': _verificationResult!['confidence'] != null
-                  ? '${((_verificationResult!['confidence'] as num) * 100).toStringAsFixed(1)}%'
-                  : 'N/A',
-              'Verification Time':
-                  _verificationResult!['verification_timestamp'] != null
-                      ? DateTime.parse(
-                              _verificationResult!['verification_timestamp'])
-                          .toLocal()
-                          .toString()
-                          .split('.')[0]
-                      : 'N/A',
-            },
+          if (_verificationError != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline,
+                      color: Colors.red, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(_verificationError!,
+                        style: GoogleFonts.inter(
+                            color: Colors.red.shade700, fontSize: 12)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _isVerifying ? null : _pickAndVerifyImage,
+              icon: _isVerifying
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.camera_alt, size: 18),
+              label: Text(
+                _isVerifying ? 'Analysing…' : 'Open Camera',
+                style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF3B82F6),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
           ),
         ],
-      ],
+      ),
     );
   }
 
-  Widget _buildMetadataSection(
-      String title, IconData icon, Map<String, dynamic> data) {
+  Widget _buildRejectionCard(bool isDark) {
+    final rejectionReason = _verificationResult?['rejection_reason'] as String?;
+    final message = (rejectionReason != null && rejectionReason.isNotEmpty)
+        ? rejectionReason
+        : 'This activity couldn\'t be verified as eco-friendly. Please try a clearer photo that directly shows the action.';
+
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade200),
+        color: isDark
+            ? Colors.orange.shade900.withAlpha(60)
+            : const Color(0xFFFFF7ED),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+            color: isDark
+                ? Colors.orange.shade700.withAlpha(80)
+                : const Color(0xFFFDBA74)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, size: 16, color: Colors.grey.shade700),
-              const SizedBox(width: 6),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade700,
+              const Icon(Icons.eco_outlined, color: Colors.orange, size: 22),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Activity not verified',
+                  style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold,
+                      color: isDark
+                          ? Colors.orange.shade300
+                          : const Color(0xFF9A3412),
+                      fontSize: 15),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          ...data.entries.map((entry) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: 100,
-                      child: Text(
-                        '${entry.key}:',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        entry.value.toString(),
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.grey.shade800,
-                          fontFamily: 'monospace',
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              )),
+          const SizedBox(height: 10),
+          Text(
+            message,
+            style: GoogleFonts.inter(
+                fontSize: 13,
+                color: isDark
+                    ? Colors.orange.shade200
+                    : const Color(0xFF7C2D12)),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _retryVerification,
+              icon: const Icon(Icons.camera_alt, size: 16),
+              label: Text('Try a different photo',
+                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.orange.shade700,
+                side: BorderSide(color: Colors.orange.shade400),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  String _getTimeSince(DateTime dateTime) {
-    final now = DateTime.now();
-    final diff = now.difference(dateTime);
+  Widget _buildRewardCard(bool isDark) {
+    final points =
+        (_verificationResult!['points_awarded'] as num?)?.toInt() ?? 0;
+    final co2 = (_verificationResult!['carbon_saved_estimate'] as num?)
+            ?.toStringAsFixed(2) ??
+        '0.00';
+    final confidence = _verificationResult!['confidence'];
+    final confidencePct = confidence != null
+        ? '${((confidence as num) * 100).toStringAsFixed(0)}%'
+        : null;
 
-    if (diff.inMinutes < 1) {
-      return 'Just now';
-    } else if (diff.inMinutes < 60) {
-      return '${diff.inMinutes} minute${diff.inMinutes == 1 ? '' : 's'} ago';
-    } else if (diff.inHours < 24) {
-      return '${diff.inHours} hour${diff.inHours == 1 ? '' : 's'} ago';
-    } else {
-      return '${diff.inDays} day${diff.inDays == 1 ? '' : 's'} ago';
-    }
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark
+            ? AppTheme.primaryGreen.withAlpha(30)
+            : const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+            color: isDark
+                ? AppTheme.primaryGreen.withAlpha(60)
+                : const Color(0xFFBBF7D0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.verified, color: AppTheme.primaryGreen, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Activity verified!',
+                style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold,
+                    color: isDark
+                        ? AppTheme.primaryGreen
+                        : const Color(0xFF14532D),
+                    fontSize: 15),
+              ),
+              if (confidencePct != null) ...[
+                const Spacer(),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryGreen.withAlpha(40),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(confidencePct,
+                      style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primaryGreen)),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildRewardStat(
+                    Icons.savings_outlined,
+                    '+$points pts',
+                    'Points earned',
+                    Colors.amber,
+                    isDark),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildRewardStat(
+                    Icons.cloud_outlined,
+                    '$co2 kg',
+                    'CO₂ saved',
+                    const Color(0xFF3B82F6),
+                    isDark),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRewardStat(
+      IconData icon, String value, String label, Color color, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white10 : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(value,
+                  style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: isDark ? Colors.white : AppTheme.textMain)),
+              Text(label,
+                  style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: isDark ? Colors.grey[400] : AppTheme.textSub)),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
