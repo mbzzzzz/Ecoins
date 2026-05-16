@@ -950,10 +950,166 @@ class _BrandDashboardScreenState extends State<BrandDashboardScreen> {
   }
 
   Widget _buildOnboardingState() {
-     // Reusing simplified onboarding logic if brand is null
-     return Scaffold(
-       backgroundColor: const Color(0xFFF0FDF4),
-       body: Center(child: Text("Initializing Brand Portal...", style: GoogleFonts.inter())),
-     );
+    final nameController = TextEditingController();
+    final descController = TextEditingController();
+    final websiteController = TextEditingController();
+    bool isCreating = false;
+
+    return StatefulBuilder(builder: (context, setStateLocal) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF0FDF4),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 24),
+                Center(
+                  child: Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981).withOpacity(0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.storefront_outlined,
+                        color: Color(0xFF10B981), size: 36),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Center(
+                  child: Text('Set Up Your Brand',
+                      style: GoogleFonts.outfit(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF1F2937))),
+                ),
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 8, bottom: 32),
+                    child: Text(
+                        'Tell us about your brand to start rewarding your eco-conscious customers.',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                            color: Colors.grey[600], fontSize: 14)),
+                  ),
+                ),
+                _onboardingField('Brand Name *', nameController,
+                    'e.g. Green Leaf Coffee', Icons.business_outlined),
+                const SizedBox(height: 16),
+                _onboardingField('Description', descController,
+                    'What does your brand stand for?', Icons.info_outline,
+                    maxLines: 3),
+                const SizedBox(height: 16),
+                _onboardingField('Website', websiteController,
+                    'https://yourbrand.com', Icons.language_outlined),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF10B981),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                    onPressed: isCreating
+                        ? null
+                        : () async {
+                            final name = nameController.text.trim();
+                            if (name.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('Brand name is required')),
+                              );
+                              return;
+                            }
+                            setStateLocal(() => isCreating = true);
+                            try {
+                              final user = _supabase.auth.currentUser!;
+                              await _supabase.from('brands').insert({
+                                'owner_id': user.id,
+                                'owner_user_id': user.id,
+                                'name': name,
+                                'description': descController.text.trim().isEmpty
+                                    ? null
+                                    : descController.text.trim(),
+                                'website': websiteController.text.trim().isEmpty
+                                    ? null
+                                    : websiteController.text.trim(),
+                              });
+                              await _fetchDashboardData();
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Error: $e')),
+                                );
+                              }
+                              setStateLocal(() => isCreating = false);
+                            }
+                          },
+                    child: isCreating
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                                color: Colors.white, strokeWidth: 2))
+                        : Text('Launch Brand Portal',
+                            style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.bold, fontSize: 16)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget _onboardingField(String label, TextEditingController controller,
+      String hint, IconData icon,
+      {int maxLines = 1}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF374151))),
+        const SizedBox(height: 6),
+        TextField(
+          controller: controller,
+          maxLines: maxLines,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: GoogleFonts.inter(color: Colors.grey[400], fontSize: 14),
+            prefixIcon: maxLines == 1
+                ? Icon(icon, color: Colors.grey[400], size: 20)
+                : Padding(
+                    padding: const EdgeInsets.only(bottom: 40),
+                    child: Icon(icon, color: Colors.grey[400], size: 20)),
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[200]!),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[200]!),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide:
+                  const BorderSide(color: Color(0xFF10B981), width: 1.5),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
