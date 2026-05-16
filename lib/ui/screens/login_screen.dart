@@ -166,10 +166,14 @@ class _LoginScreenState extends State<LoginScreen> {
         await Supabase.instance.client.auth.signUp(
           email: email,
           password: password,
+          emailRedirectTo: 'io.supabase.ecoins://login-callback/',
         );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Account created! Please sign in.')),
+            const SnackBar(
+              content: Text('Check your email and tap the confirmation link to activate your account.'),
+              duration: Duration(seconds: 5),
+            ),
           );
           setState(() => _isSignUp = false);
         }

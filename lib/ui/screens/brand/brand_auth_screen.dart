@@ -73,14 +73,17 @@ class _BrandAuthScreenState extends State<BrandAuthScreen> {
         await _supabase.auth.signUp(
           email: email,
           password: password,
-          data: {
-            'role': 'brand_admin'
-          }, // Ensure enum match (was 'brand', enum is 'brand_admin')
+          emailRedirectTo: 'io.supabase.ecoins://login-callback/',
+          data: {'role': 'brand_admin'},
         );
 
-        // After signup, redirect to brand portal for onboarding
         if (!mounted) return;
-        context.go('/brand-dashboard');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Check your email and tap the confirmation link to activate your account.'),
+            duration: Duration(seconds: 5),
+          ),
+        );
       }
     } on AuthException catch (e) {
       if (mounted) {
