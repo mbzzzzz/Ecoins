@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
     }
 
     // Fetch Data from brand-api
-    fetch('https://gwmcmlpuqummaumjloci.supabase.co/functions/v1/brand-api?key=' + apiKey)
+    fetch('https://eenpgfvmynemualvozhd.supabase.co/functions/v1/brand-api?key=' + apiKey)
         .then(function(res) { return res.json(); })
         .then(function(data) {
             if (data.error) {

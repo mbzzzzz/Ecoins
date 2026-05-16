@@ -26,3 +26,6 @@ key.json
 .vscode/
 .idea/
 *.iml
+
+# Android generated
+**/.kotlin/

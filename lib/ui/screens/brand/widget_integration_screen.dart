@@ -103,13 +103,20 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
     }
   }
 
+  static const _widgetScriptUrl =
+      'https://eenpgfvmynemualvozhd.supabase.co/functions/v1/serve-widget';
+
   String get _snippet {
-    final key = _apiKey ?? 'pk_live_eco_8492_xkqz';
+    final key = _apiKey ?? 'YOUR_API_KEY';
     final accentHex = '#${_accentColor.value.toRadixString(16).substring(2)}';
-    
-    // Construct attributes
-    // using the direct Supabase function URL for immediate functionality
-    return '<script src="https://gwmcmlpuqummaumjloci.supabase.co/functions/v1/serve-widget"\n        data-key="$key"\n        data-variant="$_selectedVariant"\n        data-accent="$accentHex"\n        data-font="$_selectedFont">\n</script>';
+    return '<script src="$_widgetScriptUrl"\n'
+        '        data-key="$key"\n'
+        '        data-variant="$_selectedVariant"\n'
+        '        data-accent="$accentHex"\n'
+        '        data-font="$_selectedFont"\n'
+        '        data-show-percentage="$_showPercentage"\n'
+        '        data-show-values="$_showRawValues">\n'
+        '</script>';
   }
 
   @override
@@ -384,11 +391,15 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    _apiKey ?? 'Loading...',
+                    _isLoading
+                        ? 'Loading...'
+                        : (_apiKey ?? 'No API key found for this account'),
                     style: GoogleFonts.jetBrainsMono(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: textMain,
+                      color: _isLoading || _apiKey != null
+                          ? textMain
+                          : Colors.redAccent,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -457,7 +468,7 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  'Auto-save',
+                  _realtimeCarbon > 0 ? 'Live Data' : 'Sample Preview',
                   style: GoogleFonts.inter(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
@@ -1051,23 +1062,29 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
                    child: SelectableText.rich(
                         TextSpan(
                           children: [
-                            const TextSpan(text: '<script ', style: TextStyle(color: Color(0xFFC084FC))), // Purple
-                            const TextSpan(text: 'src', style: TextStyle(color: Color(0xFF7DD3FC))), // Sky
+                            const TextSpan(text: '<script ', style: TextStyle(color: Color(0xFFC084FC))),
+                            const TextSpan(text: 'src', style: TextStyle(color: Color(0xFF7DD3FC))),
                             const TextSpan(text: '=', style: TextStyle(color: Colors.white)),
-                            const TextSpan(text: '"https://cdn.ecorewards.io/widget.js" \n        ', style: TextStyle(color: Color(0xFF86EFAC))), // Green
+                            TextSpan(text: '"$_widgetScriptUrl"\n        ', style: const TextStyle(color: Color(0xFF86EFAC))),
                             const TextSpan(text: 'data-key', style: TextStyle(color: Color(0xFF7DD3FC))),
                             const TextSpan(text: '=', style: TextStyle(color: Colors.white)),
-                            TextSpan(text: '"${_apiKey ?? 'pk_live_eco_8492_xkqz'}"\n        ', style: const TextStyle(color: Color(0xFF86EFAC))),
+                            TextSpan(text: '"${_apiKey ?? 'YOUR_API_KEY'}"\n        ', style: const TextStyle(color: Color(0xFF86EFAC))),
                             const TextSpan(text: 'data-variant', style: TextStyle(color: Color(0xFF7DD3FC))),
                             const TextSpan(text: '=', style: TextStyle(color: Colors.white)),
                             TextSpan(text: '"$_selectedVariant"\n        ', style: const TextStyle(color: Color(0xFF86EFAC))),
-                             const TextSpan(text: 'data-accent', style: TextStyle(color: Color(0xFF7DD3FC))),
+                            const TextSpan(text: 'data-accent', style: TextStyle(color: Color(0xFF7DD3FC))),
                             const TextSpan(text: '=', style: TextStyle(color: Colors.white)),
                             TextSpan(text: '"#${_accentColor.value.toRadixString(16).substring(2)}"\n        ', style: const TextStyle(color: Color(0xFF86EFAC))),
-                             const TextSpan(text: 'data-font', style: TextStyle(color: Color(0xFF7DD3FC))),
+                            const TextSpan(text: 'data-font', style: TextStyle(color: Color(0xFF7DD3FC))),
                             const TextSpan(text: '=', style: TextStyle(color: Colors.white)),
-                            TextSpan(text: '"$_selectedFont"', style: const TextStyle(color: Color(0xFF86EFAC))),
-                             const TextSpan(text: '>\n', style: TextStyle(color: Color(0xFFC084FC))),
+                            TextSpan(text: '"$_selectedFont"\n        ', style: const TextStyle(color: Color(0xFF86EFAC))),
+                            const TextSpan(text: 'data-show-percentage', style: TextStyle(color: Color(0xFF7DD3FC))),
+                            const TextSpan(text: '=', style: TextStyle(color: Colors.white)),
+                            TextSpan(text: '"$_showPercentage"\n        ', style: const TextStyle(color: Color(0xFF86EFAC))),
+                            const TextSpan(text: 'data-show-values', style: TextStyle(color: Color(0xFF7DD3FC))),
+                            const TextSpan(text: '=', style: TextStyle(color: Colors.white)),
+                            TextSpan(text: '"$_showRawValues"', style: const TextStyle(color: Color(0xFF86EFAC))),
+                            const TextSpan(text: '>\n', style: TextStyle(color: Color(0xFFC084FC))),
                             const TextSpan(text: '</script>', style: TextStyle(color: Color(0xFFC084FC))),
                           ],
                           style: GoogleFonts.jetBrainsMono(fontSize: 12, height: 1.5)

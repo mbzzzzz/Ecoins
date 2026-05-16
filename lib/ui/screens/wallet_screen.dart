@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:animate_do/animate_do.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -104,7 +105,11 @@ class _WalletScreenState extends State<WalletScreen> {
               padding: const EdgeInsets.fromLTRB(20, 100, 20, 40),
               itemCount: _coupons.length,
               itemBuilder: (context, index) {
-                return _buildCouponCard(_coupons[index]);
+                return FadeInUp(
+                  duration: const Duration(milliseconds: 500),
+                  delay: Duration(milliseconds: index * 100),
+                  child: _buildCouponCard(_coupons[index])
+                );
               },
             ),
         ],

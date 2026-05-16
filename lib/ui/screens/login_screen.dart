@@ -21,7 +21,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _isLoading = false;
   bool _isSignUp = false;
-  bool _rememberMe = false;
   bool _isPasswordVisible = false;
 
   late final StreamSubscription<AuthState> _authStateSubscription;
@@ -79,6 +78,33 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Error verifying account credentials.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _forgotPassword() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter your email address first.')),
+      );
+      return;
+    }
+    try {
+      await Supabase.instance.client.auth.resetPasswordForEmail(email);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Password reset email sent — check your inbox.'),
+            backgroundColor: Color(0xFF10b77f),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -209,8 +235,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.network(
-                      'https://lh3.googleusercontent.com/aida-public/AB6AXuAIVqL7RX69cpTXvqZMeU6zUc3fgIpnxIw4HbF4I3p0QQrPIvyDAtkPNvhwt8DgyITPun95jROGhMKI3uSyHpgKVLepRAmcp_T7QuMOANcoDGsMwFSJz9KoiYbzsTrFyUyT4EwHlyGLN_DJLejljSP8BzfNi8NEuqEF22wFGUSMpYuD4_sLq90KZx2rN4-rcCn_837envwyV2v39_ke-Xf-J2XC_i8m5wpoDUo3PgEiD0Yl9EBnp2VJk_7OpI07H1Zb50ptQhoOOw0', // Plant coins image
+                    Image.asset(
+                      'assets/images/background.png',
                       fit: BoxFit.cover,
                     ),
                     Container(
@@ -290,12 +316,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
                           // Social Logins
                           _SocialButton(
-                            icon: Icons.g_mobiledata, // Or custom Google SVG
+                            icon: FontAwesomeIcons.google,
                             label: 'Continue with Google',
                             onPressed: _googleSignIn,
                             isDark: isDark,
                             textColor: textColor,
                             borderColor: borderColor,
+                            iconSize: 18,
                           ),
                           const SizedBox(height: 12),
                           _SocialButton(
@@ -379,54 +406,26 @@ class _LoginScreenState extends State<LoginScreen> {
 
                           const SizedBox(height: 20),
 
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              // Remember Me
-                              Row(
-                                children: [
-                                  SizedBox(
-                                    height: 24,
-                                    width: 24,
-                                    child: Checkbox(
-                                      value: _rememberMe,
-                                      activeColor: const Color(0xFF10b77f),
-                                      side: BorderSide(color: subTextColor),
-                                      shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(4)),
-                                      onChanged: (val) => setState(
-                                          () => _rememberMe = val ?? false),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Remember me',
-                                    style: GoogleFonts.inter(
-                                        fontSize: 14, color: subTextColor),
-                                  ),
-                                ],
-                              ),
-
-                              if (!_isSignUp)
-                                TextButton(
-                                  onPressed: () {}, // TODO: Forgot Password
-                                  style: TextButton.styleFrom(
-                                      padding: EdgeInsets.zero,
-                                      minimumSize: Size.zero,
-                                      tapTargetSize:
-                                          MaterialTapTargetSize.shrinkWrap),
-                                  child: Text(
-                                    'Forgot password',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: const Color(0xFF10b77f),
-                                    ),
+                          if (!_isSignUp)
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: _forgotPassword,
+                                style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap),
+                                child: Text(
+                                  'Forgot password?',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF10b77f),
                                   ),
                                 ),
-                            ],
-                          ),
+                              ),
+                            ),
 
                           const SizedBox(height: 32),
 

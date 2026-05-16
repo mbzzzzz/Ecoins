@@ -47,27 +47,26 @@ class _BrandAuthScreenState extends State<BrandAuthScreen> {
 
           final role = profileToCheck?['role'] as String? ?? 'user';
 
-          if (role == 'user') {
-            // Auto-upgrade user to brand_admin for seamless onboarding
-            await _supabase
-                .from('profiles')
-                .update({'role': 'brand_admin'}).eq('id', user.id);
+          if (role != 'brand_admin') {
+            // This is a consumer account — do not silently upgrade the role.
+            // Signing them in here would give them unintended brand access.
+            await _supabase.auth.signOut();
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'This email is registered as a consumer account. '
+                    'Use the main login, or sign up for a new brand account.',
+                  ),
+                  backgroundColor: Colors.orange,
+                  duration: Duration(seconds: 4),
+                ),
+              );
+            }
+            return;
           }
 
-          // Role is valid (brand_admin or maybe null/admin), check brand existence
-          final brandData = await _supabase
-              .from('brands')
-              .select()
-              .eq('owner_user_id', user.id)
-              .maybeSingle();
-
-          if (brandData == null) {
-            // No brand found, stay on dashboard which will show onboarding
-            if (mounted) context.go('/brand-dashboard');
-          } else {
-            // Brand exists, go to dashboard
-            if (mounted) context.go('/brand-dashboard');
-          }
+          if (mounted) context.go('/brand-dashboard');
         }
       } else {
         // Sign up

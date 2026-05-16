@@ -733,28 +733,21 @@ class _BrandDashboardScreenState extends State<BrandDashboardScreen> {
   }
 
   Widget _buildNewCampaignButton() {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const OfferManagementScreen()));
-      },
-      child: Container(
-        height: 160,
-        decoration: BoxDecoration(
-          color: Colors.white,
+    return Container(
+      height: 160,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.blueGrey[200]!, width: 2),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.blueGrey[200]!, width: 2, style: BorderStyle.solid), // Dashed border styling simplified to solid with color diff
-          boxShadow: [
-            BoxShadow(color: Colors.transparent, blurRadius: 0),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(24),
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const OfferManagementScreen()));
-            },
-            child: Column(
+          onTap: () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const OfferManagementScreen()));
+          },
+          child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(

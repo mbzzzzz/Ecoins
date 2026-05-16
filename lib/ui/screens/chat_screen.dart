@@ -1,9 +1,11 @@
 import 'package:ecoins/core/theme.dart';
 import 'package:ecoins/ui/widgets/glass_container.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:animate_do/animate_do.dart';
 
 class ChatScreen extends StatefulWidget {
   final Map<String, dynamic> friend;
@@ -71,10 +73,9 @@ class _ChatScreenState extends State<ChatScreen> {
         'created_at': DateTime.now().toIso8601String(),
       });
       _controller.clear();
-      // Scroll to bottom handled by StreamBuilder usually, or we can trigger it
       Future.delayed(const Duration(milliseconds: 300), _scrollToBottom);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to send: $e')));
+       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to send: $e')));
     }
   }
 
@@ -96,6 +97,35 @@ class _ChatScreenState extends State<ChatScreen> {
         );
       }
     });
+  }
+
+  Future<void> _clearChat() async {
+    try {
+      final myId = Supabase.instance.client.auth.currentUser!.id;
+      // Delete conversation (both sides)
+      await Supabase.instance.client.from('messages').delete().or(
+          'and(sender_id.eq.$myId,receiver_id.eq.$_conversationId),and(sender_id.eq.$_conversationId,receiver_id.eq.$myId)');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Chat cleared.')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error clearing chat: $e')));
+      }
+    }
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   @override
@@ -212,6 +242,8 @@ class _ChatScreenState extends State<ChatScreen> {
                        }
                     });
 
+                    // Pre-calculate message groups
+                    // We render items directly in the builder, but check previous item for context
                     return ListView.builder(
                       controller: _scrollController,
                       padding: const EdgeInsets.fromLTRB(20, 110, 20, 20),
@@ -220,48 +252,85 @@ class _ChatScreenState extends State<ChatScreen> {
                         final msg = messages[index];
                         final isMe = msg['sender_id'] == myId;
                         
-                        return Align(
-                          alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-                            decoration: BoxDecoration(
-                              color: isMe ? AppTheme.primaryGreen : Colors.white,
-                              borderRadius: BorderRadius.only(
-                                topLeft: const Radius.circular(20),
-                                topRight: const Radius.circular(20),
-                                bottomLeft: isMe ? const Radius.circular(20) : Radius.zero,
-                                bottomRight: isMe ? Radius.zero : const Radius.circular(20),
+                        // Date Header Logic
+                        final createdAt = DateTime.parse(msg['created_at']).toLocal();
+                        bool showDateHeader = false;
+                        if (index == 0) {
+                          showDateHeader = true;
+                        } else {
+                          final prevDate = DateTime.parse(messages[index - 1]['created_at']).toLocal();
+                          if (prevDate.day != createdAt.day || prevDate.month != createdAt.month || prevDate.year != createdAt.year) {
+                            showDateHeader = true;
+                          }
+                        }
+
+                        // Message Grouping Logic (Same sender as previous?)
+                        bool isFirstInGroup = true;
+                        if (index > 0) {
+                          final prevSender = messages[index - 1]['sender_id'];
+                          if (prevSender == msg['sender_id']) {
+                             // Check if it was also same day, otherwise header breaks group
+                             if (!showDateHeader) {
+                               isFirstInGroup = false;
+                             }
+                          }
+                        }
+
+                        return FadeInUp(
+                          duration: const Duration(milliseconds: 300),
+                          child: Column(
+                            children: [
+                              if (showDateHeader) _buildDateHeader(createdAt),
+                              Align(
+                                alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                                child: Container(
+                                  margin: EdgeInsets.only(
+                                    bottom: 4, // Tighter stacking for all messages
+                                    top: isFirstInGroup ? 12 : 0 // Extra space for new groups
+                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+                                  decoration: BoxDecoration(
+                                    color: isMe ? AppTheme.primaryGreen : Colors.white.withOpacity(0.9),
+                                    borderRadius: BorderRadius.only(
+                                      topLeft: const Radius.circular(20),
+                                      topRight: const Radius.circular(20),
+                                      bottomLeft: isMe ? const Radius.circular(20) : (isFirstInGroup ? Radius.zero : const Radius.circular(5)),
+                                      bottomRight: isMe ? (isFirstInGroup ? Radius.zero : const Radius.circular(5)) : const Radius.circular(20),
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.05),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      )
+                                    ],
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        msg['content'],
+                                        style: GoogleFonts.inter(
+                                          color: isMe ? Colors.white : AppTheme.textDark,
+                                          fontSize: 15,
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      // Only show time for last message in group or first? Let's show for all but subtle
+                                      Text(
+                                        timeago.format(DateTime.parse(msg['created_at']), locale: 'en_short'),
+                                        style: GoogleFonts.inter(
+                                          color: isMe ? Colors.white.withOpacity(0.7) : Colors.black.withOpacity(0.4),
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                )
-                              ],
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  msg['content'],
-                                  style: GoogleFonts.inter(
-                                    color: isMe ? Colors.white : AppTheme.textDark,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  timeago.format(DateTime.parse(msg['created_at']), locale: 'en_short'),
-                                  style: GoogleFonts.inter(
-                                    color: isMe ? Colors.white70 : Colors.black45,
-                                    fontSize: 10,
-                                  ),
-                                ),
-                              ],
-                            ),
+                            ],
                           ),
                         );
                       },
@@ -274,37 +343,52 @@ class _ChatScreenState extends State<ChatScreen> {
               Container(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 24), // SafeArea bottom padding
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.4),
+                  color: Colors.black.withOpacity(0.6), // Darker for contrast
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  boxShadow: [
+                     BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, -2))
+                  ]
                 ),
                 child: Row(
                   children: [
                     Expanded(
-                      child: TextField(
-                        controller: _controller,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          hintText: 'Type a message...',
-                          hintStyle: GoogleFonts.inter(color: Colors.white60),
-                          filled: true,
-                          fillColor: Colors.white.withOpacity(0.1),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(30),
-                            borderSide: BorderSide.none,
-                          ),
+                      child: Container(
+                        decoration: BoxDecoration(
+                           color: Colors.white.withOpacity(0.1),
+                           borderRadius: BorderRadius.circular(24),
+                           border: Border.all(color: Colors.white.withOpacity(0.1))
                         ),
-                        onSubmitted: (value) => _sendMessage(value),
+                        child: TextField(
+                          controller: _controller,
+                          textCapitalization: TextCapitalization.sentences,
+                          keyboardType: TextInputType.multiline,
+                          minLines: 1,
+                          maxLines: 5,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            hintText: 'Type a message...',
+                            hintStyle: GoogleFonts.inter(color: Colors.white60),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          ),
+                          onSubmitted: (value) => _sendMessage(value),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
                     GestureDetector(
-                      onTap: () => _sendMessage(_controller.text),
+                      onTap: () {
+                         HapticFeedback.lightImpact();
+                         _sendMessage(_controller.text);
+                      },
                       child: Container(
                         padding: const EdgeInsets.all(12),
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           color: AppTheme.primaryGreen,
                           shape: BoxShape.circle,
+                          boxShadow: [
+                             BoxShadow(color: AppTheme.primaryGreen.withOpacity(0.4), blurRadius: 8)
+                          ]
                         ),
                         child: const Icon(Icons.send, color: Colors.white, size: 20),
                       ),
@@ -315,6 +399,43 @@ class _ChatScreenState extends State<ChatScreen> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDateHeader(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final checkDate = DateTime(date.year, date.month, date.day);
+
+    String text;
+    if (checkDate == today) {
+      text = 'Today';
+    } else if (checkDate == yesterday) {
+      text = 'Yesterday';
+    } else {
+      text = '${date.day}/${date.month}/${date.year}';
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            text,
+            style: GoogleFonts.inter(
+              color: Colors.white.withOpacity(0.8),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
       ),
     );
   }

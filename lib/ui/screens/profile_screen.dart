@@ -1,12 +1,15 @@
+import 'package:ecoins/core/level_system.dart';
 import 'package:ecoins/core/theme.dart';
 import 'package:ecoins/ui/screens/edit_profile_screen.dart';
 import 'package:ecoins/ui/screens/notification_screen.dart';
 import 'package:ecoins/ui/screens/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:ui'; // For ImageFilter
+import 'package:flutter/services.dart';
+import 'dart:ui';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -121,6 +124,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     // Profile Header Card
                     _buildProfileHeader(isDark),
+
+                    const SizedBox(height: 24),
+
+                    // Level Progress Card
+                    _buildLevelCard(isDark),
 
                     const SizedBox(height: 24),
 
@@ -244,7 +252,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             border: Border.all(color: AppTheme.primaryGreen.withOpacity(0.2)),
           ),
           child: Text(
-            'Member since Dec 2025',
+            'Member since ${_formatMemberSince()}',
             style: GoogleFonts.inter(
               fontSize: 12,
               fontWeight: FontWeight.w500,
@@ -253,6 +261,94 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  String _formatMemberSince() {
+    final raw = _profile?['created_at'] ?? _profile?['member_since'];
+    if (raw == null) return 'Recently';
+    try {
+      return DateFormat('MMM yyyy').format(DateTime.parse(raw.toString()).toLocal());
+    } catch (_) {
+      return 'Recently';
+    }
+  }
+
+  String get _inviteCode {
+    final uid = _supabase.auth.currentUser?.id ?? '';
+    if (uid.isEmpty) return 'ECO-XXXXXX';
+    return 'ECO-${uid.replaceAll('-', '').substring(0, 6).toUpperCase()}';
+  }
+
+  Widget _buildLevelCard(bool isDark) {
+    final points = (_profile?['points_balance'] as num?)?.toInt() ?? 0;
+    final level = LevelSystem.getLevel(points);
+    final nextLevel = LevelSystem.getNextLevel(points);
+    final progress = LevelSystem.getProgress(points);
+    final isMaxLevel = level.name == nextLevel.name;
+    final ptsToNext = nextLevel.minPoints - points;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF10B981), Color(0xFF065F46)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryGreen.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Current Level',
+                      style: GoogleFonts.inter(fontSize: 12, color: Colors.white70)),
+                  const SizedBox(height: 4),
+                  Text(level.name,
+                      style: GoogleFonts.outfit(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white)),
+                ],
+              ),
+              Image.asset(level.assetPath, width: 48, height: 48,
+                  errorBuilder: (_, __, ___) =>
+                      const Icon(Icons.forest, color: Colors.white, size: 40)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 8,
+              backgroundColor: Colors.white.withOpacity(0.2),
+              valueColor: const AlwaysStoppedAnimation(Colors.white),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            isMaxLevel
+                ? 'Maximum level reached!'
+                : '$ptsToNext pts to ${nextLevel.name}',
+            style: GoogleFonts.inter(fontSize: 12, color: Colors.white70),
+          ),
+        ],
+      ),
     );
   }
 
@@ -446,96 +542,106 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _showInviteDialog(BuildContext context, bool isDark) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: isDark ? AppTheme.surfaceDark : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.greenAccent.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.volunteer_activism,
-                  color: Colors.greenAccent, size: 40),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Invite Your Squad',
-              style: GoogleFonts.outfit(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : AppTheme.textMain,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Share your code and earn 500 XP when friends join!',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: isDark ? Colors.grey[400] : AppTheme.textSub,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              decoration: BoxDecoration(
-                color: isDark ? Colors.black26 : Colors.grey[100],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                    color: isDark ? Colors.white12 : Colors.grey[300]!),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'ECO-SQUAD-2026',
-                    style: GoogleFonts.robotoMono(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1,
-                      color: isDark ? Colors.white : Colors.black87,
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text('Code copied to clipboard!'),
-                          backgroundColor: AppTheme.primaryGreen,
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10)),
-                        ),
-                      );
-                    },
-                    child: const Icon(Icons.copy_rounded,
-                        size: 20, color: AppTheme.primaryGreen),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(ctx),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryGreen,
-                  foregroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1F2937), // Dark Gray
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: const [
+              BoxShadow(color: Colors.black45, blurRadius: 20, spreadRadius: 5)
+            ]
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.greenAccent.withOpacity(0.1),
+                  shape: BoxShape.circle,
                 ),
-                child: const Text('Done',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
+                child: const Icon(Icons.volunteer_activism,
+                    color: Colors.greenAccent, size: 40),
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              Text(
+                'Invite Your Squad',
+                style: GoogleFonts.outfit(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Share your code and earn 500 XP when friends join!',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: Colors.grey[400],
+                ),
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.black26,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white12),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _inviteCode,
+                      style: GoogleFonts.robotoMono(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                        color: Colors.white,
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () {
+                        Clipboard.setData(ClipboardData(text: _inviteCode));
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text('Code copied to clipboard!'),
+                            backgroundColor: AppTheme.primaryGreen,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
+                          ),
+                        );
+                      },
+                      child: const Icon(Icons.copy_rounded,
+                          size: 20, color: AppTheme.primaryGreen),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryGreen,
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: const Text('Done',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -563,7 +669,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
         child: ListTile(
-          onTap: onTap,
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onTap();
+          },
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           contentPadding:
@@ -596,33 +705,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _showLogoutDialog(BuildContext context, bool isDark) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: isDark ? AppTheme.surfaceDark : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Sign Out',
-            style: GoogleFonts.outfit(
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : AppTheme.textMain)),
-        content: Text('Are you sure you want to sign out?',
-            style: GoogleFonts.inter(
-                color: isDark ? Colors.grey[300] : AppTheme.textSub)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel',
-                style:
-                    TextStyle(color: isDark ? Colors.grey[400] : Colors.grey)),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1F2937),
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: const [
+              BoxShadow(color: Colors.black45, blurRadius: 20, spreadRadius: 5)
+            ]
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _signOut();
-            },
-            child: const Text('Sign Out',
-                style:
-                    TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+               const Icon(Icons.power_settings_new, color: Colors.redAccent, size: 40),
+               const SizedBox(height: 16),
+               Text('Sign Out',
+                  style: GoogleFonts.outfit(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white)),
+               const SizedBox(height: 8),
+               Text('Are you sure you want to sign out?',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                      color: Colors.white70)),
+               const SizedBox(height: 24),
+               Row(
+                 children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: Text('Cancel',
+                            style: TextStyle(color: Colors.white60)),
+                      ),
+                    ),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.redAccent,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
+                        ),
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          _signOut();
+                        },
+                        child: const Text('Sign Out'),
+                      ),
+                    ),
+                 ],
+               )
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

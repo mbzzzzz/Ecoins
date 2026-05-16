@@ -42,15 +42,30 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _redirect() async {
-    // Artificial delay to show the splash screen animations
-    await Future.delayed(const Duration(seconds: 3));
+    await Future.delayed(const Duration(milliseconds: 500));
     if (!mounted) return;
 
-    final session = Supabase.instance.client.auth.currentSession;
-    if (session != null) {
-      context.go('/home');
-    } else {
+    final supabase = Supabase.instance.client;
+    final session = supabase.auth.currentSession;
+
+    if (session == null) {
       context.go('/role-select');
+      return;
+    }
+
+    // Route returning users to the correct portal based on their role
+    try {
+      final profile = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .maybeSingle();
+
+      if (!mounted) return;
+      final role = profile?['role'] as String?;
+      context.go(role == 'brand_admin' ? '/brand-dashboard' : '/home');
+    } catch (_) {
+      if (mounted) context.go('/home');
     }
   }
 

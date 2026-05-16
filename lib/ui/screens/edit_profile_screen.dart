@@ -3,6 +3,9 @@ import 'package:ecoins/core/theme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:animate_do/animate_do.dart';
+import 'package:ecoins/ui/widgets/scale_button.dart';
+import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -103,7 +106,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
       String? avatarUrl = _currentAvatarUrl;
       if (_imageFile != null) {
-        avatarUrl = await _uploadImage();
+        final uploaded = await _uploadImage();
+        if (uploaded != null) {
+           avatarUrl = uploaded;
+        } else {
+           if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to upload image. Saving text only.')));
+        }
       }
 
       final response = await _supabase.from('profiles').upsert({
@@ -124,6 +132,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       debugPrint('EditProfile upsert response: $response');
 
       if (mounted) {
+        HapticFeedback.mediumImpact();
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Profile updated successfully!')));
         context.pop();
@@ -194,90 +203,118 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           child: Column(
             children: [
               // Avatar Edit
-              GestureDetector(
-                onTap: _pickImage,
-                child: Stack(
-                  alignment: Alignment.bottomRight,
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 4),
-                        boxShadow: const [
-                          BoxShadow(
-                              color: Colors.black12,
-                              blurRadius: 10,
-                              offset: Offset(0, 4))
-                        ],
+              ZoomIn(
+                child: GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    _pickImage();
+                  },
+                  child: Stack(
+                    alignment: Alignment.bottomRight,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 4),
+                          boxShadow: [
+                            BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 15,
+                                offset: const Offset(0, 5))
+                          ],
+                        ),
+                        child: CircleAvatar(
+                          radius: 60,
+                          backgroundColor:
+                              isDark ? Colors.grey[800] : Colors.grey[200],
+                          backgroundImage: backgroundImage,
+                          child: (backgroundImage == null)
+                              ? Icon(Icons.person,
+                                  size: 60,
+                                  color: isDark
+                                      ? Colors.grey[600]
+                                      : Colors.grey[400])
+                              : null,
+                        ),
                       ),
-                      child: CircleAvatar(
-                        radius: 60,
-                        backgroundColor:
-                            isDark ? Colors.grey[800] : Colors.grey[200],
-                        backgroundImage: backgroundImage,
-                        child: (backgroundImage == null)
-                            ? Icon(Icons.person,
-                                size: 60,
-                                color: isDark
-                                    ? Colors.grey[600]
-                                    : Colors.grey[400])
-                            : null,
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryGreen,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                          boxShadow: [BoxShadow(color: AppTheme.primaryGreen.withOpacity(0.4), blurRadius: 8)]
+                        ),
+                        child: const Icon(Icons.camera_alt,
+                            color: Colors.white, size: 20),
                       ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryGreen,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                      child: const Icon(Icons.camera_alt,
-                          color: Colors.white, size: 20),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
 
               const SizedBox(height: 32),
 
-              // Name Input
-              _buildLabel('Display Name', isDark),
-              const SizedBox(height: 8),
-              _buildTextField(context, _nameController, 'Enter your name',
-                  isDark, Icons.person_outline),
+              FadeInUp(
+                delay: const Duration(milliseconds: 200),
+                child: Column(
+                  children: [
+                    _buildLabel('Display Name', isDark),
+                    const SizedBox(height: 8),
+                    _buildTextField(context, _nameController, 'Enter your name',
+                        isDark, Icons.person_outline),
+                  ],
+                ),
+              ),
 
               const SizedBox(height: 20),
 
-              // Bio Input
-              _buildLabel('Bio', isDark),
-              const SizedBox(height: 8),
-              _buildTextField(context, _bioController, 'Tell us about yourself',
-                  isDark, Icons.info_outline,
-                  maxLines: 3),
+              FadeInUp(
+                delay: const Duration(milliseconds: 300),
+                child: Column(
+                   children: [
+                      _buildLabel('Bio', isDark),
+                      const SizedBox(height: 8),
+                      _buildTextField(context, _bioController, 'Tell us about yourself',
+                          isDark, Icons.info_outline,
+                          maxLines: 3),
+                   ],
+                ),
+              ),
 
               const SizedBox(height: 40),
 
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _saveProfile,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryGreen,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
-                    elevation: 4,
+              FadeInUp(
+                delay: const Duration(milliseconds: 400),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ScaleButton(
+                    onTap: _isLoading ? () {} : () {
+                       HapticFeedback.mediumImpact();
+                       _saveProfile();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryGreen,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                           BoxShadow(color: AppTheme.primaryGreen.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))
+                        ]
+                      ),
+                      alignment: Alignment.center,
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                  color: Colors.white, strokeWidth: 2))
+                          : Text('Save Changes',
+                              style: GoogleFonts.outfit(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold, fontSize: 16)),
+                    ),
                   ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                              color: Colors.white, strokeWidth: 2))
-                      : Text('Save Changes',
-                          style: GoogleFonts.outfit(
-                              fontWeight: FontWeight.bold, fontSize: 16)),
                 ),
               ),
             ],

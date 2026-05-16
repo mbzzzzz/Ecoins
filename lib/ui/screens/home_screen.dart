@@ -12,6 +12,11 @@ import 'package:ecoins/ui/screens/edit_profile_screen.dart';
 import 'package:ecoins/ui/screens/scan/qr_scan_screen.dart';
 import 'package:ecoins/ui/screens/impact_dashboard_screen.dart';
 import 'package:flutter/services.dart';
+import 'package:ecoins/ui/widgets/scale_button.dart';
+import 'package:ecoins/ui/widgets/shimmer_loading.dart';
+import 'package:ecoins/ui/widgets/walkthrough_overlay.dart';
+import 'package:animate_do/animate_do.dart';
+import 'package:ecoins/ui/widgets/level_up_celebration.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -30,11 +35,23 @@ class _HomeScreenState extends State<HomeScreen> {
   int _streak = 0;
   bool _dailyGoalCompleted = false;
   String? _avatarUrl;
+  Map<String, dynamic>? _userStats;
+  bool _showWalkthrough = false;
+  LevelData? _newLevelData;
+  int _previousPoints = -1; // To track level changes
 
   @override
   void initState() {
     super.initState();
     _fetchUserData();
+    // Simulate check for "First Time Login"
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+       // In production, check SharedPreferences or DB flag 'has_seen_walkthrough'
+       // For demo/request, we set it to true to show the option.
+       setState(() {
+         _showWalkthrough = true;
+       });
+    });
   }
 
   Future<void> _fetchUserData() async {
@@ -85,6 +102,19 @@ class _HomeScreenState extends State<HomeScreen> {
           .limit(30);
 
       if (mounted) {
+        // Level Up Check
+        if (_previousPoints != -1) {
+           final prevLevel = LevelSystem.getLevel(_previousPoints);
+           final currentLevel = LevelSystem.getLevel(_points);
+           if (currentLevel.minPoints > prevLevel.minPoints) {
+             // Level Up Event!
+             setState(() {
+               _newLevelData = currentLevel;
+             });
+           }
+        }
+        _previousPoints = _points;
+
         setState(() {
           _recentActivities = List<Map<String, dynamic>>.from(activities);
           _streak = _calculateRealStreak(history);
@@ -152,14 +182,22 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  String get _greeting {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good Morning,';
+    if (hour < 17) return 'Good Afternoon,';
+    return 'Good Evening,';
+  }
+
   void _logQuickAction(String category) {
+    HapticFeedback.lightImpact();
     // Instead of auto-logging, we now require verification for everything.
     // Quick actions just pre-select the category in the modal.
     _showLoggerModal(initialCategory: category);
   }
 
   Widget _buildQuickAction(String label, IconData icon, Color color, String category, int points) {
-    return GestureDetector(
+    return ScaleButton(
       onTap: () => _logQuickAction(category),
       child: Column(
         children: [
@@ -209,75 +247,112 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Positioned.fill(
                 child: Image.asset('assets/images/background.png',
-                    fit: BoxFit.cover)),
-            const Center(child: CircularProgressIndicator(color: Colors.white)),
+                    fit: BoxFit.cover, color: Colors.black.withOpacity(0.3), colorBlendMode: BlendMode.darken)),
+             SafeArea(
+               child: Padding(
+                 padding: const EdgeInsets.all(20.0),
+                 child: Column(
+                   crossAxisAlignment: CrossAxisAlignment.start,
+                   children: [
+                     // Skeleton Header
+                     Row(
+                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                       children: [
+                         Column(
+                           crossAxisAlignment: CrossAxisAlignment.start,
+                           children: const [
+                             ShimmerLoading(width: 100, height: 16),
+                             SizedBox(height: 8),
+                             ShimmerLoading(width: 180, height: 28),
+                           ],
+                         ),
+                         const ShimmerLoading(width: 50, height: 50, borderRadius: BorderRadius.all(Radius.circular(25))),
+                       ],
+                     ),
+                     const Spacer(),
+                     // Skeleton Tree
+                     const Center(child: ShimmerLoading(width: 240, height: 240, borderRadius: BorderRadius.all(Radius.circular(120)))),
+                     const SizedBox(height: 24),
+                     // Skeleton Stats
+                     const Center(child: ShimmerLoading(width: 200, height: 40, borderRadius: BorderRadius.all(Radius.circular(20)))),
+                     const Spacer(),
+                     // Skeleton Buttons
+                     Row(
+                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                       children: List.generate(4, (index) => const ShimmerLoading(width: 60, height: 80)),
+                     ),
+                     const SizedBox(height: 40),
+                   ],
+                 ),
+               ),
+             ),
           ],
         ),
       );
     }
-    
-    // final streak = _calculateStreak(); // Removed in favor of _streak class variable
 
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      body: Stack(
-        children: [
-          // Background - Premium Dark Nature
-          Positioned.fill(
-            child: Container(
-              color: const Color(0xFF111827), // Fallback
-              child: Image.asset(
-                'assets/images/background.png',
-                fit: BoxFit.cover,
-                color: Colors.black.withOpacity(0.3), // Darken for text visibility
-                colorBlendMode: BlendMode.darken,
+    return Stack(
+      children: [
+        Scaffold(
+          extendBodyBehindAppBar: true,
+          body: Stack(
+            children: [
+              // Background - Premium Dark Nature
+              Positioned.fill(
+                child: Container(
+                  color: const Color(0xFF111827), // Fallback
+                  child: Image.asset(
+                    'assets/images/background.png',
+                    fit: BoxFit.cover,
+                    color: Colors.black.withOpacity(0.3), // Darken for text visibility
+                    colorBlendMode: BlendMode.darken,
+                  ),
+                ),
               ),
-            ),
-          ),
 
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 10.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              SafeArea(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 10.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      // Header
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'Good Morning,',
-                            style: GoogleFonts.inter(
-                              color: Colors.white70,
-                              fontSize: 16,
-                            ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _greeting,
+                                style: GoogleFonts.inter(
+                                  color: Colors.white70,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              Text(
+                                _supabase.auth.currentUser?.email?.split('@')[0] ??
+                                    'Eco Warrior',
+                                style: GoogleFonts.outfit(
+                                  color: Colors.white,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  shadows: [
+                                    Shadow(blurRadius: 10, color: Colors.black.withOpacity(0.5))
+                                  ]
+                                ),
+                              ),
+                            ],
                           ),
-                          Text(
-                            _supabase.auth.currentUser?.email?.split('@')[0] ??
-                                'Eco Warrior',
-                            style: GoogleFonts.outfit(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              shadows: [
-                                Shadow(blurRadius: 10, color: Colors.black.withOpacity(0.5))
-                              ]
-                            ),
-                          ),
-                        ],
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => const EditProfileScreen()),
-                          );
-                        },
-                        child: Container(
+                          ScaleButton(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const EditProfileScreen()),
+                            );
+                          },
+                          child: Container(
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
@@ -290,15 +365,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: CircleAvatar(
                             radius: 24,
                             backgroundColor: Colors.white.withOpacity(0.1),
-    backgroundImage: _avatarUrl != null ? NetworkImage(_avatarUrl!) : null,
-                            child: Text(
-                              _supabase.auth.currentUser?.email?[0]
-                                      .toUpperCase() ??
-                                  'U',
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold),
-                            ),
+                            backgroundImage: _avatarUrl != null ? NetworkImage(_avatarUrl!) : null,
+                            child: _avatarUrl == null
+                                ? Text(
+                                    _supabase.auth.currentUser?.email?[0].toUpperCase() ?? 'U',
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                  )
+                                : null,
                           ),
                         ),
                       ),
@@ -522,7 +595,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         Expanded(
                           child: GestureDetector(
-                            onTap: () => _showLoggerModal(),
+                            onTap: () {
+                              HapticFeedback.mediumImpact();
+                              _showLoggerModal();
+                            },
                             child: GlassContainer(
                               borderRadius: BorderRadius.circular(20),
                               padding: const EdgeInsets.symmetric(vertical: 12),
@@ -550,6 +626,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         Expanded(
                           child: GestureDetector(
                             onTap: () {
+                               HapticFeedback.mediumImpact();
                                Navigator.push(context, MaterialPageRoute(builder: (_) => const QRScanScreen()));
                             },
                             child: GlassContainer(
@@ -588,6 +665,8 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     );
+      ],
+    );
   }
 
   void _showLoggerModal({String? initialCategory}) {
@@ -599,7 +678,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onLogged: () => _fetchUserData(), 
         initialCategory: initialCategory
       ),
-    ).then((_) => _fetchUserData());
+    );
   }
 
   IconData _getIconForCategory(String? category) {

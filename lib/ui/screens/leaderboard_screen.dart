@@ -2,7 +2,10 @@ import 'package:ecoins/core/theme.dart';
 import 'package:ecoins/ui/widgets/glass_container.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:animate_do/animate_do.dart';
+import 'package:ecoins/ui/widgets/scale_button.dart';
 
 class LeaderboardScreen extends StatefulWidget {
   const LeaderboardScreen({super.key});
@@ -14,36 +17,7 @@ class LeaderboardScreen extends StatefulWidget {
 class _LeaderboardScreenState extends State<LeaderboardScreen> {
   final _supabase = Supabase.instance.client;
   List<Map<String, dynamic>> _leaders = [];
-  final List<Map<String, dynamic>> _squads = [
-    {
-      'rank': 1,
-      'name': 'Google Devs',
-      'members': 142,
-      'points': 45200,
-      'icon': Icons.code
-    },
-    {
-      'rank': 2,
-      'name': 'Green Schools',
-      'members': 89,
-      'points': 38100,
-      'icon': Icons.school
-    },
-    {
-      'rank': 3,
-      'name': 'Eco Family',
-      'members': 12,
-      'points': 12400,
-      'icon': Icons.family_restroom
-    },
-    {
-      'rank': 4,
-      'name': 'Local Runners',
-      'members': 45,
-      'points': 8900,
-      'icon': Icons.directions_run
-    },
-  ];
+  final List<Map<String, dynamic>> _squads = []; // Squads feature pending backend implementation
   bool _isLoading = true;
 
   @override
@@ -56,47 +30,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     try {
       final user = _supabase.auth.currentUser;
 
+
       if (user == null) {
-        // MOCK DATA
-        await Future.delayed(const Duration(milliseconds: 800));
-        if (mounted) {
-          setState(() {
-            _leaders = [
-              {
-                'rank': 1,
-                'display_name': 'GreenGiant',
-                'points_balance': 3500,
-                'user_id': 'mock1'
-              },
-              {
-                'rank': 2,
-                'display_name': 'EcoWarrior',
-                'points_balance': 3200,
-                'user_id': 'mock2'
-              },
-              {
-                'rank': 3,
-                'display_name': 'LeafyLogic',
-                'points_balance': 2950,
-                'user_id': 'mock3'
-              },
-              {
-                'rank': 4,
-                'display_name': 'PlanetSaver',
-                'points_balance': 2100,
-                'user_id': 'mock4'
-              },
-              {
-                'rank': 5,
-                'display_name': 'You',
-                'points_balance': 1250,
-                'user_id': 'me'
-              },
-            ];
-            _isLoading = false;
-          });
-        }
-        return;
+          if(mounted) setState(() => _isLoading = false);
+          return;
       }
 
       final data = await _supabase
@@ -191,37 +128,74 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             user['user_id'] == 'me';
         final rank = user['rank'];
 
-        return GlassContainer(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          opacity: isMe ? 0.3 : 0.15,
-          border:
-              isMe ? Border.all(color: AppTheme.accentYellow, width: 2) : null,
-          child: Row(
-            children: [
-              SizedBox(width: 40, child: _buildRankBadge(rank)),
-              const SizedBox(width: 16),
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: Colors.white.withOpacity(0.2),
-                child: Text(
-                  (user['display_name'] ?? 'U')[0],
-                  style: const TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  user['display_name'] ?? 'User',
-                  style: GoogleFonts.outfit(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+        return FadeInUp(
+          delay: Duration(milliseconds: index * 100),
+          child: ScaleButton(
+            onTap: () {
+               HapticFeedback.lightImpact();
+            },
+            child: GlassContainer(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              opacity: isMe ? 0.3 : (rank <= 3 ? 0.2 : 0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: isMe 
+                  ? Border.all(color: AppTheme.accentYellow, width: 2)
+                  : (rank == 1 ? Border.all(color: const Color(0xFFFFD700).withOpacity(0.5)) : null),
+              child: Row(
+                children: [
+                   SizedBox(
+                     width: 40, 
+                     child: rank <= 3 
+                         ? ZoomIn(delay: Duration(milliseconds: 300 + (index*100)), child: _buildRankBadge(rank)) 
+                         : _buildRankBadge(rank)
+                   ),
+                  const SizedBox(width: 16),
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: rank == 1 ? [
+                         const BoxShadow(color: Color(0xFFFFD700), blurRadius: 10, spreadRadius: 1)
+                      ] : null
+                    ),
+                    child: CircleAvatar(
+                      radius: 20,
+                      backgroundColor: Colors.white.withOpacity(0.2),
+                      child: Text(
+                        (user['display_name'] ?? 'U')[0],
+                        style: const TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user['display_name'] ?? 'User',
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        if (isMe)
+                          Text(
+                            'That\'s You!',
+                            style: GoogleFonts.inter(
+                              color: AppTheme.accentYellow,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600
+                            ),
+                          )
+                      ],
+                    ),
+                  ),
+                  _buildPointsBadge(user['points_balance'], rank),
+                ],
               ),
-              _buildPointsBadge(user['points_balance']),
-            ],
+            ),
           ),
         );
       },
@@ -229,6 +203,19 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   }
 
   Widget _buildSquadList() {
+    if (_squads.isEmpty) {
+        return Center(
+          child: Column(
+             mainAxisAlignment: MainAxisAlignment.center,
+             children: [
+               Icon(Icons.groups, size: 48, color: Colors.white.withOpacity(0.3)),
+               const SizedBox(height: 16),
+               Text('Squads coming soon!', style: GoogleFonts.outfit(color: Colors.white, fontSize: 18)),
+             ],
+          ),
+        );
+    }
+
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: _squads.length,
@@ -237,70 +224,84 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
         final squad = _squads[index];
         final rank = squad['rank'];
 
-        return GlassContainer(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          opacity: 0.15,
-          child: Row(
-            children: [
-              SizedBox(width: 40, child: _buildRankBadge(rank)),
-              const SizedBox(width: 16),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(squad['icon'], color: Colors.white, size: 20),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      squad['name'],
-                      style: GoogleFonts.outfit(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
+        return FadeInUp(
+          delay: Duration(milliseconds: index * 100),
+          child: ScaleButton(
+            onTap: () {
+               HapticFeedback.lightImpact();
+            },
+            child: GlassContainer(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              opacity: 0.15,
+              child: Row(
+                children: [
+                  SizedBox(width: 40, child: _buildRankBadge(rank)),
+                  const SizedBox(width: 16),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      shape: BoxShape.circle,
                     ),
-                    Text(
-                      '${squad['members']} members',
-                      style: GoogleFonts.inter(
-                        color: Colors.white70,
-                        fontSize: 12,
-                      ),
+                    child: Icon(squad['icon'], color: Colors.white, size: 20),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          squad['name'],
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        Text(
+                          '${squad['members']} members',
+                          style: GoogleFonts.inter(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  _buildPointsBadge(squad['points'], rank),
+                ],
               ),
-              _buildPointsBadge(squad['points']),
-            ],
+            ),
           ),
         );
       },
     );
   }
 
-  Widget _buildPointsBadge(int points) {
+  Widget _buildPointsBadge(int points, int rank) {
+    Color textColor = AppTheme.accentYellow;
+    if (rank == 1) textColor = const Color(0xFFFFD700);
+    if (rank == 2) textColor = const Color(0xFFE0E0E0);
+    if (rank == 3) textColor = const Color(0xFFCD7F32);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
+        color: textColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: textColor.withOpacity(0.3))
       ),
       child: Row(
         children: [
           Text(
             '$points',
             style: GoogleFonts.inter(
-              color: AppTheme.accentYellow,
+              color: textColor,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(width: 4),
-          const Icon(Icons.stars, color: AppTheme.accentYellow, size: 14),
+          Icon(Icons.stars, color: textColor, size: 14),
         ],
       ),
     );

@@ -2,7 +2,10 @@ import 'package:ecoins/core/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:ecoins/ui/widgets/scale_button.dart';
+import 'package:animate_do/animate_do.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -14,14 +17,22 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final _nameController = TextEditingController();
   final _bioController = TextEditingController();
+  late final PageController _pageController;
   int _currentStep = 0;
   bool _isLoading = false;
   final _supabase = Supabase.instance.client;
 
   @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     _bioController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -36,7 +47,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
       // Update profile with onboarding data
       await _supabase.from('profiles').update({
-        'full_name': _nameController.text.trim(),
+        'display_name': _nameController.text.trim(),
+        'bio': _bioController.text.trim().isEmpty ? null : _bioController.text.trim(),
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', user.id);
 
@@ -88,7 +100,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
             Expanded(
               child: PageView(
-                controller: PageController(initialPage: _currentStep),
+                controller: _pageController,
                 onPageChanged: (index) => setState(() => _currentStep = index),
                 children: [
                   _buildWelcomeStep(isDark),
@@ -106,38 +118,64 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 children: [
                   if (_currentStep > 0)
                     TextButton(
-                      onPressed: () => setState(() => _currentStep--),
+                      onPressed: () {
+                        setState(() => _currentStep--);
+                        _pageController.animateToPage(
+                          _currentStep - 1,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      },
                       child: const Text('Back'),
                     )
                   else
                     const SizedBox(),
-                  ElevatedButton(
-                    onPressed: _isLoading
+                  ScaleButton(
+                    onTap: _isLoading
                         ? null
                         : () {
+                            HapticFeedback.lightImpact();
                             if (_currentStep < 2) {
                               setState(() => _currentStep++);
+                              _pageController.animateToPage(
+                                _currentStep,
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                              );
                             } else {
+                              HapticFeedback.mediumImpact();
                               _completeOnboarding();
                             }
                           },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryGreen,
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 32, vertical: 16),
-                    ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.black),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryGreen,
+                        borderRadius: BorderRadius.circular(30),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.primaryGreen.withOpacity(0.4),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4)
                           )
-                        : Text(
-                            _currentStep < 2 ? 'Next' : 'Get Started',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
+                        ]
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.black),
+                            )
+                          : Text(
+                              _currentStep < 2 ? 'Next' : 'Get Started',
+                              style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                                fontSize: 16
+                              ),
+                            ),
+                    ),
                   ),
                 ],
               ),
@@ -154,34 +192,42 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              color: AppTheme.primaryGreen.withOpacity(0.1),
-              shape: BoxShape.circle,
+          FadeInDown(
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: AppTheme.primaryGreen.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child:
+                  const Icon(Icons.eco, color: AppTheme.primaryGreen, size: 64),
             ),
-            child:
-                const Icon(Icons.eco, color: AppTheme.primaryGreen, size: 64),
           ),
           const SizedBox(height: 32),
-          Text(
-            'Welcome to Ecoins!',
-            style: GoogleFonts.outfit(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : AppTheme.textMain,
+          FadeInUp(
+            delay: const Duration(milliseconds: 200),
+            child: Text(
+              'Welcome to Ecoins!',
+              style: GoogleFonts.outfit(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : AppTheme.textMain,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-          Text(
-            'Let\'s set up your profile so you can start earning rewards for your eco-friendly actions.',
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              color: isDark ? Colors.grey[400] : AppTheme.textSub,
+          FadeInUp(
+            delay: const Duration(milliseconds: 400),
+            child: Text(
+              'Let\'s set up your profile so you can start earning rewards for your eco-friendly actions.',
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                color: isDark ? Colors.grey[400] : AppTheme.textSub,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -194,39 +240,53 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            'What should we call you?',
-            style: GoogleFonts.outfit(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : AppTheme.textMain,
+          FadeInDown(
+            child: Text(
+              'What should we call you?',
+              style: GoogleFonts.outfit(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : AppTheme.textMain,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),
-          TextField(
-            controller: _nameController,
-            decoration: InputDecoration(
-              labelText: 'Full Name',
-              hintText: 'Enter your name',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
+          FadeInUp(
+            delay: const Duration(milliseconds: 200),
+            child: TextField(
+              controller: _nameController,
+              decoration: InputDecoration(
+                labelText: 'Full Name',
+                hintText: 'Enter your name',
+                filled: true,
+                fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
               ),
+              style: TextStyle(color: isDark ? Colors.white : AppTheme.textMain),
             ),
-            style: TextStyle(color: isDark ? Colors.white : AppTheme.textMain),
           ),
           const SizedBox(height: 16),
-          TextField(
-            controller: _bioController,
-            maxLines: 3,
-            decoration: InputDecoration(
-              labelText: 'Bio (Optional)',
-              hintText: 'Tell us about your eco journey...',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
+          FadeInUp(
+            delay: const Duration(milliseconds: 300),
+            child: TextField(
+              controller: _bioController,
+              maxLines: 3,
+              decoration: InputDecoration(
+                labelText: 'Bio (Optional)',
+                hintText: 'Tell us about your eco journey...',
+                filled: true,
+                fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
               ),
+              style: TextStyle(color: isDark ? Colors.white : AppTheme.textMain),
             ),
-            style: TextStyle(color: isDark ? Colors.white : AppTheme.textMain),
           ),
         ],
       ),
@@ -239,34 +299,42 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              color: AppTheme.primaryGreen.withOpacity(0.1),
-              shape: BoxShape.circle,
+          ZoomIn(
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: AppTheme.primaryGreen.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.check_circle,
+                  color: AppTheme.primaryGreen, size: 64),
             ),
-            child: const Icon(Icons.check_circle,
-                color: AppTheme.primaryGreen, size: 64),
           ),
           const SizedBox(height: 32),
-          Text(
-            'You\'re all set!',
-            style: GoogleFonts.outfit(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : AppTheme.textMain,
+          FadeInUp(
+            delay: const Duration(milliseconds: 300),
+            child: Text(
+              'You\'re all set!',
+              style: GoogleFonts.outfit(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : AppTheme.textMain,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-          Text(
-            'Start logging activities to earn Ecoins and grow your impact tree.',
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              color: isDark ? Colors.grey[400] : AppTheme.textSub,
+          FadeInUp(
+             delay: const Duration(milliseconds: 500),
+             child: Text(
+              'Start logging activities to earn Ecoins and grow your impact tree.',
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                color: isDark ? Colors.grey[400] : AppTheme.textSub,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),

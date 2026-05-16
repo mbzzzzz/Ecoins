@@ -2,8 +2,11 @@ import 'package:ecoins/core/theme.dart';
 import 'package:ecoins/ui/widgets/glass_container.dart';
 import 'package:ecoins/ui/screens/wallet_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:ecoins/ui/widgets/scale_button.dart';
+import 'package:ecoins/ui/widgets/custom_toast.dart';
 
 class RewardsScreen extends StatefulWidget {
   const RewardsScreen({super.key});
@@ -140,7 +143,7 @@ class _RewardsScreenState extends State<RewardsScreen>
         actions: [
             Padding(
             padding: const EdgeInsets.only(right: 16.0),
-            child: GestureDetector(
+            child: ScaleButton(
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WalletScreen())),
               child: GlassContainer(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -427,17 +430,59 @@ class _RewardsScreenState extends State<RewardsScreen>
          return;
       }
       
-      // CONFIRM DIALOG
+      HapticFeedback.lightImpact();
+      // CONFIRM DIALOG - Premium Design
       final confirm = await showDialog<bool>(
         context: context,
-        builder: (context) => AlertDialog(
-            backgroundColor: Colors.white,
-            title: const Text('Confirm Redemption'),
-            content: Text('Redeem "${reward['title']}" for $cost points?'),
-            actions: [
-                TextButton(onPressed: ()=>Navigator.pop(context, false), child: const Text('Cancel')),
-                ElevatedButton(onPressed: ()=>Navigator.pop(context, true), child: const Text('Confirm')),
-            ],
+        builder: (context) => Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1F2937), // Dark Gray
+              border: Border.all(color: Colors.white.withOpacity(0.1)),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: const [
+                BoxShadow(color: Colors.black45, blurRadius: 20, spreadRadius: 5)
+              ]
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.stars, color: AppTheme.accentYellow, size: 48),
+                const SizedBox(height: 16),
+                Text('Redeem Reward?', 
+                  style: GoogleFonts.outfit(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                Text('Redeem "${reward['title']}" for $cost points?',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(color: Colors.white70)),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: ()=>Navigator.pop(context, false), 
+                        child: Text('Cancel', style: GoogleFonts.inter(color: Colors.white60))
+                      )
+                    ),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryGreen,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 12)
+                        ),
+                        onPressed: ()=>Navigator.pop(context, true), 
+                        child: const Text('Confirm')
+                      )
+                    ),
+                  ],
+                )
+              ],
+            ),
+          ),
         ),
       );
 
@@ -459,26 +504,15 @@ class _RewardsScreenState extends State<RewardsScreen>
               'status': 'active'
           });
 
-          await _supabase.from('profiles').update({'points_balance': _userPoints - cost}).eq('id', user.id);
-          _fetchData();
-          
-          if(mounted) {
-              showDialog(context: context, builder: (_) => AlertDialog(
-                  backgroundColor: Colors.white,
-                  title: const Text('Success!'),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.check_circle_outline, color: Colors.green, size: 48),
-                      const SizedBox(height: 16),
-                      Text('Code: $uniquePromoCode', style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 8),
-                      const Text('Saved to your Wallet.', style: TextStyle(color: Colors.grey)),
-                    ],
-                  ),
-                  actions: [TextButton(onPressed: ()=>Navigator.pop(context), child: const Text('OK'))]
-              ));
+          final newBalance = _userPoints - cost;
+          await _supabase.from('profiles').update({'points_balance': newBalance}).eq('id', user.id);
+
+          if (mounted) {
+              setState(() => _userPoints = newBalance);
+              HapticFeedback.heavyImpact();
+              CustomToast.show(context, 'Redeemed: $uniquePromoCode');
           }
+          _fetchData();
       } catch(e) {
           debugPrint(e.toString());
       }
