@@ -660,11 +660,11 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          
+
+            ],
+          ),
           // Removed Floating Action Button
-        ],
-      ),
-    );
+        ),
       ],
     );
   }

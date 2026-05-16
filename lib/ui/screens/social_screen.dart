@@ -200,7 +200,6 @@ class _SocialScreenState extends State<SocialScreen> {
                     ],
                   ),
                 ),
-              ),
 
                 // Modern Custom Tab Switcher
                 Container(
@@ -507,7 +506,8 @@ class _ActivityFeedTabState extends State<ActivityFeedTab> {
               )
             ],
           ),
-        );
+        ),
+      );
       },
     );
   }

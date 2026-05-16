@@ -80,26 +80,6 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _clearChat() async {
-     final myId = Supabase.instance.client.auth.currentUser!.id;
-     // Delete messages for this conversation
-     await Supabase.instance.client.from('messages').delete().or(
-       'and(sender_id.eq.$myId,receiver_id.eq.$_conversationId),and(sender_id.eq.$_conversationId,receiver_id.eq.$myId)'
-     );
-  }
-
-  void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
-  }
-
-  Future<void> _clearChat() async {
     try {
       final myId = Supabase.instance.client.auth.currentUser!.id;
       // Delete conversation (both sides)

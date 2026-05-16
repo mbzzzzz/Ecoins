@@ -769,7 +769,6 @@ class _BrandDashboardScreenState extends State<BrandDashboardScreen> {
                   ),
                 ),
               ],
-            ),
           ),
         ),
       ),
