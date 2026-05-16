@@ -283,11 +283,45 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
       }
 
       // Points and carbon are server-determined — never trust the client
-      final int points =
+      int points =
           (_verificationResult!['points_awarded'] as num?)?.toInt() ?? 50;
       final double carbonSaved =
           (_verificationResult!['carbon_saved_estimate'] as num?)?.toDouble() ??
               0.0;
+
+      // Calculate streak for bonus
+      int streakBonus = 0;
+      int currentStreak = 0;
+      try {
+        final history = await Supabase.instance.client
+            .from('activities')
+            .select('logged_at')
+            .eq('user_id', user.id)
+            .order('logged_at', ascending: false)
+            .limit(35);
+        final uniqueDates = (history as List<dynamic>).map((a) {
+          final dt = DateTime.parse(a['logged_at']).toLocal();
+          return DateTime(dt.year, dt.month, dt.day);
+        }).toSet().toList()
+          ..sort((a, b) => b.compareTo(a));
+        final today = DateTime.now();
+        final todayMid = DateTime(today.year, today.month, today.day);
+        final yest = todayMid.subtract(const Duration(days: 1));
+        DateTime check = uniqueDates.contains(todayMid) ? todayMid : (uniqueDates.contains(yest) ? yest : DateTime(0));
+        if (check.year > 1) {
+          while (uniqueDates.contains(check)) {
+            currentStreak++;
+            check = check.subtract(const Duration(days: 1));
+          }
+        }
+        // Today counts as +1 since we're about to log
+        currentStreak += 1;
+        if (currentStreak >= 30) streakBonus = 100;
+        else if (currentStreak >= 14) streakBonus = 50;
+        else if (currentStreak >= 7) streakBonus = 25;
+        else if (currentStreak >= 3) streakBonus = 10;
+        points += streakBonus;
+      } catch (_) {}
 
       final description = _descriptionController.text.trim().isNotEmpty
           ? _descriptionController.text.trim()
@@ -346,10 +380,14 @@ class _ActivityLoggerModalState extends State<ActivityLoggerModal> {
       if (mounted) {
         Navigator.pop(context);
         widget.onLogged();
+        final streakMsg = streakBonus > 0
+            ? ' 🔥 $currentStreak-day streak! +$streakBonus bonus'
+            : '';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Activity logged! +$points pts earned 🌱'),
+            content: Text('Activity logged! +$points pts earned 🌱$streakMsg'),
             backgroundColor: AppTheme.primaryGreen,
+            duration: Duration(seconds: streakBonus > 0 ? 4 : 2),
           ),
         );
       }

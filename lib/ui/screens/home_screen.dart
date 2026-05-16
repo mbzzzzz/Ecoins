@@ -84,11 +84,64 @@ class _HomeScreenState extends State<HomeScreen> {
               _avatarUrl = updated['avatar_url'] ?? _avatarUrl;
               if (currentLevel.minPoints > prevLevel.minPoints) {
                 _newLevelData = currentLevel;
+                _notifyFriendsOfLevelUp(currentLevel);
               }
             });
           },
         )
         .subscribe();
+  }
+
+  Future<void> _notifyFriendsOfLevelUp(LevelData newLevel) async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) return;
+    try {
+      final friendships = await _supabase
+          .from('friendships')
+          .select('requester_id, addressee_id')
+          .or('requester_id.eq.$userId,addressee_id.eq.$userId')
+          .eq('status', 'accepted');
+
+      final friendIds = (friendships as List<dynamic>).map((f) {
+        return (f['requester_id'] == userId
+            ? f['addressee_id']
+            : f['requester_id']) as String;
+      }).toList();
+
+      if (friendIds.isEmpty) return;
+
+      final profile = await _supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('id', userId)
+          .maybeSingle();
+      final name = profile?['display_name'] ?? 'Your friend';
+
+      final notifications = friendIds
+          .map((fid) => {
+                'user_id': fid,
+                'type': 'level_up',
+                'title': '🌱 $name levelled up!',
+                'body': '$name just reached ${newLevel.name} on Ecoins. Can you keep up?',
+                'created_at': DateTime.now().toIso8601String(),
+              })
+          .toList();
+
+      await _supabase.from('notifications').insert(notifications);
+
+      // Send actual push notifications via FCM
+      try {
+        await _supabase.functions.invoke('send-push', body: {
+          'user_ids': friendIds,
+          'title': '🌱 $name levelled up!',
+          'body': '$name just reached ${newLevel.name} on Ecoins. Can you keep up?',
+        });
+      } catch (e) {
+        debugPrint('FCM push failed (non-fatal): $e');
+      }
+    } catch (e) {
+      debugPrint('Failed to notify friends of level up: $e');
+    }
   }
 
   @override

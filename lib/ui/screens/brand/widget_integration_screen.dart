@@ -17,10 +17,12 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
   String? _apiKey;
   bool _isLoading = true;
   double _realtimeCarbon = 0.0;
+  int _realtimeUsers = 0;
+  int _realtimeTrees = 0;
   bool _isLoadingData = false;
 
   // Customization State
-  String _selectedVariant = 'banner'; // 'banner', 'ring', 'illustrative-tree'
+  String _selectedVariant = 'banner';
   Color _accentColor = const Color(0xFF11BB82);
   String _selectedFont = 'Inter';
   bool _showPercentage = true;
@@ -32,6 +34,9 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
     {'id': 'ring', 'name': 'Ring', 'icon': Icons.circle_outlined},
     {'id': 'minimal', 'name': 'Minimal', 'icon': Icons.remove_circle_outline},
     {'id': 'illustrative-tree', 'name': 'Tree', 'icon': Icons.forest_outlined},
+    {'id': 'counter', 'name': 'Counter', 'icon': Icons.speed_outlined},
+    {'id': 'badge', 'name': 'Trust Badge', 'icon': Icons.workspace_premium_outlined},
+    {'id': 'stats', 'name': 'Stats Board', 'icon': Icons.analytics_outlined},
   ];
 
   final List<Color> _accentOptions = [
@@ -94,6 +99,8 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
       if (mounted) {
         setState(() {
           _realtimeCarbon = (data['total_carbon_saved'] ?? 0.0).toDouble();
+          _realtimeUsers = (data['active_users'] ?? 0) as int;
+          _realtimeTrees = (data['trees_equivalent'] ?? 0) as int;
           _isLoadingData = false;
         });
       }
@@ -648,12 +655,27 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
     );
   }
 
+  Widget _buildStatCell(String value, String label, IconData icon, bool isDark, Color textMain) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+      decoration: BoxDecoration(
+        color: _accentColor.withOpacity(0.07),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 14, color: _accentColor),
+          const SizedBox(height: 4),
+          Text(value, style: GoogleFonts.getFont(_selectedFont, fontSize: 16, fontWeight: FontWeight.w800, color: textMain)),
+          Text(label, style: GoogleFonts.inter(fontSize: 9, color: textMain.withOpacity(0.5))),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPreviewContent(bool isDark, Color textMain) {
-     final carbonVal = _realtimeCarbon;
-     final displayVal = carbonVal; 
-     
-     // Mock Goal
-     final goal = 2000;
+     final displayVal = _realtimeCarbon;
+     const goal = 2000;
      final progress = (displayVal / goal).clamp(0.0, 1.0);
      final percentage = (progress * 100).round();
 
@@ -872,6 +894,174 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
                ),
              )
            ],
+         );
+
+       case 'counter':
+         return Center(
+           child: Column(
+             mainAxisSize: MainAxisSize.min,
+             children: [
+               Container(
+                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                 decoration: BoxDecoration(
+                   color: isDark ? Colors.black.withOpacity(0.3) : Colors.white,
+                   borderRadius: BorderRadius.circular(16),
+                   border: Border.all(color: _accentColor.withOpacity(0.3), width: 1.5),
+                 ),
+                 child: Column(
+                   children: [
+                     Container(
+                       padding: const EdgeInsets.all(10),
+                       decoration: BoxDecoration(
+                         color: _accentColor.withOpacity(0.1),
+                         shape: BoxShape.circle,
+                       ),
+                       child: Icon(Icons.eco, color: _accentColor, size: 28),
+                     ),
+                     const SizedBox(height: 12),
+                     Text(
+                       '${displayVal.toInt()}',
+                       style: GoogleFonts.getFont(
+                         _selectedFont,
+                         fontSize: 48,
+                         fontWeight: FontWeight.w900,
+                         color: _accentColor,
+                         height: 1.0,
+                       ),
+                     ),
+                     Text(
+                       'kg CO₂ Saved',
+                       style: GoogleFonts.getFont(
+                         _selectedFont,
+                         fontSize: 12,
+                         fontWeight: FontWeight.w600,
+                         color: textMain.withOpacity(0.6),
+                         letterSpacing: 1.2,
+                       ),
+                     ),
+                     const SizedBox(height: 8),
+                     Container(
+                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                       decoration: BoxDecoration(
+                         color: _accentColor.withOpacity(0.1),
+                         borderRadius: BorderRadius.circular(20),
+                       ),
+                       child: Text(
+                         '🌱 Eco Rewards Verified',
+                         style: GoogleFonts.inter(
+                           fontSize: 9,
+                           fontWeight: FontWeight.w600,
+                           color: _accentColor,
+                         ),
+                       ),
+                     ),
+                   ],
+                 ),
+               ),
+             ],
+           ),
+         );
+
+       case 'badge':
+         return Center(
+           child: Container(
+             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+             decoration: BoxDecoration(
+               color: isDark ? const Color(0xFF1A2E26) : Colors.white,
+               borderRadius: BorderRadius.circular(8),
+               border: Border.all(color: Colors.grey.withOpacity(0.2)),
+               boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 8, offset: const Offset(0, 2))],
+             ),
+             child: Row(
+               mainAxisSize: MainAxisSize.min,
+               children: [
+                 Container(
+                   padding: const EdgeInsets.all(6),
+                   decoration: BoxDecoration(
+                     color: _accentColor,
+                     borderRadius: BorderRadius.circular(6),
+                   ),
+                   child: const Icon(Icons.verified_outlined, color: Colors.white, size: 14),
+                 ),
+                 const SizedBox(width: 10),
+                 Column(
+                   crossAxisAlignment: CrossAxisAlignment.start,
+                   mainAxisSize: MainAxisSize.min,
+                   children: [
+                     Text(
+                       'Sustainability Partner',
+                       style: GoogleFonts.getFont(_selectedFont, fontSize: 10, fontWeight: FontWeight.w700, color: textMain),
+                     ),
+                     Text(
+                       '${displayVal.toInt()} kg CO₂ offset via Eco Rewards',
+                       style: GoogleFonts.getFont(_selectedFont, fontSize: 9, color: textMain.withOpacity(0.5)),
+                     ),
+                   ],
+                 ),
+                 const SizedBox(width: 10),
+                 Column(
+                   mainAxisSize: MainAxisSize.min,
+                   children: [
+                     Text('★★★★★', style: TextStyle(fontSize: 9, color: _accentColor)),
+                   ],
+                 ),
+               ],
+             ),
+           ),
+         );
+
+       case 'stats':
+         final users = _realtimeUsers > 0 ? _realtimeUsers : 42;
+         final trees = _realtimeTrees > 0 ? _realtimeTrees : (displayVal / 20).round();
+         return Container(
+           padding: const EdgeInsets.all(16),
+           decoration: BoxDecoration(
+             color: isDark ? Colors.black.withOpacity(0.3) : Colors.white,
+             borderRadius: BorderRadius.circular(12),
+             border: Border.all(color: _accentColor.withOpacity(0.2)),
+           ),
+           child: Column(
+             children: [
+               Row(
+                 children: [
+                   Icon(Icons.bar_chart_rounded, color: _accentColor, size: 16),
+                   const SizedBox(width: 6),
+                   Text(
+                     'IMPACT DASHBOARD',
+                     style: GoogleFonts.getFont(_selectedFont, fontSize: 10, fontWeight: FontWeight.w700, color: _accentColor, letterSpacing: 1.0),
+                   ),
+                 ],
+               ),
+               const SizedBox(height: 14),
+               Row(
+                 children: [
+                   Expanded(child: _buildStatCell('${displayVal.toInt()}', 'kg CO₂', Icons.cloud_off, isDark, textMain)),
+                   const SizedBox(width: 8),
+                   Expanded(child: _buildStatCell('$users', 'Users', Icons.people_outline, isDark, textMain)),
+                   const SizedBox(width: 8),
+                   Expanded(child: _buildStatCell('$trees', 'Trees', Icons.park_outlined, isDark, textMain)),
+                 ],
+               ),
+               const SizedBox(height: 12),
+               ClipRRect(
+                 borderRadius: BorderRadius.circular(4),
+                 child: LinearProgressIndicator(
+                   value: progress,
+                   minHeight: 5,
+                   backgroundColor: Colors.grey.withOpacity(0.15),
+                   valueColor: AlwaysStoppedAnimation(_accentColor),
+                 ),
+               ),
+               const SizedBox(height: 6),
+               Row(
+                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                 children: [
+                   Text('Goal: ${goal}kg', style: GoogleFonts.inter(fontSize: 9, color: textMain.withOpacity(0.4))),
+                   Text('$percentage% reached', style: GoogleFonts.inter(fontSize: 9, color: _accentColor, fontWeight: FontWeight.w600)),
+                 ],
+               ),
+             ],
+           ),
          );
 
        case 'banner':

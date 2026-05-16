@@ -160,6 +160,66 @@ Deno.serve(async (req) => {
                         '</div>';
                     break;
                     
+                case 'counter':
+                    html = '<div style="' + boxStyle + ' padding: 24px; max-width: 220px; display: flex; flex-direction: column; align-items: center; text-align: center;">' +
+                        '<div style="width: 52px; height: 52px; background: ' + accent + '15; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 12px;">' +
+                            '<svg width="26" height="26" viewBox="0 0 24 24" fill="' + accent + '"><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm-1-5h2v2h-2v-2zm0-8h2v6h-2V7z"/></svg>' +
+                        '</div>' +
+                        '<div style="font-size: 52px; font-weight: 900; color: ' + accent + '; line-height: 1; letter-spacing: -2px;">' + carbonSavedFormatted + '</div>' +
+                        '<div style="font-size: 12px; font-weight: 700; color: #6B7280; letter-spacing: 1.2px; margin-top: 4px; text-transform: uppercase;">kg CO₂ Saved</div>' +
+                        '<div style="margin-top: 12px; background: ' + accent + '10; border-radius: 20px; padding: 4px 12px;">' +
+                            '<span style="font-size: 9px; font-weight: 700; color: ' + accent + '; letter-spacing: 0.5px;">🌱 ECO REWARDS VERIFIED</span>' +
+                        '</div>' +
+                        '</div>';
+                    break;
+
+                case 'badge':
+                    html = '<div style="display: inline-flex; align-items: center; padding: 8px 14px; background: #ffffff; border: 1px solid #E5E7EB; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); font-family: \'' + font + '\', sans-serif; gap: 10px;">' +
+                        '<div style="width: 28px; height: 28px; background: ' + accent + '; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">' +
+                            '<svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>' +
+                        '</div>' +
+                        '<div style="display: flex; flex-direction: column;">' +
+                            '<span style="font-size: 10px; font-weight: 700; color: #111827; line-height: 1.2;">Sustainability Partner</span>' +
+                            '<span style="font-size: 9px; color: #6B7280; line-height: 1.4;">' + carbonSavedFormatted + ' kg CO₂ offset · Eco Rewards</span>' +
+                        '</div>' +
+                        '<div style="font-size: 9px; color: ' + accent + '; letter-spacing: -0.5px;">★★★★★</div>' +
+                        '</div>';
+                    break;
+
+                case 'stats': {
+                    const totalUsers = data.active_users || 0;
+                    const totalRedemptions = data.total_redemptions || 0;
+                    const trees = data.trees_equivalent || Math.round(carbonSaved / 20);
+                    html = '<div style="' + boxStyle + ' padding: 20px; max-width: 340px;">' +
+                        '<div style="display: flex; align-items: center; margin-bottom: 16px;">' +
+                            '<svg width="16" height="16" viewBox="0 0 24 24" fill="' + accent + '" style="margin-right: 6px;"><path d="M3 3h18v18H3z" fill="none"/><path d="M7 12h2v5H7v-5zm4-7h2v12h-2V5zm4 4h2v8h-2V9z"/></svg>' +
+                            '<span style="font-size: 10px; font-weight: 700; color: ' + accent + '; letter-spacing: 1px; text-transform: uppercase;">Impact Dashboard</span>' +
+                        '</div>' +
+                        '<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px;">' +
+                            '<div style="background: ' + accent + '0D; border-radius: 8px; padding: 10px; text-align: center;">' +
+                                '<div style="font-size: 20px; font-weight: 800; color: #111827;">' + carbonSavedFormatted + '</div>' +
+                                '<div style="font-size: 9px; color: #6B7280; margin-top: 2px;">kg CO₂</div>' +
+                            '</div>' +
+                            '<div style="background: ' + accent + '0D; border-radius: 8px; padding: 10px; text-align: center;">' +
+                                '<div style="font-size: 20px; font-weight: 800; color: #111827;">' + totalUsers + '</div>' +
+                                '<div style="font-size: 9px; color: #6B7280; margin-top: 2px;">Users</div>' +
+                            '</div>' +
+                            '<div style="background: ' + accent + '0D; border-radius: 8px; padding: 10px; text-align: center;">' +
+                                '<div style="font-size: 20px; font-weight: 800; color: #111827;">' + trees + '</div>' +
+                                '<div style="font-size: 9px; color: #6B7280; margin-top: 2px;">Trees 🌳</div>' +
+                            '</div>' +
+                        '</div>' +
+                        '<div style="height: 5px; background: #F3F4F6; border-radius: 3px; overflow: hidden;">' +
+                            '<div style="width: ' + progress + '%; height: 100%; background: ' + accent + ';"></div>' +
+                        '</div>' +
+                        '<div style="display: flex; justify-content: space-between; margin-top: 6px;">' +
+                            '<span style="font-size: 9px; color: #9CA3AF;">Goal: ' + goal + 'kg</span>' +
+                            '<span style="font-size: 9px; font-weight: 700; color: ' + accent + ';">' + progress + '% reached</span>' +
+                        '</div>' +
+                        '</div>';
+                    break;
+                }
+
                 case 'banner':
                 default:
                      html = '<div style="' + boxStyle + ' padding: 16px; max-width: 320px;">' +

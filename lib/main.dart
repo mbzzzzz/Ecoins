@@ -13,6 +13,7 @@ import 'package:ecoins/core/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:provider/provider.dart';
 
@@ -52,9 +53,9 @@ Future<void> main() async {
     anonKey: Constants.supabaseAnonKey,
   );
 
-  // Initialize Firebase (Requires google-services.json)
-  // await Firebase.initializeApp();
-  // _setupFCM();
+  // Initialize Firebase
+  await Firebase.initializeApp();
+  await _setupFCM();
 
   // Initialize Local Notifications
   await NotificationService().initialize();

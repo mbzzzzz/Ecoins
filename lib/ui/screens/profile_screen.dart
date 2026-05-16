@@ -1,5 +1,6 @@
 import 'package:ecoins/core/level_system.dart';
 import 'package:ecoins/core/theme.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:ecoins/ui/screens/edit_profile_screen.dart';
 import 'package:ecoins/ui/screens/notification_screen.dart';
 import 'package:ecoins/ui/screens/settings_screen.dart';
@@ -22,6 +23,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _supabase = Supabase.instance.client;
   bool _isLoading = true;
   Map<String, dynamic>? _profile;
+  List<double> _weeklyCarbon = List.filled(8, 0.0);
 
   @override
   void initState() {
@@ -60,10 +62,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _isLoading = false;
         });
       }
+      _fetchWeeklyCarbon();
     } catch (e) {
       // If table doesn't exist or error, fall back to basic info
       debugPrint('Error fetching profile: $e');
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _fetchWeeklyCarbon() async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return;
+    try {
+      final cutoff = DateTime.now().subtract(const Duration(days: 56));
+      final rows = await _supabase
+          .from('activities')
+          .select('carbon_saved, logged_at')
+          .eq('user_id', user.id)
+          .gte('logged_at', cutoff.toIso8601String())
+          .order('logged_at', ascending: true);
+
+      final buckets = List.filled(8, 0.0);
+      final now = DateTime.now();
+      for (final row in rows) {
+        final dt = DateTime.parse(row['logged_at']).toLocal();
+        final weeksAgo = now.difference(dt).inDays ~/ 7;
+        if (weeksAgo < 8) {
+          buckets[7 - weeksAgo] += (row['carbon_saved'] as num? ?? 0).toDouble();
+        }
+      }
+      if (mounted) setState(() => _weeklyCarbon = buckets);
+    } catch (e) {
+      debugPrint('Weekly carbon fetch error: $e');
     }
   }
 
@@ -152,6 +182,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 isDark)),
                       ],
                     ),
+
+                    const SizedBox(height: 24),
+
+                    // Carbon Impact Chart
+                    _buildCarbonChart(isDark),
 
                     const SizedBox(height: 24),
 
@@ -397,6 +432,127 @@ class _ProfileScreenState extends State<ProfileScreen> {
               fontSize: 13,
               color: isDark ? Colors.grey[400] : AppTheme.textSub,
               fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCarbonChart(bool isDark) {
+    final maxY = _weeklyCarbon.reduce((a, b) => a > b ? a : b);
+    final displayMax = maxY < 1 ? 5.0 : (maxY * 1.3).ceilToDouble();
+    final weekLabels = ['7w', '6w', '5w', '4w', '3w', '2w', 'W', 'Now'];
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.surfaceDark.withOpacity(0.8) : Colors.white.withOpacity(0.8),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.white),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryGreen.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.bar_chart_rounded, color: AppTheme.primaryGreen, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Carbon Impact', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppTheme.textMain)),
+                  Text('Last 8 weeks (kg CO₂)', style: GoogleFonts.inter(fontSize: 11, color: isDark ? Colors.grey[400] : AppTheme.textSub)),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            height: 140,
+            child: BarChart(
+              BarChartData(
+                maxY: displayMax,
+                minY: 0,
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: displayMax / 4,
+                  getDrawingHorizontalLine: (_) => FlLine(
+                    color: isDark ? Colors.white.withOpacity(0.07) : Colors.black.withOpacity(0.05),
+                    strokeWidth: 1,
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+                titlesData: FlTitlesData(
+                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 32,
+                      getTitlesWidget: (val, meta) {
+                        if (val == 0 || val == meta.max) return const SizedBox.shrink();
+                        return Text(val.toInt().toString(), style: GoogleFonts.inter(fontSize: 9, color: isDark ? Colors.white38 : Colors.black38));
+                      },
+                    ),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 22,
+                      getTitlesWidget: (val, _) {
+                        final i = val.toInt();
+                        if (i < 0 || i >= weekLabels.length) return const SizedBox.shrink();
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(weekLabels[i], style: GoogleFonts.inter(fontSize: 9, color: isDark ? Colors.white38 : Colors.black38)),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                barGroups: List.generate(8, (i) {
+                  final isCurrentWeek = i == 7;
+                  return BarChartGroupData(
+                    x: i,
+                    barRods: [
+                      BarChartRodData(
+                        toY: _weeklyCarbon[i] == 0 ? 0.1 : _weeklyCarbon[i],
+                        color: isCurrentWeek ? AppTheme.primaryGreen : AppTheme.primaryGreen.withOpacity(0.4),
+                        width: 18,
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                      ),
+                    ],
+                  );
+                }),
+                barTouchData: BarTouchData(
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipColor: (_) => isDark ? const Color(0xFF1E2925) : Colors.white,
+                    getTooltipItem: (group, _, rod, __) {
+                      final kg = _weeklyCarbon[group.x];
+                      return BarTooltipItem(
+                        '${kg.toStringAsFixed(2)} kg',
+                        GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.primaryGreen),
+                      );
+                    },
+                  ),
+                ),
+              ),
             ),
           ),
         ],
