@@ -16,11 +16,12 @@ yarn-error.log
 # Supabase
 supabase/.temp/
 
-# Keys
+# Keys — never commit these
 google-services.json
 key.json
 *.jks
 *.keystore
+android/key.properties
 
 # Editors
 .vscode/
