@@ -2,6 +2,10 @@
 -keep class io.flutter.** { *; }
 -keep class io.flutter.plugins.** { *; }
 
+# Flutter references Play Core split-install internally but this app doesn't use
+# deferred components — suppress the missing class warnings to unblock R8
+-dontwarn com.google.android.play.core.**
+
 # Supabase / Ktor / OkHttp
 -keep class io.ktor.** { *; }
 -dontwarn io.ktor.**
