@@ -53,9 +53,13 @@ Future<void> main() async {
     anonKey: Constants.supabaseAnonKey,
   );
 
-  // Initialize Firebase
-  await Firebase.initializeApp();
-  await _setupFCM();
+  // Initialize Firebase (non-fatal — app works without push notifications)
+  try {
+    await Firebase.initializeApp();
+    await _setupFCM();
+  } catch (e) {
+    debugPrint('Firebase init failed (non-fatal): $e');
+  }
 
   // Initialize Local Notifications
   await NotificationService().initialize();
