@@ -2,6 +2,7 @@ import 'package:ecoins/core/analytics_service.dart';
 import 'package:ecoins/core/level_system.dart';
 import 'package:ecoins/core/theme.dart';
 import 'package:ecoins/ui/screens/carbon_methodology_screen.dart';
+import 'package:ecoins/ui/screens/my_codes_screen.dart';
 import 'package:ecoins/ui/widgets/referral_card.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:ecoins/ui/screens/edit_profile_screen.dart';
@@ -663,6 +664,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildMenuSection(bool isDark) {
     return Column(
       children: [
+        _buildMenuTile(
+          title: 'My Redeemed Codes',
+          icon: Icons.confirmation_number_outlined,
+          color: AppTheme.primaryGreen,
+          isDark: isDark,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const MyCodesScreen()),
+          ),
+        ),
+        const SizedBox(height: 12),
         _buildMenuTile(
           title: 'Invite Friends',
           icon: Icons.person_add_alt_1_outlined,

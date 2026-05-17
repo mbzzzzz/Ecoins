@@ -1,7 +1,8 @@
 import 'dart:ui';
-// Removed unused imports
 import 'package:ecoins/ui/screens/brand/offer_management_screen.dart';
 import 'package:ecoins/ui/screens/brand/brand_settings_screen.dart';
+import 'package:ecoins/ui/screens/brand/brand_stats_screen.dart';
+import 'package:ecoins/ui/screens/brand/brand_redemptions_screen.dart';
 import 'package:ecoins/ui/screens/brand/widget_integration_screen.dart';
 import 'package:ecoins/ui/screens/scan/qr_scan_screen.dart';
 import 'package:ecoins/ui/widgets/glass_container.dart';
@@ -253,6 +254,8 @@ class _BrandDashboardScreenState extends State<BrandDashboardScreen> {
                     ),
                     const SizedBox(height: 16),
                     _buildWidgetButton(),
+                    const SizedBox(height: 16),
+                    _buildRedemptionsButton(),
                     const SizedBox(height: 16),
                     _buildScanButton(),
                   ],
@@ -859,6 +862,44 @@ class _BrandDashboardScreenState extends State<BrandDashboardScreen> {
     );
   }
 
+  Widget _buildRedemptionsButton() {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const BrandRedemptionsScreen()));
+      },
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.blueGrey[100]!),
+          boxShadow: [BoxShadow(color: const Color(0xFF10B981).withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: const Color(0xFF10B981).withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+              child: const Icon(Icons.receipt_long_rounded, color: Color(0xFF10B981)),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Code Redemptions', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blueGrey[900])),
+                  const SizedBox(height: 4),
+                  Text('View all codes your customers have redeemed', style: GoogleFonts.inter(fontSize: 13, color: Colors.blueGrey[500])),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.blueGrey[300]),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildScanButton() {
     return GestureDetector(
       onTap: () {
@@ -937,7 +978,9 @@ class _BrandDashboardScreenState extends State<BrandDashboardScreen> {
                _buildNavItem(Icons.campaign_outlined, 'Campaigns', false, onTap: () {
                  Navigator.push(context, MaterialPageRoute(builder: (_) => const OfferManagementScreen()));
                }),
-               _buildNavItem(Icons.bar_chart_rounded, 'Stats', false),
+               _buildNavItem(Icons.bar_chart_rounded, 'Stats', false, onTap: () {
+                 Navigator.push(context, MaterialPageRoute(builder: (_) => const BrandStatsScreen()));
+               }),
                _buildNavItem(Icons.person_outline_rounded, 'Profile', false, onTap: () {
                  Navigator.push(context, MaterialPageRoute(builder: (_) => const BrandSettingsScreen()));
                }),

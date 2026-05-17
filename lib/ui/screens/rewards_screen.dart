@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:ecoins/core/theme.dart';
 import 'package:ecoins/ui/widgets/glass_container.dart';
 import 'package:ecoins/ui/screens/wallet_screen.dart';
@@ -98,7 +97,7 @@ class _RewardsScreenState extends State<RewardsScreen>
                     'title': offer['title'],
                     'description': offer['description'],
                     'cost_points': offer['points_cost'],
-                    'discount_code': offer['discount_code'],
+                    'discount_code': offer['discount_code'] ?? '',
                     'brands': offer['brands'],
                   })
               .toList()
@@ -112,11 +111,6 @@ class _RewardsScreenState extends State<RewardsScreen>
     }
   }
 
-  String _generatePromoCode() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    final rand = Random.secure();
-    return 'ECO-${List.generate(8, (_) => chars[rand.nextInt(chars.length)]).join()}';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -514,16 +508,14 @@ class _RewardsScreenState extends State<RewardsScreen>
       final user = _supabase.auth.currentUser;
       if (user == null) return;
 
-      final promoCode = _generatePromoCode();
-
       final result = await _supabase.rpc('redeem_offer', params: {
         'p_user_id': user.id,
         'p_offer_id': reward['id'],
         'p_points_cost': cost,
-        'p_promo_code': promoCode,
       });
 
       final newBalance = result['new_balance'] as int;
+      final promoCode = result['promo_code'] as String? ?? '—';
 
       if (mounted) {
         setState(() => _userPoints = newBalance);

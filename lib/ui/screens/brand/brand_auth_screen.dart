@@ -1,4 +1,5 @@
 import 'package:ecoins/core/theme.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -18,6 +19,81 @@ class _BrandAuthScreenState extends State<BrandAuthScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
   final _supabase = Supabase.instance.client;
+  late final _authSub = _supabase.auth.onAuthStateChange.listen((data) {
+    if (data.event == AuthChangeEvent.signedIn && mounted) {
+      _handleGoogleAuthResult();
+    }
+  });
+
+  @override
+  void dispose() {
+    _authSub.cancel();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _googleSignIn() async {
+    setState(() => _isLoading = true);
+    try {
+      await _supabase.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: kIsWeb
+            ? 'http://localhost:8080'
+            : 'io.supabase.ecoins://login-callback',
+      );
+      // Auth state listener below handles role check and navigation
+    } catch (e) {
+      debugPrint('Brand Google Sign-In error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Google Sign-In failed. Try again.'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleGoogleAuthResult() async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return;
+
+    final profile = await _supabase
+        .from('profiles')
+        .select('role, created_at')
+        .eq('id', user.id)
+        .maybeSingle();
+
+    final role = profile?['role'] as String? ?? 'user';
+
+    if (role == 'brand_admin') {
+      if (mounted) context.go('/brand-dashboard');
+      return;
+    }
+
+    // New account (created within the last 60 seconds) → promote to brand_admin
+    final createdAt = profile?['created_at'];
+    final isNewAccount = createdAt != null &&
+        DateTime.now().difference(DateTime.parse(createdAt.toString())).inSeconds < 60;
+
+    if (isNewAccount) {
+      await _supabase.from('profiles').update({'role': 'brand_admin'}).eq('id', user.id);
+      if (mounted) context.go('/brand-dashboard');
+    } else {
+      // Existing consumer account — sign out and show error
+      await _supabase.auth.signOut();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('This Google account is registered as a consumer. Use the main app login, or sign up with email for a brand account.'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 5),
+          ),
+        );
+      }
+    }
+  }
 
   Future<void> _submit() async {
     setState(() => _isLoading = true);
@@ -104,13 +180,6 @@ class _BrandAuthScreenState extends State<BrandAuthScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
   }
 
   @override
@@ -330,15 +399,10 @@ class _BrandAuthScreenState extends State<BrandAuthScreen> {
                 children: [
                   Expanded(
                     child: _SocialAuthButton(
-                      icon: 'assets/images/google_logo.png', // Ensure asset exists or use Icon
-                      label: 'Google', 
+                      icon: '',
+                      label: 'Google',
                       isDark: isDark,
-                      onTap: () {
-                         // TODO: Implement Google Auth
-                         ScaffoldMessenger.of(context).showSnackBar(
-                           const SnackBar(content: Text('Google Auth coming soon')),
-                         );
-                      },
+                      onTap: _isLoading ? () {} : _googleSignIn,
                     ),
                   ),
                   const SizedBox(width: 16),
