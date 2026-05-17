@@ -1,5 +1,8 @@
+import 'package:ecoins/core/analytics_service.dart';
 import 'package:ecoins/core/level_system.dart';
 import 'package:ecoins/core/theme.dart';
+import 'package:ecoins/ui/screens/carbon_methodology_screen.dart';
+import 'package:ecoins/ui/widgets/referral_card.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:ecoins/ui/screens/edit_profile_screen.dart';
 import 'package:ecoins/ui/screens/notification_screen.dart';
@@ -194,6 +197,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _buildAchievementsSection(isDark),
 
                     const SizedBox(height: 24),
+
+                    // Referral Card
+                    if (_profile?['referral_code'] != null)
+                      ReferralCard(
+                        referralCode: 'ECO-${_profile!['referral_code']}',
+                      ),
+
+                    if (_profile?['referral_code'] != null)
+                      const SizedBox(height: 24),
 
                     // Menu Options
                     _buildMenuSection(isDark),
@@ -664,10 +676,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
           icon: Icons.edit_outlined,
           color: Colors.blue,
           isDark: isDark,
+          onTap: () {
+            AnalyticsService.instance.track(AnalyticsService.profileEdited);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+            ).then((_) => _fetchProfile());
+          },
+        ),
+        const SizedBox(height: 12),
+        _buildMenuTile(
+          title: 'Carbon Methodology',
+          icon: Icons.science_outlined,
+          color: Colors.teal,
+          isDark: isDark,
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-          ).then((_) => _fetchProfile()),
+            MaterialPageRoute(builder: (_) => const CarbonMethodologyScreen()),
+          ),
         ),
         const SizedBox(height: 12),
         _buildMenuTile(

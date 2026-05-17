@@ -1,7 +1,9 @@
+import 'package:ecoins/core/analytics_service.dart';
 import 'package:ecoins/core/constants.dart';
 import 'package:ecoins/core/theme.dart';
 import 'package:ecoins/ui/screens/home_screen.dart';
 import 'package:ecoins/ui/screens/login_screen.dart';
+import 'package:ecoins/ui/screens/onboarding_screen.dart';
 import 'package:ecoins/ui/screens/profile_screen.dart';
 import 'package:ecoins/ui/screens/rewards_screen.dart';
 import 'package:ecoins/ui/screens/brand/brand_dashboard_screen.dart';
@@ -17,17 +19,16 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:provider/provider.dart';
 
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
+
 Future<void> _setupFCM() async {
   final messaging = FirebaseMessaging.instance;
 
-  // Request permission
   await messaging.requestPermission();
 
-  // Get Token
   final token = await messaging.getToken();
   if (token != null) {
     debugPrint('FCM Token: $token');
-    // Save to Supabase (if user is logged in)
     final supabase = Supabase.instance.client;
     if (supabase.auth.currentUser != null) {
       await supabase
@@ -35,13 +36,42 @@ Future<void> _setupFCM() async {
           .update({'fcm_token': token}).eq('id', supabase.auth.currentUser!.id);
     }
 
-    // Listen for token refresh
     messaging.onTokenRefresh.listen((newToken) {
       if (supabase.auth.currentUser != null) {
         supabase.from('profiles').update({'fcm_token': newToken}).eq(
             'id', supabase.auth.currentUser!.id);
       }
     });
+  }
+
+  // Handle notification tap when app is in background
+  FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
+
+  // Handle notification tap when app was terminated
+  final initialMessage = await messaging.getInitialMessage();
+  if (initialMessage != null) {
+    _handleNotificationTap(initialMessage);
+  }
+}
+
+void _handleNotificationTap(RemoteMessage message) {
+  final data = message.data;
+  final context = _rootNavigatorKey.currentContext;
+  if (context == null) return;
+
+  final screen = data['screen'] as String?;
+  switch (screen) {
+    case 'social':
+      context.go('/home', extra: 1); // Community tab
+      break;
+    case 'rewards':
+      context.go('/home', extra: 2);
+      break;
+    case 'profile':
+      context.go('/home', extra: 3);
+      break;
+    default:
+      context.go('/home');
   }
 }
 
@@ -73,6 +103,7 @@ Future<void> main() async {
 }
 
 final _router = GoRouter(
+  navigatorKey: _rootNavigatorKey,
   initialLocation: '/',
   routes: [
     GoRoute(
@@ -88,6 +119,10 @@ final _router = GoRouter(
       builder: (context, state) => const LoginScreen(),
     ),
     GoRoute(
+      path: '/onboarding',
+      builder: (context, state) => const OnboardingScreen(),
+    ),
+    GoRoute(
       path: '/brand-auth',
       builder: (context, state) => const BrandAuthScreen(),
     ),
@@ -97,7 +132,9 @@ final _router = GoRouter(
     ),
     GoRoute(
       path: '/home',
-      builder: (context, state) => const MainScaffold(),
+      builder: (context, state) => MainScaffold(
+        initialTab: state.extra is int ? state.extra as int : 0,
+      ),
     ),
   ],
 );
@@ -120,22 +157,25 @@ class EcoinsApp extends StatelessWidget {
 }
 
 class MainScaffold extends StatefulWidget {
-  const MainScaffold({super.key});
+  final int initialTab;
+  const MainScaffold({super.key, this.initialTab = 0});
 
   @override
   State<MainScaffold> createState() => _MainScaffoldState();
 }
 
 class _MainScaffoldState extends State<MainScaffold> {
-  int _selectedIndex = 0;
+  late int _selectedIndex;
 
   @override
   void initState() {
     super.initState();
+    _selectedIndex = widget.initialTab;
     final userId = Supabase.instance.client.auth.currentUser?.id;
     if (userId != null) {
       NotificationService().listenToUserNotifications(userId);
     }
+    AnalyticsService.instance.track(AnalyticsService.appOpened);
   }
 
   static const List<Widget> _pages = <Widget>[

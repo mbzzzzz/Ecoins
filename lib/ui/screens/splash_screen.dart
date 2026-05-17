@@ -57,13 +57,21 @@ class _SplashScreenState extends State<SplashScreen>
     try {
       final profile = await supabase
           .from('profiles')
-          .select('role')
+          .select('role, onboarding_completed')
           .eq('id', session.user.id)
           .maybeSingle();
 
       if (!mounted) return;
       final role = profile?['role'] as String?;
-      context.go(role == 'brand_admin' ? '/brand-dashboard' : '/home');
+      final onboardingDone = profile?['onboarding_completed'] as bool? ?? false;
+
+      if (role == 'brand_admin') {
+        context.go('/brand-dashboard');
+      } else if (!onboardingDone) {
+        context.go('/onboarding');
+      } else {
+        context.go('/home');
+      }
     } catch (_) {
       if (mounted) context.go('/home');
     }

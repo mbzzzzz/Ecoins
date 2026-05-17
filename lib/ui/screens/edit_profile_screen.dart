@@ -113,22 +113,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         }
       }
 
-      final response = await _supabase.from('profiles').upsert({
-        'id': userId,
+      await _supabase.from('profiles').update({
         'display_name': _nameController.text.trim(),
         'bio': _bioController.text.trim(),
         'avatar_url': avatarUrl,
-        'email': _supabase.auth.currentUser!.email,
         'updated_at': DateTime.now().toIso8601String(),
-      });
-
-      debugPrint('EditProfile upsert payload: ${{
-        'id': userId,
-        'display_name': _nameController.text.trim(),
-        'bio': _bioController.text.trim(),
-        'avatar_url': avatarUrl,
-      }}');
-      debugPrint('EditProfile upsert response: $response');
+      }).eq('id', userId);
 
       if (mounted) {
         HapticFeedback.mediumImpact();

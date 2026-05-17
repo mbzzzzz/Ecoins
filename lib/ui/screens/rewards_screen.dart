@@ -499,7 +499,7 @@ class _RewardsScreenState extends State<RewardsScreen>
 
           await _supabase.from('redemptions').insert({
               'user_id': user.id,
-              'reward_id': reward['id'],
+              'offer_id': reward['id'],
               'promo_code': uniquePromoCode,
               'status': 'active'
           });
