@@ -37,6 +37,10 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
     {'id': 'counter', 'name': 'Counter', 'icon': Icons.speed_outlined},
     {'id': 'badge', 'name': 'Trust Badge', 'icon': Icons.workspace_premium_outlined},
     {'id': 'stats', 'name': 'Stats Board', 'icon': Icons.analytics_outlined},
+    {'id': 'gradient', 'name': 'Gradient', 'icon': Icons.gradient_outlined},
+    {'id': 'neon', 'name': 'Neon Dark', 'icon': Icons.nightlight_outlined},
+    {'id': 'split', 'name': 'Split', 'icon': Icons.view_column_outlined},
+    {'id': 'ticker', 'name': 'Ticker', 'icon': Icons.pin_outlined},
   ];
 
   final List<Color> _accentOptions = [
@@ -1058,6 +1062,253 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
                  children: [
                    Text('Goal: ${goal}kg', style: GoogleFonts.inter(fontSize: 9, color: textMain.withOpacity(0.4))),
                    Text('$percentage% reached', style: GoogleFonts.inter(fontSize: 9, color: _accentColor, fontWeight: FontWeight.w600)),
+                 ],
+               ),
+             ],
+           ),
+         );
+
+       case 'gradient':
+         return Container(
+           width: double.infinity,
+           padding: const EdgeInsets.all(20),
+           decoration: BoxDecoration(
+             gradient: LinearGradient(
+               begin: Alignment.topLeft,
+               end: Alignment.bottomRight,
+               colors: [
+                 _accentColor,
+                 Color.lerp(_accentColor, Colors.black, 0.3)!,
+               ],
+             ),
+             borderRadius: BorderRadius.circular(12),
+             boxShadow: [
+               BoxShadow(
+                 color: _accentColor.withOpacity(0.45),
+                 blurRadius: 20,
+                 offset: const Offset(0, 8),
+               ),
+             ],
+           ),
+           child: Column(
+             crossAxisAlignment: CrossAxisAlignment.start,
+             children: [
+               Row(
+                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                 children: [
+                   Text('ECO IMPACT', style: GoogleFonts.getFont(_selectedFont, fontSize: 9, fontWeight: FontWeight.w700, color: Colors.white.withOpacity(0.7), letterSpacing: 1.5)),
+                   Container(
+                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                     decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
+                     child: Text('Verified ✓', style: GoogleFonts.inter(fontSize: 9, color: Colors.white, fontWeight: FontWeight.w600)),
+                   ),
+                 ],
+               ),
+               const SizedBox(height: 12),
+               Row(
+                 crossAxisAlignment: CrossAxisAlignment.baseline,
+                 textBaseline: TextBaseline.alphabetic,
+                 children: [
+                   Text(displayVal.toInt().toString(), style: GoogleFonts.getFont(_selectedFont, fontSize: 40, fontWeight: FontWeight.w900, color: Colors.white, height: 1.0)),
+                   const SizedBox(width: 6),
+                   Text('kg CO₂', style: GoogleFonts.getFont(_selectedFont, fontSize: 14, fontWeight: FontWeight.w500, color: Colors.white.withOpacity(0.8))),
+                 ],
+               ),
+               const SizedBox(height: 2),
+               Text('saved through Eco Rewards', style: GoogleFonts.getFont(_selectedFont, fontSize: 11, color: Colors.white.withOpacity(0.65))),
+               const SizedBox(height: 16),
+               ClipRRect(
+                 borderRadius: BorderRadius.circular(4),
+                 child: LinearProgressIndicator(
+                   value: progress,
+                   minHeight: 6,
+                   backgroundColor: Colors.white.withOpacity(0.2),
+                   valueColor: const AlwaysStoppedAnimation(Colors.white),
+                 ),
+               ),
+               const SizedBox(height: 6),
+               Row(
+                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                 children: [
+                   Text('Progress to goal', style: GoogleFonts.inter(fontSize: 9, color: Colors.white.withOpacity(0.6))),
+                   Text('$percentage%', style: GoogleFonts.inter(fontSize: 9, color: Colors.white, fontWeight: FontWeight.w600)),
+                 ],
+               ),
+             ],
+           ),
+         );
+
+       case 'neon':
+         return Container(
+           width: double.infinity,
+           padding: const EdgeInsets.all(20),
+           decoration: BoxDecoration(
+             color: const Color(0xFF0A0A0A),
+             borderRadius: BorderRadius.circular(12),
+             border: Border.all(color: _accentColor.withOpacity(0.3), width: 1),
+             boxShadow: [
+               BoxShadow(color: _accentColor.withOpacity(0.15), blurRadius: 20, spreadRadius: 2),
+             ],
+           ),
+           child: Column(
+             crossAxisAlignment: CrossAxisAlignment.start,
+             children: [
+               Text('CARBON OFFSET', style: GoogleFonts.getFont(_selectedFont, fontSize: 9, fontWeight: FontWeight.w700, color: _accentColor.withOpacity(0.6), letterSpacing: 2.0)),
+               const SizedBox(height: 8),
+               Text(
+                 '${displayVal.toInt()}',
+                 style: GoogleFonts.getFont(
+                   _selectedFont,
+                   fontSize: 48,
+                   fontWeight: FontWeight.w900,
+                   color: _accentColor,
+                   height: 1.0,
+                   shadows: [
+                     Shadow(color: _accentColor.withOpacity(0.9), blurRadius: 12),
+                     Shadow(color: _accentColor.withOpacity(0.5), blurRadius: 28),
+                   ],
+                 ),
+               ),
+               Text('kg CO₂ saved', style: GoogleFonts.getFont(_selectedFont, fontSize: 12, color: Colors.white.withOpacity(0.45), fontWeight: FontWeight.w500)),
+               const SizedBox(height: 16),
+               Stack(
+                 children: [
+                   Container(height: 3, decoration: BoxDecoration(color: Colors.white.withOpacity(0.07), borderRadius: BorderRadius.circular(2))),
+                   LayoutBuilder(
+                     builder: (ctx, c) => Container(
+                       height: 3,
+                       width: c.maxWidth * progress,
+                       decoration: BoxDecoration(
+                         color: _accentColor,
+                         borderRadius: BorderRadius.circular(2),
+                         boxShadow: [BoxShadow(color: _accentColor, blurRadius: 8, spreadRadius: 1)],
+                       ),
+                     ),
+                   ),
+                 ],
+               ),
+               const SizedBox(height: 8),
+               Row(
+                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                 children: [
+                   Text('$percentage% of goal', style: GoogleFonts.inter(fontSize: 9, color: Colors.white.withOpacity(0.25))),
+                   Text('ECO REWARDS', style: GoogleFonts.inter(fontSize: 8, color: _accentColor.withOpacity(0.55), letterSpacing: 1.0, fontWeight: FontWeight.w700)),
+                 ],
+               ),
+             ],
+           ),
+         );
+
+       case 'split':
+         return IntrinsicHeight(
+           child: Row(
+             children: [
+               Expanded(
+                 flex: 5,
+                 child: Container(
+                   padding: const EdgeInsets.all(16),
+                   decoration: BoxDecoration(
+                     color: _accentColor.withOpacity(0.1),
+                     borderRadius: const BorderRadius.only(topLeft: Radius.circular(12), bottomLeft: Radius.circular(12)),
+                     border: Border.all(color: _accentColor.withOpacity(0.15)),
+                   ),
+                   child: Column(
+                     crossAxisAlignment: CrossAxisAlignment.start,
+                     mainAxisAlignment: MainAxisAlignment.center,
+                     children: [
+                       Text('CO₂ SAVED', style: GoogleFonts.getFont(_selectedFont, fontSize: 9, fontWeight: FontWeight.w700, color: _accentColor.withOpacity(0.75), letterSpacing: 1.5)),
+                       const SizedBox(height: 4),
+                       Text(displayVal.toInt().toString(), style: GoogleFonts.getFont(_selectedFont, fontSize: 34, fontWeight: FontWeight.w900, color: textMain, height: 1.0)),
+                       Text('kg', style: GoogleFonts.getFont(_selectedFont, fontSize: 13, color: textMain.withOpacity(0.45), fontWeight: FontWeight.w500)),
+                     ],
+                   ),
+                 ),
+               ),
+               Expanded(
+                 flex: 6,
+                 child: Container(
+                   padding: const EdgeInsets.all(16),
+                   decoration: BoxDecoration(
+                     color: isDark ? const Color(0xFF1A2E26) : Colors.white,
+                     borderRadius: const BorderRadius.only(topRight: Radius.circular(12), bottomRight: Radius.circular(12)),
+                     border: Border(
+                       top: BorderSide(color: _accentColor.withOpacity(0.15)),
+                       right: BorderSide(color: _accentColor.withOpacity(0.15)),
+                       bottom: BorderSide(color: _accentColor.withOpacity(0.15)),
+                     ),
+                   ),
+                   child: Column(
+                     crossAxisAlignment: CrossAxisAlignment.start,
+                     mainAxisAlignment: MainAxisAlignment.center,
+                     children: [
+                       Text('Goal progress', style: GoogleFonts.inter(fontSize: 10, color: textMain.withOpacity(0.45))),
+                       const SizedBox(height: 6),
+                       ClipRRect(
+                         borderRadius: BorderRadius.circular(3),
+                         child: LinearProgressIndicator(value: progress, minHeight: 5, backgroundColor: Colors.grey.withOpacity(0.15), valueColor: AlwaysStoppedAnimation(_accentColor)),
+                       ),
+                       const SizedBox(height: 4),
+                       Text('$percentage%', style: GoogleFonts.getFont(_selectedFont, fontSize: 16, fontWeight: FontWeight.w800, color: _accentColor)),
+                       const SizedBox(height: 10),
+                       Row(
+                         children: [
+                           const Text('🌳 ', style: TextStyle(fontSize: 12)),
+                           Text('${(displayVal / 20).round()} trees', style: GoogleFonts.getFont(_selectedFont, fontSize: 11, fontWeight: FontWeight.w600, color: textMain)),
+                         ],
+                       ),
+                     ],
+                   ),
+                 ),
+               ),
+             ],
+           ),
+         );
+
+       case 'ticker':
+         final tickerUsers = _realtimeUsers > 0 ? _realtimeUsers : 42;
+         return Container(
+           width: double.infinity,
+           padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+           decoration: BoxDecoration(
+             color: isDark ? const Color(0xFF111111) : Colors.white,
+             borderRadius: BorderRadius.circular(12),
+             border: Border.all(color: isDark ? Colors.white.withOpacity(0.07) : Colors.grey.withOpacity(0.15)),
+           ),
+           child: Column(
+             children: [
+               Text('LIVE IMPACT', style: GoogleFonts.getFont(_selectedFont, fontSize: 9, fontWeight: FontWeight.w700, color: textMain.withOpacity(0.35), letterSpacing: 2.5)),
+               const SizedBox(height: 8),
+               Text(
+                 displayVal.toInt().toString(),
+                 style: GoogleFonts.getFont(_selectedFont, fontSize: 52, fontWeight: FontWeight.w900, color: textMain, height: 1.0),
+               ),
+               Text('kg CO₂ OFFSET', style: GoogleFonts.getFont(_selectedFont, fontSize: 10, fontWeight: FontWeight.w700, color: _accentColor, letterSpacing: 1.0)),
+               const SizedBox(height: 12),
+               Container(
+                 height: 2,
+                 decoration: BoxDecoration(
+                   gradient: LinearGradient(colors: [Colors.transparent, _accentColor, Colors.transparent]),
+                   borderRadius: BorderRadius.circular(1),
+                 ),
+               ),
+               const SizedBox(height: 12),
+               Row(
+                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                 children: [
+                   Column(children: [
+                     Text('${(displayVal / 20).round()}', style: GoogleFonts.getFont(_selectedFont, fontSize: 15, fontWeight: FontWeight.w800, color: textMain)),
+                     Text('trees', style: GoogleFonts.inter(fontSize: 9, color: textMain.withOpacity(0.4))),
+                   ]),
+                   Container(width: 1, height: 24, color: isDark ? Colors.white12 : Colors.black12),
+                   Column(children: [
+                     Text('$percentage%', style: GoogleFonts.getFont(_selectedFont, fontSize: 15, fontWeight: FontWeight.w800, color: _accentColor)),
+                     Text('of goal', style: GoogleFonts.inter(fontSize: 9, color: textMain.withOpacity(0.4))),
+                   ]),
+                   Container(width: 1, height: 24, color: isDark ? Colors.white12 : Colors.black12),
+                   Column(children: [
+                     Text('$tickerUsers', style: GoogleFonts.getFont(_selectedFont, fontSize: 15, fontWeight: FontWeight.w800, color: textMain)),
+                     Text('users', style: GoogleFonts.inter(fontSize: 9, color: textMain.withOpacity(0.4))),
+                   ]),
                  ],
                ),
              ],

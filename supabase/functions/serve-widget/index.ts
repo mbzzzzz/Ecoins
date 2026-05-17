@@ -197,6 +197,73 @@ Deno.serve(async (req) => {
       );
     }
 
+    if (v === 'gradient') {
+      return '<div style="background:linear-gradient(135deg,' + accent + ',' + accent + 'bb);border-radius:12px;padding:20px;max-width:280px;box-sizing:border-box;box-shadow:0 8px 24px ' + accent + '55;font-family:' + font + ',Inter,sans-serif;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
+          '<span style="font-size:9px;font-weight:700;color:rgba(255,255,255,.7);letter-spacing:1.5px;">ECO IMPACT</span>' +
+          '<span style="padding:2px 8px;background:rgba(255,255,255,.2);border-radius:20px;font-size:9px;color:#fff;font-weight:600;">Verified ✓</span>' +
+        '</div>' +
+        '<div style="font-size:44px;font-weight:900;color:#fff;line-height:1;">' + carbon + '</div>' +
+        '<div style="font-size:12px;color:rgba(255,255,255,.75);font-weight:500;margin:4px 0 16px;">kg CO₂ saved through Eco Rewards</div>' +
+        '<div style="background:rgba(255,255,255,.25);border-radius:4px;height:6px;overflow:hidden;">' +
+          '<div style="background:#fff;border-radius:4px;height:6px;width:' + Math.round(progress * 100) + '%;transition:width .8s ease;"></div>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;margin-top:6px;">' +
+          '<span style="font-size:9px;color:rgba(255,255,255,.6);">Progress to goal</span>' +
+          '<span style="font-size:9px;color:#fff;font-weight:600;">' + pct + '%</span>' +
+        '</div>' +
+        '</div>';
+    }
+
+    if (v === 'neon') {
+      return '<div style="background:#0a0a0a;border-radius:12px;padding:20px;max-width:280px;box-sizing:border-box;border:1px solid ' + accent + '44;box-shadow:0 0 28px ' + accent + '22;font-family:' + font + ',Inter,sans-serif;">' +
+        '<div style="font-size:9px;font-weight:700;color:' + accent + ';opacity:.6;letter-spacing:2px;margin-bottom:8px;">CARBON OFFSET</div>' +
+        '<div style="font-size:52px;font-weight:900;color:' + accent + ';line-height:1;text-shadow:0 0 12px ' + accent + ',0 0 28px ' + accent + '88;">' + carbon + '</div>' +
+        '<div style="font-size:12px;color:rgba(255,255,255,.4);font-weight:500;margin:4px 0 16px;">kg CO₂ saved</div>' +
+        '<div style="background:rgba(255,255,255,.06);border-radius:2px;height:3px;overflow:hidden;">' +
+          '<div style="background:' + accent + ';border-radius:2px;height:3px;width:' + Math.round(progress * 100) + '%;box-shadow:0 0 10px ' + accent + ',0 0 20px ' + accent + '88;transition:width .8s ease;"></div>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;margin-top:8px;">' +
+          '<span style="font-size:9px;color:rgba(255,255,255,.25);">' + pct + '% of goal</span>' +
+          '<span style="font-size:8px;font-weight:700;color:' + accent + ';opacity:.6;letter-spacing:1px;">ECO REWARDS</span>' +
+        '</div>' +
+        '</div>';
+    }
+
+    if (v === 'split') {
+      return '<div style="display:inline-flex;max-width:320px;border-radius:12px;overflow:hidden;border:1px solid ' + accent + '26;box-shadow:0 4px 12px rgba(0,0,0,.06);font-family:' + font + ',Inter,sans-serif;">' +
+        '<div style="background:' + accent + '18;padding:20px 16px;display:flex;flex-direction:column;justify-content:center;min-width:110px;">' +
+          '<div style="font-size:9px;font-weight:700;color:' + accent + ';opacity:.8;letter-spacing:1.5px;margin-bottom:4px;">CO₂ SAVED</div>' +
+          '<div style="font-size:36px;font-weight:900;color:#111;line-height:1;">' + carbon + '</div>' +
+          '<div style="font-size:13px;color:#6b7280;font-weight:500;">kg</div>' +
+        '</div>' +
+        '<div style="background:#fff;padding:16px;display:flex;flex-direction:column;justify-content:center;flex:1;">' +
+          '<div style="font-size:10px;color:#9ca3af;margin-bottom:6px;">Goal progress</div>' +
+          '<div style="background:#e5e7eb;border-radius:3px;height:5px;margin-bottom:4px;overflow:hidden;">' +
+            '<div style="background:' + accent + ';border-radius:3px;height:5px;width:' + Math.round(progress * 100) + '%;transition:width .8s ease;"></div>' +
+          '</div>' +
+          '<div style="font-size:18px;font-weight:800;color:' + accent + ';margin-bottom:10px;">' + pct + '%</div>' +
+          '<div style="font-size:11px;font-weight:600;color:#374151;">🌳 ' + trees + ' trees</div>' +
+        '</div>' +
+        '</div>';
+    }
+
+    if (v === 'ticker') {
+      return '<div style="background:#fff;border-radius:12px;padding:20px 16px;max-width:280px;box-sizing:border-box;border:1px solid #f3f4f6;box-shadow:0 2px 8px rgba(0,0,0,.05);font-family:' + font + ',Inter,sans-serif;text-align:center;">' +
+        '<div style="font-size:9px;font-weight:700;color:#9ca3af;letter-spacing:2.5px;margin-bottom:8px;">LIVE IMPACT</div>' +
+        '<div style="font-size:56px;font-weight:900;color:#111;line-height:1;">' + carbon + '</div>' +
+        '<div style="font-size:10px;font-weight:700;color:' + accent + ';letter-spacing:1px;margin:4px 0 12px;">kg CO₂ OFFSET</div>' +
+        '<div style="height:2px;background:linear-gradient(90deg,transparent,' + accent + ',transparent);border-radius:1px;margin-bottom:12px;"></div>' +
+        '<div style="display:flex;justify-content:space-around;align-items:center;">' +
+          '<div><div style="font-size:15px;font-weight:800;color:#111;">' + trees + '</div><div style="font-size:9px;color:#9ca3af;">trees</div></div>' +
+          '<div style="width:1px;height:24px;background:#e5e7eb;"></div>' +
+          '<div><div style="font-size:15px;font-weight:800;color:' + accent + ';">' + pct + '%</div><div style="font-size:9px;color:#9ca3af;">of goal</div></div>' +
+          '<div style="width:1px;height:24px;background:#e5e7eb;"></div>' +
+          '<div><div style="font-size:15px;font-weight:800;color:#111;">' + users + '</div><div style="font-size:9px;color:#9ca3af;">users</div></div>' +
+        '</div>' +
+        '</div>';
+    }
+
     // banner (default)
     return wrap(
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
