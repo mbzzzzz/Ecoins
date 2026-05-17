@@ -15,7 +15,7 @@ if (keyPropertiesFile.exists()) {
 }
 
 android {
-    namespace = "app.ecoins"
+    namespace = "com.example.ecoins"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -41,7 +41,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "app.ecoins"
+        applicationId = "com.example.ecoins"
         minSdk = 26
         targetSdk = 35
         versionCode = flutter.versionCode
