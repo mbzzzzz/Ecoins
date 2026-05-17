@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:ecoins/core/theme.dart';
 import 'package:ecoins/ui/widgets/glass_container.dart';
 import 'package:ecoins/ui/screens/wallet_screen.dart';
@@ -23,6 +24,7 @@ class _RewardsScreenState extends State<RewardsScreen>
   // Data
   List<Map<String, dynamic>> _marketOffers = [];
   bool _isLoading = true;
+  bool _hasError = false;
   int _userPoints = 0;
 
   // Mock Raffles
@@ -67,7 +69,7 @@ class _RewardsScreenState extends State<RewardsScreen>
   }
 
   Future<void> _fetchData() async {
-    setState(() => _isLoading = true);
+    setState(() { _isLoading = true; _hasError = false; });
     try {
       final user = _supabase.auth.currentUser;
       if (user == null) {
@@ -75,14 +77,12 @@ class _RewardsScreenState extends State<RewardsScreen>
         return;
       }
 
-      // 1. Fetch User Points
       final profile = await _supabase
           .from('profiles')
           .select('points_balance')
           .eq('id', user.id)
           .single();
 
-      // 2. Fetch Offers
       final List<dynamic> offersData = await _supabase
           .from('offers')
           .select('*, brands(name, logo_url)')
@@ -98,7 +98,6 @@ class _RewardsScreenState extends State<RewardsScreen>
                     'title': offer['title'],
                     'description': offer['description'],
                     'cost_points': offer['points_cost'],
-                    'code_prefix': offer['code_prefix'],
                     'discount_code': offer['discount_code'],
                     'brands': offer['brands'],
                   })
@@ -109,8 +108,14 @@ class _RewardsScreenState extends State<RewardsScreen>
       }
     } catch (e) {
       debugPrint('Error fetching rewards: $e');
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() { _isLoading = false; _hasError = true; });
     }
+  }
+
+  String _generatePromoCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final rand = Random.secure();
+    return 'ECO-${List.generate(8, (_) => chars[rand.nextInt(chars.length)]).join()}';
   }
 
   @override
@@ -191,10 +196,43 @@ class _RewardsScreenState extends State<RewardsScreen>
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator(color: Colors.white));
     }
+    if (_hasError) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.wifi_off_rounded, color: Colors.white54, size: 56),
+            const SizedBox(height: 16),
+            Text('Could not load rewards', style: GoogleFonts.outfit(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text('Check your connection and try again.', style: GoogleFonts.inter(color: Colors.white60)),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _fetchData,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: AppTheme.primaryDark, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            ),
+          ],
+        ),
+      );
+    }
     if (_marketOffers.isEmpty) {
       return Center(
-          child: Text('No rewards available',
-              style: GoogleFonts.inter(color: Colors.white70)));
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.card_giftcard_outlined, color: Colors.white54, size: 64),
+              const SizedBox(height: 16),
+              Text('No rewards yet', style: GoogleFonts.outfit(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text('Brands are adding eco offers soon.\nLog activities to build up your points!', style: GoogleFonts.inter(color: Colors.white60), textAlign: TextAlign.center),
+            ],
+          ),
+        ),
+      );
     }
 
     return GridView.builder(
@@ -355,27 +393,26 @@ class _RewardsScreenState extends State<RewardsScreen>
         children: [
           Expanded(
             flex: 3,
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                image: DecorationImage(
-                  image: imageUrl != null && imageUrl.isNotEmpty
-                      ? NetworkImage(imageUrl)
-                      : const AssetImage('assets/images/logo.png')
-                          as ImageProvider,
-                  fit: BoxFit.cover,
-                ),
-              ),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
               child: Stack(
+                fit: StackFit.expand,
                 children: [
-                    Positioned(
-                        top: 8, right: 8,
-                        child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(12)),
-                            child: Text('$points pts', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold))
+                  imageUrl != null && imageUrl.isNotEmpty
+                      ? Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => _imageFallback(),
                         )
-                    )
+                      : _imageFallback(),
+                  Positioned(
+                    top: 8, right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(12)),
+                      child: Text('$points pts', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -420,101 +457,94 @@ class _RewardsScreenState extends State<RewardsScreen>
     );
   }
 
-  // Reuse logic from original file
+  Widget _imageFallback() => Container(
+    color: Colors.white12,
+    child: const Center(child: Icon(Icons.store_outlined, color: Colors.white38, size: 40)),
+  );
+
   Future<void> _redeem(Map<String, dynamic> reward) async {
-      // ... same logic as before, abbreviated here for saving chars ...
-      // In a real refactor, I'd extract this to a service or mixin
-      final cost = reward['cost_points'] as int;
-      if (_userPoints < cost) {
-         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Not enough points!'), backgroundColor: Colors.red));
-         return;
-      }
-      
-      HapticFeedback.lightImpact();
-      // CONFIRM DIALOG - Premium Design
-      final confirm = await showDialog<bool>(
-        context: context,
-        builder: (context) => Dialog(
-          backgroundColor: Colors.transparent,
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1F2937), // Dark Gray
-              border: Border.all(color: Colors.white.withOpacity(0.1)),
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: const [
-                BoxShadow(color: Colors.black45, blurRadius: 20, spreadRadius: 5)
-              ]
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.stars, color: AppTheme.accentYellow, size: 48),
-                const SizedBox(height: 16),
-                Text('Redeem Reward?', 
-                  style: GoogleFonts.outfit(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
-                Text('Redeem "${reward['title']}" for $cost points?',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(color: Colors.white70)),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: ()=>Navigator.pop(context, false), 
-                        child: Text('Cancel', style: GoogleFonts.inter(color: Colors.white60))
-                      )
-                    ),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryGreen,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          padding: const EdgeInsets.symmetric(vertical: 12)
-                        ),
-                        onPressed: ()=>Navigator.pop(context, true), 
-                        child: const Text('Confirm')
-                      )
-                    ),
-                  ],
-                )
-              ],
-            ),
+    final cost = reward['cost_points'] as int;
+    if (_userPoints < cost) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Not enough points!'), backgroundColor: Colors.red));
+      return;
+    }
+
+    HapticFeedback.lightImpact();
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1F2937),
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 20, spreadRadius: 5)],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.stars, color: AppTheme.accentYellow, size: 48),
+              const SizedBox(height: 16),
+              Text('Redeem Reward?', style: GoogleFonts.outfit(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              Text('Redeem "${reward['title']}" for $cost points?', textAlign: TextAlign.center, style: GoogleFonts.inter(color: Colors.white70)),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(child: TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel', style: GoogleFonts.inter(color: Colors.white60)))),
+                  Expanded(child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryGreen, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), padding: const EdgeInsets.symmetric(vertical: 12)),
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('Confirm'),
+                  )),
+                ],
+              ),
+            ],
           ),
         ),
-      );
+      ),
+    );
 
-      if (confirm != true) return;
+    if (confirm != true || !mounted) return;
 
-      try {
-          final user = _supabase.auth.currentUser;
-          if (user == null) return;
-          
-          final codePrefix = reward['code_prefix'] ?? 'ECO';
-          final uniqueSuffix = DateTime.now().millisecondsSinceEpoch.toString().substring(8);
-          final uniquePromoCode = '$codePrefix-$uniqueSuffix';
-          final brandDisplayCode = reward['discount_code'] ?? uniquePromoCode;
+    try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) return;
 
-          await _supabase.from('redemptions').insert({
-              'user_id': user.id,
-              'offer_id': reward['id'],
-              'promo_code': uniquePromoCode,
-              'status': 'active'
-          });
+      final promoCode = _generatePromoCode();
 
-          final newBalance = _userPoints - cost;
-          await _supabase.from('profiles').update({'points_balance': newBalance}).eq('id', user.id);
+      final result = await _supabase.rpc('redeem_offer', params: {
+        'p_user_id': user.id,
+        'p_offer_id': reward['id'],
+        'p_points_cost': cost,
+        'p_promo_code': promoCode,
+      });
 
-          if (mounted) {
-              setState(() => _userPoints = newBalance);
-              HapticFeedback.heavyImpact();
-              CustomToast.show(context, 'Redeemed: $uniquePromoCode');
-          }
-          _fetchData();
-      } catch(e) {
-          debugPrint(e.toString());
+      final newBalance = result['new_balance'] as int;
+
+      if (mounted) {
+        setState(() => _userPoints = newBalance);
+        HapticFeedback.heavyImpact();
+        CustomToast.show(context, 'Your code: $promoCode');
       }
+      _fetchData();
+    } catch (e) {
+      debugPrint('Redemption error: $e');
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Redemption failed'),
+            content: Text(e.toString().contains('Insufficient')
+                ? 'You don\'t have enough points for this reward.'
+                : 'Something went wrong. Please try again.'),
+            actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))],
+          ),
+        );
+      }
+    }
   }
 }

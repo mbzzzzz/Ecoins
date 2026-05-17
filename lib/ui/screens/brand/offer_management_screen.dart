@@ -18,6 +18,7 @@ class _OfferManagementScreenState extends State<OfferManagementScreen>
   final _supabase = Supabase.instance.client;
   List<Map<String, dynamic>> _offers = [];
   bool _isLoading = true;
+  bool _hasError = false;
   String _selectedFilter = 'All';
   String? _brandId;
 
@@ -144,7 +145,47 @@ class _OfferManagementScreenState extends State<OfferManagementScreen>
       }
     } catch (e) {
       debugPrint('Error fetching offers: $e');
-      if (mounted) _loadMockData();
+      if (mounted) setState(() { _isLoading = false; _hasError = true; });
+    }
+  }
+
+  Future<void> _toggleOfferStatus(Map<String, dynamic> offer, bool newValue) async {
+    final offerId = offer['id'];
+    final previous = offer['status'];
+    setState(() => offer['status'] = newValue ? 'active' : 'paused');
+    try {
+      await _supabase.from('offers').update({'is_active': newValue}).eq('id', offerId);
+    } catch (e) {
+      if (mounted) {
+        setState(() => offer['status'] = previous);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update: $e')));
+      }
+    }
+  }
+
+  Future<void> _confirmDelete(Map<String, dynamic> offer) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete offer?'),
+        content: Text('This will permanently delete "${offer['title']}". This cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await _supabase.from('offers').delete().eq('id', offer['id']);
+      _fetchOffers();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Offer deleted')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to delete: $e')));
     }
   }
 
@@ -272,8 +313,27 @@ class _OfferManagementScreenState extends State<OfferManagementScreen>
                 ),
               ],
               body: _isLoading
+                  ? Center(child: CircularProgressIndicator(color: _primaryColor))
+                  : _hasError
                   ? Center(
-                      child: CircularProgressIndicator(color: _primaryColor))
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.cloud_off_rounded, size: 56, color: Colors.grey[400]),
+                          const SizedBox(height: 16),
+                          Text('Could not load offers', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blueGrey[700])),
+                          const SizedBox(height: 8),
+                          Text('Check your connection and try again.', style: GoogleFonts.inter(color: Colors.grey[500])),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: () { setState(() => _hasError = false); _fetchOffers(); },
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Retry'),
+                            style: ElevatedButton.styleFrom(backgroundColor: _primaryColor, foregroundColor: Colors.white),
+                          ),
+                        ],
+                      ),
+                    )
                   : SingleChildScrollView(
                       padding: const EdgeInsets.only(bottom: 100),
                       child: Column(
@@ -337,6 +397,29 @@ class _OfferManagementScreenState extends State<OfferManagementScreen>
                           const SizedBox(height: 24),
 
                           // Offer List
+                          if (_filteredOffers.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.all(40),
+                              child: Center(
+                                child: Column(
+                                  children: [
+                                    Icon(Icons.local_offer_outlined, size: 64, color: isDark ? Colors.grey[600] : Colors.grey[400]),
+                                    const SizedBox(height: 16),
+                                    Text('No offers here', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : Colors.blueGrey[700])),
+                                    const SizedBox(height: 8),
+                                    Text('Create your first offer to attract eco-conscious customers.', textAlign: TextAlign.center, style: GoogleFonts.inter(color: Colors.grey[500])),
+                                    const SizedBox(height: 24),
+                                    ElevatedButton.icon(
+                                      onPressed: () => _showOfferDialog(),
+                                      icon: const Icon(Icons.add),
+                                      label: const Text('Create Offer'),
+                                      style: ElevatedButton.styleFrom(backgroundColor: _primaryColor, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                          else
                           ListView.separated(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             shrinkWrap: true,
@@ -537,20 +620,16 @@ class _OfferManagementScreenState extends State<OfferManagementScreen>
                       // Image
                       Stack(
                         children: [
-                          Container(
-                            height: 64,
-                            width: 64,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              image: DecorationImage(
-                                image: NetworkImage(offer['image'] ??
-                                    'https://via.placeholder.com/150'),
-                                fit: BoxFit.cover,
-                                colorFilter: isPaused || isDraft
-                                    ? const ColorFilter.mode(
-                                        Colors.grey, BlendMode.saturation)
-                                    : null,
-                              ),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: ColorFiltered(
+                              colorFilter: (isPaused || isDraft)
+                                  ? const ColorFilter.mode(Colors.grey, BlendMode.saturation)
+                                  : const ColorFilter.mode(Colors.transparent, BlendMode.multiply),
+                              child: offer['image'] != null && (offer['image'] as String).isNotEmpty
+                                  ? Image.network(offer['image'], width: 64, height: 64, fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => _offerImageFallback())
+                                  : _offerImageFallback(),
                             ),
                           ),
                           if (status == 'active')
@@ -637,29 +716,32 @@ class _OfferManagementScreenState extends State<OfferManagementScreen>
                         ),
                       ),
 
-                      // Action / Toggle
-                      if (isDraft)
-                        IconButton(
-                            onPressed: () {},
-                            icon: Icon(Icons.more_vert,
-                                color: Colors.grey[400]))
-                      else
-                        Switch(
-                          value: isActive,
-                          onChanged: (val) {
-                            // Mock toggle
-                            setState(() {
-                              offer['status'] = val ? 'active' : 'paused';
-                            });
-                          },
-                          activeColor: _primaryColor,
-                          thumbColor: MaterialStateProperty.all(Colors.white),
-                          trackColor: MaterialStateProperty.resolveWith(
-                              (states) =>
-                                  states.contains(MaterialState.selected)
-                                      ? _primaryColor
-                                      : Colors.grey[300]),
-                        )
+                      // Action / Toggle + Delete Menu
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (!isDraft)
+                            Switch(
+                              value: isActive,
+                              onChanged: (val) => _toggleOfferStatus(offer, val),
+                              activeColor: _primaryColor,
+                              thumbColor: MaterialStateProperty.all(Colors.white),
+                              trackColor: MaterialStateProperty.resolveWith(
+                                  (states) => states.contains(MaterialState.selected) ? _primaryColor : Colors.grey[300]),
+                            ),
+                          PopupMenuButton<String>(
+                            onSelected: (value) {
+                              if (value == 'edit') _showOfferDialog(offer: offer);
+                              if (value == 'delete') _confirmDelete(offer);
+                            },
+                            itemBuilder: (ctx) => [
+                              PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit, size: 16, color: Colors.grey[700]), const SizedBox(width: 8), const Text('Edit')])),
+                              PopupMenuItem(value: 'delete', child: Row(children: [const Icon(Icons.delete_outline, size: 16, color: Colors.red), const SizedBox(width: 8), const Text('Delete', style: TextStyle(color: Colors.red))])),
+                            ],
+                            icon: Icon(Icons.more_vert, color: Colors.grey[400]),
+                          ),
+                        ],
+                      )
                     ],
                   ),
 
@@ -758,6 +840,12 @@ class _OfferManagementScreenState extends State<OfferManagementScreen>
       ),
     );
   }
+
+  Widget _offerImageFallback() => Container(
+    width: 64, height: 64,
+    decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(12)),
+    child: Icon(Icons.local_offer_outlined, color: Colors.grey[400], size: 28),
+  );
 
   void _showOfferDialog({Map<String, dynamic>? offer}) {
     final titleController = TextEditingController(text: offer?['title']);

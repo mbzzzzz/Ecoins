@@ -22,6 +22,7 @@ class BrandDashboardScreen extends StatefulWidget {
 class _BrandDashboardScreenState extends State<BrandDashboardScreen> {
   final _supabase = Supabase.instance.client;
   bool _isLoading = true;
+  bool _hasError = false;
   Map<String, dynamic>? _brand;
   List<Map<String, dynamic>> _activeOffers = [];
   
@@ -86,7 +87,7 @@ class _BrandDashboardScreenState extends State<BrandDashboardScreen> {
       }
     } catch (e) {
       debugPrint('Error fetching dashboard data: $e');
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() { _isLoading = false; _hasError = true; });
     }
   }
 
@@ -96,6 +97,31 @@ class _BrandDashboardScreenState extends State<BrandDashboardScreen> {
       return const Scaffold(
         backgroundColor: Color(0xFFF0FDF4),
         body: Center(child: CircularProgressIndicator(color: Color(0xFF10B981))),
+      );
+    }
+
+    if (_hasError) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF0FDF4),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.cloud_off_rounded, size: 64, color: Colors.grey[400]),
+              const SizedBox(height: 16),
+              Text('Could not load dashboard', style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blueGrey[700])),
+              const SizedBox(height: 8),
+              Text('Check your connection and try again.', style: GoogleFonts.inter(color: Colors.grey[500])),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: () { setState(() => _hasError = false); _fetchDashboardData(); },
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981), foregroundColor: Colors.white),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
@@ -259,18 +285,16 @@ class _BrandDashboardScreenState extends State<BrandDashboardScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 4,
-                  )
-                ],
-                image: DecorationImage(
-                  image: _brand?['logo_url'] != null
-                      ? NetworkImage(_brand!['logo_url'])
-                      : const AssetImage('assets/images/logo.png') as ImageProvider,
-                  fit: BoxFit.cover,
-                ),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)],
+              ),
+              child: ClipOval(
+                child: _brand?['logo_url'] != null
+                    ? Image.network(
+                        _brand!['logo_url'],
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const _BrandLogoFallback(),
+                      )
+                    : const _BrandLogoFallback(),
               ),
             ),
             const SizedBox(width: 12),
@@ -1110,6 +1134,18 @@ class _BrandDashboardScreenState extends State<BrandDashboardScreen> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _BrandLogoFallback extends StatelessWidget {
+  const _BrandLogoFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFFD1FAE5),
+      child: const Center(child: Icon(Icons.store, color: Color(0xFF10B981), size: 24)),
     );
   }
 }
