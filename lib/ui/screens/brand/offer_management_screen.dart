@@ -89,7 +89,7 @@ class _OfferManagementScreenState extends State<OfferManagementScreen>
           final redemptionCount = await _supabase
               .from('redemptions')
               .count(CountOption.exact)
-              .filter('reward_id', 'in', offerIds);
+              .filter('offer_id', 'in', offerIds);
           totalRedeemed = redemptionCount;
         } catch (e) {
           debugPrint('Error fetching redemption stats: $e');
@@ -814,10 +814,8 @@ class _OfferManagementScreenState extends State<OfferManagementScreen>
                      'brand_id': _brandId,
                      'title': title,
                      'discount_code': code,
-                     'code_prefix': 'ECO', // Default or derived
                      'points_cost': points,
                      'is_active': true,
-                     'type': 'Discount' 
                    });
                 } else {
                   // Update

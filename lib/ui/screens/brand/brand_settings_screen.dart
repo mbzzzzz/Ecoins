@@ -39,13 +39,18 @@ class _BrandSettingsScreenState extends State<BrandSettingsScreen> {
           .from('brands')
           .select()
           .eq('owner_user_id', user.id)
-          .single();
+          .maybeSingle();
+
+      if (data == null) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
 
       if (mounted) {
         setState(() {
           _brandId = data['id'];
-          _nameController.text = data['name'];
-          _websiteController.text = data['website_url'] ?? '';
+          _nameController.text = data['name'] ?? '';
+          _websiteController.text = data['website'] ?? '';
           _goalController.text = (data['sustainability_goal'] ?? 2000).toString();
           _logoUrl = data['logo_url'];
           _isLoading = false;
@@ -98,7 +103,7 @@ class _BrandSettingsScreenState extends State<BrandSettingsScreen> {
 
       await _supabase.from('brands').update({
         'name': _nameController.text,
-        'website_url': _websiteController.text,
+        'website': _websiteController.text,
         'logo_url': logoUrl,
         'sustainability_goal': goal,
       }).eq('id', _brandId!);
