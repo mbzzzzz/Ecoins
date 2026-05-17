@@ -72,8 +72,8 @@ class _WidgetIntegrationScreenState extends State<WidgetIntegrationScreen> {
       final data = await Supabase.instance.client
           .from('brands')
           .select('api_key')
-          .eq('owner_user_id', user.id)
-          .single();
+          .or('owner_id.eq.${user.id},owner_user_id.eq.${user.id}')
+          .maybeSingle() ?? {};
 
       if (mounted) {
         setState(() {

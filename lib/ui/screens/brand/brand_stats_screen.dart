@@ -35,10 +35,11 @@ class _BrandStatsScreenState extends State<BrandStatsScreen> {
       final user = _supabase.auth.currentUser;
       if (user == null) return;
 
+      // Support both owner_id and owner_user_id
       final brand = await _supabase
           .from('brands')
           .select()
-          .eq('owner_user_id', user.id)
+          .or('owner_id.eq.${user.id},owner_user_id.eq.${user.id}')
           .maybeSingle();
 
       if (brand == null) {
@@ -49,30 +50,46 @@ class _BrandStatsScreenState extends State<BrandStatsScreen> {
       final brandId = brand['id'] as String;
       _totalCo2 = (brand['total_carbon_saved'] ?? 0).toDouble();
 
-      // Fetch offers
-      final offers = await _supabase
+      // Step 1: fetch all offers for this brand (RLS now allows brand to see own offers)
+      final offersRes = await _supabase
           .from('offers')
           .select()
           .eq('brand_id', brandId)
           .order('redeemed_count', ascending: false);
 
-      // Fetch redemptions (joined with offer + user profile)
-      final redemptions = await _supabase
-          .from('redemptions')
-          .select('*, offers!inner(title, brand_id), profiles(display_name)')
-          .eq('offers.brand_id', brandId)
-          .order('redeemed_at', ascending: false)
-          .limit(20);
+      final offers = offersRes as List;
+      final offerIds = offers.map((o) => o['id'] as String).toList();
+      final offerLookup = {for (final o in offers) o['id'] as String: o};
 
-      final activeCount = (offers as List).where((o) => o['is_active'] == true).length;
-      final totalRedeemed = (offers).fold<int>(0, (sum, o) => sum + ((o['redeemed_count'] as int?) ?? 0));
+      // Step 2: fetch redemptions via inFilter — no join filtering, avoids RLS issues
+      List<dynamic> redemptions = [];
+      if (offerIds.isNotEmpty) {
+        redemptions = await _supabase
+            .from('redemptions')
+            .select('id, offer_id, user_id, promo_code, status, redeemed_at')
+            .inFilter('offer_id', offerIds)
+            .order('redeemed_at', ascending: false)
+            .limit(20);
+      }
 
-      // Unique user count from redemptions
-      final uniqueUsers = (redemptions as List)
+      final activeCount = offers.where((o) => o['is_active'] == true).length;
+      // Use redeemed_count from offers for total (more reliable than counting rows)
+      final totalRedeemed = offers.fold<int>(0, (sum, o) => sum + ((o['redeemed_count'] as int?) ?? 0));
+
+      final uniqueUsers = redemptions
           .map((r) => r['user_id'] as String?)
           .whereType<String>()
           .toSet()
           .length;
+
+      // Enrich recent redemptions with offer title client-side
+      final enrichedRedemptions = redemptions.map((r) {
+        final oid = r['offer_id'] as String?;
+        return {
+          ...Map<String, dynamic>.from(r),
+          'offer': oid != null ? offerLookup[oid] : null,
+        };
+      }).toList();
 
       if (mounted) {
         setState(() {
@@ -80,7 +97,7 @@ class _BrandStatsScreenState extends State<BrandStatsScreen> {
           _totalRedemptions = totalRedeemed;
           _totalUsers = uniqueUsers;
           _topOffers = List<Map<String, dynamic>>.from(offers.take(5));
-          _recentRedemptions = List<Map<String, dynamic>>.from(redemptions.take(10));
+          _recentRedemptions = List<Map<String, dynamic>>.from(enrichedRedemptions.take(10));
           _isLoading = false;
         });
       }
@@ -279,8 +296,7 @@ class _BrandStatsScreenState extends State<BrandStatsScreen> {
           ? _empty('No redemptions yet')
           : Column(
               children: _recentRedemptions.map((r) {
-                final offerTitle = (r['offers'] as Map?)?['title'] ?? 'Unknown Offer';
-                final userName = (r['profiles'] as Map?)?['display_name'] ?? 'Anonymous';
+                final offerTitle = (r['offer'] as Map?)?['title'] ?? 'Unknown Offer';
                 final code = r['promo_code'] ?? '—';
                 final at = r['redeemed_at'] != null
                     ? DateFormat('MMM d, h:mm a').format(DateTime.parse(r['redeemed_at']).toLocal())
@@ -292,7 +308,7 @@ class _BrandStatsScreenState extends State<BrandStatsScreen> {
                       Container(
                         width: 38, height: 38,
                         decoration: BoxDecoration(color: AppTheme.primaryGreen.withOpacity(0.1), shape: BoxShape.circle),
-                        child: const Icon(Icons.person_outline, color: AppTheme.primaryGreen, size: 18),
+                        child: const Icon(Icons.confirmation_number_outlined, color: AppTheme.primaryGreen, size: 18),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -300,7 +316,7 @@ class _BrandStatsScreenState extends State<BrandStatsScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(offerTitle, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? Colors.white : AppTheme.textMain)),
-                            Text('$userName • $at', style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textSub)),
+                            Text(at, style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textSub)),
                           ],
                         ),
                       ),

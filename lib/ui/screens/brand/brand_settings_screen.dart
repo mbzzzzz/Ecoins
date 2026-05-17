@@ -38,7 +38,7 @@ class _BrandSettingsScreenState extends State<BrandSettingsScreen> {
       final data = await _supabase
           .from('brands')
           .select()
-          .eq('owner_user_id', user.id)
+          .or('owner_id.eq.${user.id},owner_user_id.eq.${user.id}')
           .maybeSingle();
 
       if (data == null) {

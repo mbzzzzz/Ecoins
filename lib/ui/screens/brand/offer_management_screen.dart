@@ -57,7 +57,7 @@ class _OfferManagementScreenState extends State<OfferManagementScreen>
       final brand = await _supabase
           .from('brands')
           .select('id')
-          .eq('owner_user_id', user.id)
+          .or('owner_id.eq.${user.id},owner_user_id.eq.${user.id}')
           .maybeSingle();
 
       if (brand == null) {

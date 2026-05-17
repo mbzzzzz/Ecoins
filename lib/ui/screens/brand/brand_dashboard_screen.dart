@@ -46,11 +46,11 @@ class _BrandDashboardScreenState extends State<BrandDashboardScreen> {
         return;
       }
 
-      // 1. Fetch Brand Profile
+      // 1. Fetch Brand Profile (support both owner_id and owner_user_id columns)
       final brandData = await _supabase
           .from('brands')
           .select()
-          .eq('owner_user_id', user.id)
+          .or('owner_id.eq.${user.id},owner_user_id.eq.${user.id}')
           .maybeSingle();
 
       if (brandData == null) {

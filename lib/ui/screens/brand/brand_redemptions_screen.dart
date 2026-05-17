@@ -32,10 +32,11 @@ class _BrandRedemptionsScreenState extends State<BrandRedemptionsScreen> {
       final user = _supabase.auth.currentUser;
       if (user == null) return;
 
+      // Find brand by owner_id OR owner_user_id
       final brand = await _supabase
           .from('brands')
           .select('id')
-          .eq('owner_user_id', user.id)
+          .or('owner_id.eq.${user.id},owner_user_id.eq.${user.id}')
           .maybeSingle();
 
       if (brand == null) {
@@ -45,26 +46,41 @@ class _BrandRedemptionsScreenState extends State<BrandRedemptionsScreen> {
 
       final brandId = brand['id'] as String;
 
-      // Load brand's offers for filter
+      // Step 1: load all brand offers (RLS now allows brand to see own offers)
       final offersRes = await _supabase
           .from('offers')
-          .select('id, title')
+          .select('id, title, discount_code')
           .eq('brand_id', brandId)
           .order('created_at', ascending: false);
 
-      // Load redemptions for this brand's offers
-      var query = _supabase
-          .from('redemptions')
-          .select('*, offers!inner(id, title, brand_id, discount_code), profiles(display_name, avatar_url)')
-          .eq('offers.brand_id', brandId)
-          .order('redeemed_at', ascending: false);
+      final offerIds = (offersRes as List).map((o) => o['id'] as String).toList();
 
-      final redemptionsRes = await query;
+      // Step 2: fetch redemptions using inFilter — no join-filtering, avoids RLS quirks
+      List<Map<String, dynamic>> redemptionsRes = [];
+      if (offerIds.isNotEmpty) {
+        // Build an offer lookup for enriching redemption rows
+        final offerLookup = {for (final o in offersRes) o['id'] as String: o};
+
+        final raw = await _supabase
+            .from('redemptions')
+            .select('id, offer_id, user_id, promo_code, status, redeemed_at')
+            .inFilter('offer_id', offerIds)
+            .order('redeemed_at', ascending: false);
+
+        // Enrich with offer data client-side (profiles join blocked by RLS — show anon)
+        redemptionsRes = (raw as List).map((r) {
+          final oid = r['offer_id'] as String?;
+          return {
+            ...Map<String, dynamic>.from(r),
+            'offer': oid != null ? offerLookup[oid] : null,
+          };
+        }).toList().cast<Map<String, dynamic>>();
+      }
 
       if (mounted) {
         setState(() {
           _offers = List<Map<String, dynamic>>.from(offersRes);
-          _redemptions = List<Map<String, dynamic>>.from(redemptionsRes);
+          _redemptions = redemptionsRes;
           _isLoading = false;
         });
       }
@@ -76,10 +92,7 @@ class _BrandRedemptionsScreenState extends State<BrandRedemptionsScreen> {
 
   List<Map<String, dynamic>> get _filtered {
     if (_selectedOfferId == null) return _redemptions;
-    return _redemptions.where((r) {
-      final offer = r['offers'] as Map?;
-      return offer?['id'] == _selectedOfferId;
-    }).toList();
+    return _redemptions.where((r) => r['offer_id'] == _selectedOfferId).toList();
   }
 
   @override
@@ -167,11 +180,9 @@ class _BrandRedemptionsScreenState extends State<BrandRedemptionsScreen> {
   }
 
   Widget _buildRedemptionTile(Map<String, dynamic> r, bool isDark) {
-    final offer = r['offers'] as Map?;
-    final profile = r['profiles'] as Map?;
+    final offer = r['offer'] as Map?;
     final offerTitle = offer?['title'] ?? 'Unknown Offer';
     final code = r['promo_code'] ?? '—';
-    final userName = profile?['display_name'] ?? 'Anonymous';
     final at = r['redeemed_at'] != null
         ? DateFormat('MMM d, yyyy • h:mm a').format(DateTime.parse(r['redeemed_at']).toLocal())
         : '—';
@@ -205,10 +216,8 @@ class _BrandRedemptionsScreenState extends State<BrandRedemptionsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(offerTitle, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: isDark ? Colors.white : AppTheme.textMain)),
-                const SizedBox(height: 2),
-                Text(userName, style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textSub)),
                 const SizedBox(height: 4),
-                Text(at, style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textSub.withOpacity(0.7))),
+                Text(at, style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textSub)),
               ],
             ),
           ),
