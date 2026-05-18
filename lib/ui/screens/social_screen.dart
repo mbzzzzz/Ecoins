@@ -1174,9 +1174,8 @@ class _FriendsTabState extends State<FriendsTab> {
     } catch (_) {}
     final level = LevelSystem.getLevel(points);
     if (!mounted) return;
-    // ignore: use_build_context_synchronously
     showModalBottomSheet(
-      context: context,
+      context: this.context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => GlassContainer(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -1199,6 +1198,17 @@ class _FriendsTabState extends State<FriendsTab> {
                     'type': 'achievement',
                     'created_at': DateTime.now().toIso8601String(),
                   });
+                  await _supabase.from('messages').insert({
+                    'sender_id': user.id,
+                    'receiver_id': friend['id'],
+                    'content': '🏆 Shared an achievement: ${level.name}',
+                    'message_type': 'achievement',
+                    'metadata': {
+                      'level_name': level.name,
+                      'level_asset': level.assetPath,
+                      'points': points,
+                    },
+                  });
                 } catch (_) {}
                 if (!ctx.mounted) return;
                 Navigator.pop(ctx);
@@ -1206,11 +1216,7 @@ class _FriendsTabState extends State<FriendsTab> {
                 Navigator.push(
                   ctx,
                   MaterialPageRoute(
-                    builder: (_) => ChatScreen(
-                      friend: friend,
-                      initialMessage:
-                          '🏆 I just reached the ${level.name} level! #EcoWarrior',
-                    ),
+                    builder: (_) => ChatScreen(friend: friend),
                   ),
                 );
               },
@@ -1330,11 +1336,28 @@ class _FriendsTabState extends State<FriendsTab> {
                                 'created_at': DateTime.now().toIso8601String(),
                               });
 
+                              // Send rich coupon message
+                              await _supabase.from('messages').insert({
+                                'sender_id': user.id,
+                                'receiver_id': friend['id'],
+                                'content': '🎁 Gifted a coupon: ${offer?['title'] ?? 'coupon'}',
+                                'message_type': 'coupon',
+                                'metadata': {
+                                  'offer_title': offer?['title'],
+                                  'brand_name': brand?['name'] ?? 'Partner',
+                                  'brand_logo': brand?['logo_url'],
+                                  'promo_code': code,
+                                },
+                              });
+
                               if (!context.mounted) return;
                               Navigator.pop(ctx);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text('Coupon gifted! 🎁 They\'ll see it in their codes.')));
+                              if (!context.mounted) return;
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => ChatScreen(friend: friend)),
+                              );
                             } catch (e) {
                               debugPrint('Gift error: $e');
                             }

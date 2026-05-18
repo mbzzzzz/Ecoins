@@ -1,4 +1,5 @@
 import 'package:ecoins/core/theme.dart';
+import 'package:ecoins/ui/screens/challenge_detail_screen.dart';
 import 'package:ecoins/ui/widgets/glass_container.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -17,6 +18,7 @@ class _ChallengesTabState extends State<ChallengesTab> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _challenges = [];
   Map<String, Map<String, dynamic>> _myParticipation = {};
+  Set<String> _invitedChallengeIds = {};
 
   @override
   void initState() {
@@ -35,7 +37,6 @@ class _ChallengesTabState extends State<ChallengesTab> {
       final challengesRes = await _supabase
           .from('eco_challenges')
           .select('*')
-          .or('is_global.eq.true,creator_id.eq.$uid,invited_user_id.eq.$uid')
           .gte('end_date', DateTime.now().toIso8601String().substring(0, 10))
           .order('is_global', ascending: false)
           .order('created_at', ascending: false);
@@ -52,6 +53,8 @@ class _ChallengesTabState extends State<ChallengesTab> {
 
       final challengeIds = (challengesRes as List).map((c) => c['id'] as String).toList();
       final countMap = <String, int>{};
+      Set<String> invitedIds = {};
+
       if (challengeIds.isNotEmpty) {
         final countsRes = await _supabase
             .from('challenge_participants')
@@ -61,15 +64,25 @@ class _ChallengesTabState extends State<ChallengesTab> {
           final cid = row['challenge_id'] as String;
           countMap[cid] = (countMap[cid] ?? 0) + 1;
         }
+
+        final inviteRes = await _supabase
+            .from('challenge_invites')
+            .select('challenge_id')
+            .eq('invitee_id', uid)
+            .inFilter('challenge_id', challengeIds);
+        invitedIds = (inviteRes as List)
+            .map((r) => r['challenge_id'] as String)
+            .toSet();
       }
 
       if (mounted) {
         setState(() {
-          _challenges = challengesRes.map<Map<String, dynamic>>((c) => {
+          _challenges = (challengesRes as List).map<Map<String, dynamic>>((c) => {
             ...Map<String, dynamic>.from(c),
             '_participant_count': countMap[c['id'] as String] ?? 0,
           }).toList();
           _myParticipation = participationMap;
+          _invitedChallengeIds = invitedIds;
           _isLoading = false;
         });
       }
@@ -324,6 +337,7 @@ class _ChallengesTabState extends State<ChallengesTab> {
               final cid = c['id'] as String;
               final p = _myParticipation[cid];
               final isJoined = p != null;
+              final isInvited = _invitedChallengeIds.contains(cid) && !isJoined;
               final targetValue = (c['target_value'] as num).toDouble();
               final currentValue = isJoined ? (p['current_value'] as num).toDouble() : 0.0;
               final progress = targetValue > 0 ? (currentValue / targetValue).clamp(0.0, 1.0) : 0.0;
@@ -343,7 +357,15 @@ class _ChallengesTabState extends State<ChallengesTab> {
               return FadeInUp(
                 delay: Duration(milliseconds: index * 80),
                 duration: const Duration(milliseconds: 400),
-                child: GlassContainer(
+                child: GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          ChallengeDetailScreen(challengeId: cid),
+                    ),
+                  ).then((_) => _fetchChallenges()),
+                  child: GlassContainer(
                   margin: const EdgeInsets.only(bottom: 16),
                   padding: const EdgeInsets.all(18),
                   borderRadius: BorderRadius.circular(20),
@@ -361,6 +383,10 @@ class _ChallengesTabState extends State<ChallengesTab> {
                             targetType == 'co2_kg' ? '🌿 CO₂' : '⚡ Points',
                             Colors.white54,
                           ),
+                          if (isInvited) ...[
+                            const SizedBox(width: 8),
+                            _badge('🏁 Invited!', Colors.purpleAccent),
+                          ],
                           const Spacer(),
                           Text(
                             daysLeft > 1
@@ -445,6 +471,7 @@ class _ChallengesTabState extends State<ChallengesTab> {
                       ),
                     ],
                   ),
+                ),
                 ),
               );
             }),
