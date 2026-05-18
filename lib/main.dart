@@ -14,6 +14,7 @@ import 'package:ecoins/ui/screens/splash_screen.dart';
 import 'package:ecoins/core/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:timeago/timeago.dart' as timeago;
 import 'package:go_router/go_router.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -77,6 +78,8 @@ void _handleNotificationTap(RemoteMessage message) {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  timeago.setLocaleMessages('en_short', timeago.EnShortMessages());
 
   await Supabase.initialize(
     url: Constants.supabaseUrl,
